@@ -5,12 +5,12 @@
 <cfcomponent>
 	<cffunction name="params" access="remote" returntype="struct">
     	<cfscript>
-			var systemParam.dsn = 'catalyst_prod';
-			var systemParam.dsn3 = 'catalyst_prod_1';
+			var systemParam.dsn = 'boyahane';
+			var systemParam.dsn3 = 'boyahane';
 			if(isDefined("session.ep.PERIOD_YEAR")){
-				var systemParam.dsn2 = 'catalyst_prod_#session.ep.PERIOD_YEAR#_1';
+				var systemParam.dsn2 = 'boyahane';
 			}else{
-			var systemParam.dsn2 = 'catalyst_prod_#year(now())#_1';}
+			var systemParam.dsn2 = 'boyahane';}
 			var systemParam.uploadFolder = '\\devappsrv\documents\';
 			dir_seperator = '\';
 		</cfscript>
@@ -20,12 +20,12 @@
 		<cfargument  name="CompanyId">
 		<cfargument  name="PeriodYear">
 		<cfscript>
-			var systemParam.dsn = 'catalyst_prod';
-			var systemParam.dsn3 = 'catalyst_prod_#arguments.CompanyId#';
+			var systemParam.dsn = 'boyahane';
+			var systemParam.dsn3 = 'boyahane';
 			
-			//	var systemParam.dsn2 = 'catalyst_prod_#arguments.PeriodYear#_#arguments.CompanyId#';
+			//	var systemParam.dsn2 = 'boyahane';
 			
-			var systemParam.dsn2 = 'catalyst_prod_#arguments.PeriodYear#_#arguments.CompanyId#';
+			var systemParam.dsn2 = 'boyahane';
 			var systemParam.uploadFolder = '\\devappsrv\documents\';
 			dir_seperator = '\';
 		</cfscript>

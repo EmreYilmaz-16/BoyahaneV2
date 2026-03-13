@@ -1,0 +1,234 @@
+<cfprocessingdirective pageEncoding="utf-8">
+
+<!--- ID parametresi kontrolü --->
+<cfparam name="url.id" default="0">
+
+<cfif val(url.id) eq 0>
+    <cflocation url="../display/list_product_cat.cfm" addtoken="false">
+    <cfabort>
+</cfif>
+
+<!--- Kategori bilgilerini getir --->
+<cfquery name="getCategory" datasource="boyahane">
+    SELECT 
+        product_catid,
+        hierarchy,
+        product_cat,
+        detail,
+        record_date,
+        record_emp,
+        update_date,
+        update_emp
+    FROM 
+        product_cat
+    WHERE 
+        product_catid = <cfqueryparam value="#url.id#" cfsqltype="cf_sql_integer">
+</cfquery>
+
+<!--- Kategori bulunamadı --->
+<cfif getCategory.recordCount eq 0>
+    <cflocation url="../display/list_product_cat.cfm?error=notfound" addtoken="false">
+    <cfabort>
+</cfif>
+
+<!--- Form submit edildi mi kontrol et --->
+<cfif structKeyExists(form, "submit")>
+    <cfparam name="form.hierarchy" default="">
+    <cfparam name="form.product_cat" default="">
+    <cfparam name="form.detail" default="">
+    
+    <!--- Kategori adı zorunlu --->
+    <cfif trim(form.product_cat) eq "">
+        <cfset errorMsg = "Kategori adı zorunludur!">
+    <cfelse>
+        <!--- Kategori güncelle --->
+        <cftry>
+            <cfquery datasource="boyahane">
+                UPDATE product_cat
+                SET
+                    hierarchy = <cfqueryparam value="#trim(form.hierarchy)#" cfsqltype="cf_sql_varchar" null="#trim(form.hierarchy) eq ''#">,
+                    product_cat = <cfqueryparam value="#trim(form.product_cat)#" cfsqltype="cf_sql_varchar">,
+                    detail = <cfqueryparam value="#trim(form.detail)#" cfsqltype="cf_sql_varchar" null="#trim(form.detail) eq ''#">,
+                    update_date = <cfqueryparam value="#now()#" cfsqltype="cf_sql_timestamp">,
+                    update_emp = <cfqueryparam value="#session.user.id#" cfsqltype="cf_sql_integer" null="#not structKeyExists(session, 'user')#">,
+                    update_emp_ip = <cfqueryparam value="#cgi.remote_addr#" cfsqltype="cf_sql_varchar">
+                WHERE
+                    product_catid = <cfqueryparam value="#url.id#" cfsqltype="cf_sql_integer">
+            </cfquery>
+            
+            <!--- Başarılı --->
+            <cflocation url="../display/list_product_cat.cfm?success=updated" addtoken="false">
+            <cfabort>
+            
+            <cfcatch type="any">
+                <cfset errorMsg = "Kategori güncellenirken bir hata oluştu: #cfcatch.message#">
+            </cfcatch>
+        </cftry>
+    </cfif>
+</cfif>
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kategori Düzenle</title>
+    
+    <!--- Bootstrap CSS --->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!--- Font Awesome --->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        .page-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .form-card {
+            border: none;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        .required-field::after {
+            content: " *";
+            color: red;
+        }
+        .info-badge {
+            background: #f8f9fa;
+            padding: 0.5rem 1rem;
+            border-left: 3px solid #667eea;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-header">
+        <div class="container">
+            <h1><i class="fas fa-edit me-2"></i>Kategori Düzenle</h1>
+            <p class="mb-0">Kategori bilgilerini güncelleyin</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <!--- Hata mesajı --->
+                <cfif isDefined("errorMsg")>
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        <cfoutput>#errorMsg#</cfoutput>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                </cfif>
+
+                <!--- Kayıt bilgileri --->
+                <cfoutput>
+                <div class="info-badge">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <small class="text-muted">
+                                <i class="fas fa-hashtag me-1"></i><strong>ID:</strong> #getCategory.product_catid#
+                            </small>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted">
+                                <i class="fas fa-calendar me-1"></i><strong>Kayıt:</strong> 
+                                <cfif isDate(getCategory.record_date)>
+                                    #dateFormat(getCategory.record_date, "dd/mm/yyyy")# #timeFormat(getCategory.record_date, "HH:mm")#
+                                <cfelse>
+                                    -
+                                </cfif>
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                </cfoutput>
+
+                <div class="card form-card">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0"><i class="fas fa-layer-group me-2"></i>Kategori Bilgileri</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <cfoutput>
+                        <form method="post" action="edit_product_cat.cfm?id=#url.id#" id="categoryForm">
+                            <div class="mb-3">
+                                <label for="hierarchy" class="form-label">
+                                    <i class="fas fa-sitemap me-1"></i>Hiyerarşi
+                                </label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="hierarchy" 
+                                       name="hierarchy" 
+                                       placeholder="Örn: 01, 01.01, 01.01.01"
+                                       value="<cfif isDefined('form.hierarchy')>#form.hierarchy#<cfelse>#getCategory.hierarchy#</cfif>">
+                                <small class="form-text text-muted">
+                                    Kategori hiyerarşisini belirtir (isteğe bağlı)
+                                </small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="product_cat" class="form-label required-field">
+                                    <i class="fas fa-tag me-1"></i>Kategori Adı
+                                </label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="product_cat" 
+                                       name="product_cat" 
+                                       required 
+                                       placeholder="Kategori adını girin"
+                                       value="<cfif isDefined('form.product_cat')>#form.product_cat#<cfelse>#getCategory.product_cat#</cfif>">
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="detail" class="form-label">
+                                    <i class="fas fa-align-left me-1"></i>Detay
+                                </label>
+                                <textarea class="form-control" 
+                                          id="detail" 
+                                          name="detail" 
+                                          rows="3" 
+                                          placeholder="Kategori hakkında ek bilgiler"><cfif isDefined('form.detail')>#form.detail#<cfelse>#getCategory.detail#</cfif></textarea>
+                            </div>
+
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Not:</strong> <span class="text-danger">*</span> işaretli alanlar zorunludur.
+                            </div>
+
+                            <div class="d-flex justify-content-between">
+                                <a href="../display/list_product_cat.cfm" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left me-1"></i>Geri Dön
+                                </a>
+                                <button type="submit" name="submit" class="btn btn-warning btn-lg">
+                                    <i class="fas fa-save me-1"></i>Değişiklikleri Kaydet
+                                </button>
+                            </div>
+                        </form>
+                        </cfoutput>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!--- Bootstrap JS --->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Form validasyonu
+        document.getElementById('categoryForm').addEventListener('submit', function(e) {
+            const productCat = document.getElementById('product_cat').value.trim();
+            
+            if (productCat === '') {
+                e.preventDefault();
+                alert('Kategori adı zorunludur!');
+                document.getElementById('product_cat').focus();
+                return false;
+            }
+        });
+    </script>
+</body>
+</html>

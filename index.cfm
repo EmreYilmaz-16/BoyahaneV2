@@ -1,3 +1,42 @@
+<cfprocessingdirective pageEncoding="utf-8">
+<!--- Session kontrolü - Giriş yapılmamışsa login sayfasına yönlendir --->
+<cfif not structKeyExists(session, "authenticated") or not session.authenticated>
+    <cflocation url="login.cfm" addtoken="false">
+    <cfabort>
+</cfif>
+
+<!--- Fuseaction kontrolü ve window_type belirleme --->
+<cfset showLayout = true>
+<cfset loadAssets = true>
+<cfset pageContent = "">
+
+<cfif isDefined("attributes.fuseaction") and attributes.fuseaction neq "">
+    <cfquery name="getObject" datasource="boyahane">
+        SELECT * FROM pbs_objects WHERE full_fuseaction = <cfqueryparam value="#attributes.fuseaction#" cfsqltype="cf_sql_varchar">
+    </cfquery>
+    
+    <cfif getObject.recordCount>
+        <!--- Window type'a göre ayarları yap --->
+        <cfif getObject.window_type eq "popup">
+            <cfset showLayout = false>
+            <cfset loadAssets = false>
+        <cfelseif getObject.window_type eq "ajaxpage">
+            <cfset showLayout = false>
+            <cfset loadAssets = false>
+        <cfelse>
+            <cfset showLayout = true>
+            <cfset loadAssets = true>
+        </cfif>
+    <cfelse>
+        <!--- Sayfa bulunamadı --->
+        <cfset showLayout = true>
+        <cfset loadAssets = true>
+    </cfif>
+<cfelse>
+    <!--- Anasayfa --->
+    <cflocation url="index.cfm?fuseaction=myhome.welcome" addtoken="no">
+</cfif>
+
 <!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -6,6 +45,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>Boyahane - Rasih Çelik</title>
     
+    <cfif loadAssets>
     <!--- Bootstrap CSS --->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
     
@@ -13,6 +53,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     
     <!--- DevExtreme CSS --->
+    <link rel="stylesheet" href="https://cdn3.devexpress.com/jslib/23.2.5/css/dx.common.css">
     <link rel="stylesheet" href="https://cdn3.devexpress.com/jslib/23.2.5/css/dx.light.css">
     
     <!--- Custom CSS --->
@@ -42,9 +83,165 @@
             transform: translateY(-5px);
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
+        
+        /* Sidebar Styles */
+        .sidebar {
+            position: fixed;
+            top: 56px;
+            left: 0;
+            bottom: 0;
+            width: 280px;
+            background-color: #2c3e50;
+            overflow-y: auto;
+            z-index: 1000;
+            transition: all 0.3s;
+        }
+        
+        .sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .sidebar::-webkit-scrollbar-track {
+            background: #1a252f;
+        }
+        
+        .sidebar::-webkit-scrollbar-thumb {
+            background: #34495e;
+            border-radius: 3px;
+        }
+        
+        .content-wrapper {
+            margin-left: 280px;
+            transition: all 0.3s;
+        }
+        
+        .menu-solution {
+            color: #ecf0f1;
+            padding: 12px 20px;
+            cursor: pointer;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.2s;
+        }
+        
+        .menu-solution:hover {
+            background-color: #34495e;
+        }
+        
+        .menu-solution i {
+            margin-right: 10px;
+            width: 20px;
+        }
+        
+        .menu-family {
+            background-color: #1a252f;
+            border-left: 3px solid #3498db;
+        }
+        
+        .menu-family-item {
+            color: #bdc3c7;
+            padding: 10px 20px 10px 40px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        .menu-family-item:hover {
+            background-color: #243447;
+            color: #fff;
+        }
+        
+        .menu-module {
+            background-color: #16202b;
+        }
+        
+        .menu-module-item {
+            color: #95a5a6;
+            padding: 8px 20px 8px 60px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+        }
+        
+        .menu-module-item:hover {
+            background-color: #1c2a38;
+            color: #ecf0f1;
+        }
+        
+        .menu-object-item {
+            color: #7f8c8d;
+            padding: 6px 20px 6px 80px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.85rem;
+            border-bottom: 1px solid rgba(255,255,255,0.02);
+        }
+        
+        .menu-object-item:hover {
+            background-color: #1e2d3d;
+            color: #bdc3c7;
+            padding-left: 85px;
+        }
+        
+        .menu-object-item i {
+            margin-right: 8px;
+            font-size: 0.75rem;
+        }
+        
+        .menu-active {
+            background-color: #3498db !important;
+            color: #fff !important;
+            font-weight: 500;
+        }
+        
+        .toggle-icon {
+            float: right;
+            transition: transform 0.3s;
+        }
+        
+        .toggle-icon.rotate {
+            transform: rotate(90deg);
+        }
+        
+        .sidebar-header {
+            padding: 15px 20px;
+            background-color: #1a252f;
+            border-bottom: 2px solid #3498db;
+            color: #ecf0f1;
+            font-weight: bold;
+        }
     </style>
+    </cfif>
 </head>
 <body>
+    <!--- Menü için verileri çek (sadece layout varsa) --->
+    <cfif showLayout>
+    <cfquery name="getSolutions" datasource="boyahane">
+        SELECT * FROM pbs_solution 
+        WHERE is_active = true AND show_menu = true
+        ORDER BY order_no, solution_name
+    </cfquery>
+    
+    <cfquery name="getFamilies" datasource="boyahane">
+        SELECT * FROM pbs_family
+        WHERE is_active = true AND show_menu = true
+        ORDER BY solution_id, order_no, family_name
+    </cfquery>
+    
+    <cfquery name="getModules" datasource="boyahane">
+        SELECT * FROM pbs_module
+        WHERE is_active = true AND show_menu = true
+        ORDER BY family_id, order_no, module_name
+    </cfquery>
+    
+    <cfquery name="getObjects" datasource="boyahane">
+        SELECT * FROM pbs_objects
+        WHERE is_active = true AND show_menu = true
+        ORDER BY module_id, order_no, object_name
+    </cfquery>
+    </cfif>
+    
+    <cfif showLayout>
     <!--- Navigation Bar --->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container-fluid">
@@ -78,13 +275,19 @@
                     </li>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fas fa-user-circle"></i> Kullanıcı
+                            <i class="fas fa-user-circle"></i> <cfoutput>#session.user.fullname#</cfoutput>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                            <li class="dropdown-header">
+                                <small class="text-muted">
+                                    <cfoutput>@#session.user.username#</cfoutput>
+                                </small>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="#profil"><i class="fas fa-user me-2"></i>Profil</a></li>
                             <li><a class="dropdown-item" href="#ayarlar"><i class="fas fa-cog me-2"></i>Ayarlar</a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="#cikis"><i class="fas fa-sign-out-alt me-2"></i>Çıkış</a></li>
+                            <li><a class="dropdown-item text-danger" href="logout.cfm"><i class="fas fa-sign-out-alt me-2"></i>Çıkış Yap</a></li>
                         </ul>
                     </li>
                 </ul>
@@ -92,125 +295,91 @@
         </div>
     </nav>
 
-    <!--- Main Content --->
-    <div class="container-fluid main-content mt-4">
-        <div class="row">
-            <div class="col-12">
-                <h2 class="mb-4">
-                    <i class="fas fa-dashboard me-2"></i>Kontrol Paneli
-                </h2>
-            </div>
+    <!--- Sidebar Menu --->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <i class="fas fa-sitemap me-2"></i>Menü
         </div>
-
-        <!--- Dashboard Cards --->
-        <div class="row g-4 mb-4">
-            <div class="col-md-3">
-                <div class="card card-custom text-white bg-primary">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="card-title text-uppercase mb-0">Günlük Üretim</h6>
-                                <h2 class="mt-2 mb-0">1,245</h2>
-                            </div>
-                            <div class="fs-1">
-                                <i class="fas fa-box-open"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+        
+        <cfoutput query="getSolutions">
+            <div class="menu-solution" data-solution="#solution_id#">
+                <i class="#icon#"></i>
+                <span>#solution_name#</span>
+                <i class="fas fa-chevron-right toggle-icon"></i>
             </div>
-            <div class="col-md-3">
-                <div class="card card-custom text-white bg-success">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="card-title text-uppercase mb-0">Aktif Siparişler</h6>
-                                <h2 class="mt-2 mb-0">42</h2>
+            
+            <div class="menu-family" id="solution-#solution_id#" style="display:none;">
+                <cfquery name="familiesForSolution" dbtype="query">
+                    SELECT * FROM getFamilies
+                    WHERE solution_id = #solution_id#
+                </cfquery>
+                
+                <cfloop query="familiesForSolution">
+                    <div class="menu-family-item" data-family="#family_id#">
+                        <i class="#icon#"></i>
+                        <span>#family_name#</span>
+                        <i class="fas fa-chevron-right toggle-icon"></i>
+                    </div>
+                    
+                    <div class="menu-module" id="family-#family_id#" style="display:none;">
+                        <cfquery name="modulesForFamily" dbtype="query">
+                            SELECT * FROM getModules
+                            WHERE family_id = #family_id#
+                        </cfquery>
+                        
+                        <cfloop query="modulesForFamily">
+                            <div class="menu-module-item" data-module="#module_id#">
+                                <i class="#icon#"></i>
+                                <span>#module_name#</span>
+                                <i class="fas fa-chevron-right toggle-icon"></i>
                             </div>
-                            <div class="fs-1">
-                                <i class="fas fa-shopping-cart"></i>
+                            
+                            <div class="menu-objects" id="module-#module_id#" style="display:none;">
+                                <cfquery name="objectsForModule" dbtype="query">
+                                    SELECT * FROM getObjects
+                                    WHERE module_id = #module_id#
+                                </cfquery>
+                                
+                                <cfloop query="objectsForModule">
+                                    <a href="index.cfm?fuseaction=#full_fuseaction#" class="menu-object-item text-decoration-none d-block" data-object="#object_id#">
+                                        <i class="fas fa-circle"></i>
+                                        <span>#object_name#</span>
+                                    </a>
+                                </cfloop>
                             </div>
-                        </div>
+                        </cfloop>
                     </div>
-                </div>
+                </cfloop>
             </div>
-            <div class="col-md-3">
-                <div class="card card-custom text-white bg-warning">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="card-title text-uppercase mb-0">Bekleyen</h6>
-                                <h2 class="mt-2 mb-0">18</h2>
-                            </div>
-                            <div class="fs-1">
-                                <i class="fas fa-clock"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card card-custom text-white bg-danger">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="card-title text-uppercase mb-0">Geciken</h6>
-                                <h2 class="mt-2 mb-0">5</h2>
-                            </div>
-                            <div class="fs-1">
-                                <i class="fas fa-exclamation-triangle"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!--- DevExtreme Grid Example --->
-        <div class="row">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header bg-white">
-                        <h5 class="mb-0">
-                            <i class="fas fa-table me-2"></i>Son İşlemler
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <div id="dataGrid"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!--- Chart Section --->
-        <div class="row mt-4">
-            <div class="col-md-8">
-                <div class="card">
-                    <div class="card-header bg-white">
-                        <h5 class="mb-0">
-                            <i class="fas fa-chart-line me-2"></i>Üretim Grafiği
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <div id="chart"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-header bg-white">
-                        <h5 class="mb-0">
-                            <i class="fas fa-pie-chart me-2"></i>Durum Dağılımı
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <div id="pieChart"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        </cfoutput>
     </div>
+    </cfif>
 
+    <!--- Main Content --->
+    <cfif showLayout>
+    <div class="content-wrapper">
+    </cfif>
+        <div class="container-fluid main-content mt-4">
+        <cfif isDefined("attributes.fuseaction") and attributes.fuseaction neq "">
+            <cfif getObject.recordCount>
+                    <cfinclude template="#getObject.file_path#">
+                <cfelse>
+                    <div class="alert alert-danger text-center" role="alert">
+                        <h4 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i>Hata!</h4>
+                        <p>İstenen sayfa bulunamadı. Lütfen geçerli bir sayfa isteğinde bulunun.</p>
+                        <hr>
+                        <p class="mb-0">Anasayfaya dönmek için <a href="index.cfm" class="alert-link">buraya tıklayın</a>.</p>
+                    </div>
+                </cfif>
+                <cfelse>
+                    <cflocation url="index.cfm?fuseaction=myhome.welcome" addtoken="no">
+        </cfif>
+        </div>
+    <cfif showLayout>
+    </div>
+    </cfif>
+
+    <cfif showLayout>
     <!--- Footer --->
     <footer class="footer mt-5">
         <div class="container-fluid">
@@ -228,7 +397,9 @@
             </div>
         </div>
     </footer>
+    </cfif>
 
+    <cfif loadAssets>
     <!--- jQuery --->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
     
@@ -238,127 +409,68 @@
     <!--- DevExtreme JS --->
     <script src="https://cdn3.devexpress.com/jslib/23.2.5/js/dx.all.js"></script>
     
+    <!--- DevExtreme Türkçe Lokalizasyon --->
+    <script src="https://cdn3.devexpress.com/jslib/23.2.5/js/localization/dx.messages.tr.js"></script>
+    
     <!--- Custom JavaScript --->
     <script>
         $(document).ready(function() {
-            // DevExtreme DataGrid
-            $("#dataGrid").dxDataGrid({
-                dataSource: [
-                    { id: 1, siparis: "SIP-2026-001", urun: "Profil 40x40", miktar: 250, durum: "Tamamlandı", tarih: "2026-03-13" },
-                    { id: 2, siparis: "SIP-2026-002", urun: "Boru 50mm", miktar: 180, durum: "İşlemde", tarih: "2026-03-13" },
-                    { id: 3, siparis: "SIP-2026-003", urun: "Lama 30x30", miktar: 320, durum: "Beklemede", tarih: "2026-03-12" },
-                    { id: 4, siparis: "SIP-2026-004", urun: "Profil 60x60", miktar: 150, durum: "Tamamlandı", tarih: "2026-03-12" },
-                    { id: 5, siparis: "SIP-2026-005", urun: "Sac 2mm", miktar: 420, durum: "İşlemde", tarih: "2026-03-11" }
-                ],
-                columns: [
-                    { dataField: "siparis", caption: "Sipariş No", width: 150 },
-                    { dataField: "urun", caption: "Ürün" },
-                    { dataField: "miktar", caption: "Miktar", dataType: "number", format: "#,##0" },
-                    { dataField: "durum", caption: "Durum", 
-                        cellTemplate: function(container, options) {
-                            let badgeClass = "badge bg-secondary";
-                            if(options.value === "Tamamlandı") badgeClass = "badge bg-success";
-                            else if(options.value === "İşlemde") badgeClass = "badge bg-primary";
-                            else if(options.value === "Beklemede") badgeClass = "badge bg-warning";
-                            $("<span>").addClass(badgeClass).text(options.value).appendTo(container);
-                        }
-                    },
-                    { dataField: "tarih", caption: "Tarih", dataType: "date", format: "dd.MM.yyyy" }
-                ],
-                showBorders: true,
-                showRowLines: true,
-                rowAlternationEnabled: true,
-                columnAutoWidth: true,
-                paging: {
-                    pageSize: 10
-                },
-                pager: {
-                    showPageSizeSelector: true,
-                    allowedPageSizes: [5, 10, 20],
-                    showInfo: true
-                },
-                filterRow: {
-                    visible: true
-                },
-                headerFilter: {
-                    visible: true
-                },
-                searchPanel: {
-                    visible: true,
-                    placeholder: "Ara..."
-                },
-                export: {
-                    enabled: true
-                }
+            // Menü toggle işlemleri
+            $('.menu-solution').click(function() {
+                var solutionId = $(this).data('solution');
+                var menu = $('#solution-' + solutionId);
+                var icon = $(this).find('.toggle-icon');
+                
+                menu.slideToggle(300);
+                icon.toggleClass('rotate');
             });
-
-            // DevExtreme Chart
-            $("#chart").dxChart({
-                dataSource: [
-                    { gun: "Pazartesi", miktar: 1150 },
-                    { gun: "Salı", miktar: 1320 },
-                    { gun: "Çarşamba", miktar: 1080 },
-                    { gun: "Perşembe", miktar: 1450 },
-                    { gun: "Cuma", miktar: 1245 },
-                    { gun: "Cumartesi", miktar: 980 },
-                    { gun: "Pazar", miktar: 750 }
-                ],
-                series: [{
-                    argumentField: "gun",
-                    valueField: "miktar",
-                    type: "bar",
-                    color: "#0d6efd"
-                }],
-                title: {
-                    text: "Haftalık Üretim (Adet)"
-                },
-                legend: {
-                    visible: false
-                },
-                tooltip: {
-                    enabled: true,
-                    customizeTooltip: function(arg) {
-                        return {
-                            text: arg.argumentText + ": " + arg.valueText + " adet"
-                        };
-                    }
-                }
+            
+            $('.menu-family-item').click(function(e) {
+                e.stopPropagation();
+                var familyId = $(this).data('family');
+                var menu = $('#family-' + familyId);
+                var icon = $(this).find('.toggle-icon');
+                
+                menu.slideToggle(300);
+                icon.toggleClass('rotate');
             });
-
-            // DevExtreme PieChart
-            $("#pieChart").dxPieChart({
-                dataSource: [
-                    { durum: "Tamamlandı", deger: 45 },
-                    { durum: "İşlemde", deger: 30 },
-                    { durum: "Beklemede", deger: 18 },
-                    { durum: "Geciken", deger: 7 }
-                ],
-                series: [{
-                    argumentField: "durum",
-                    valueField: "deger",
-                    label: {
-                        visible: true,
-                        connector: {
-                            visible: true
-                        },
-                        customizeText: function(arg) {
-                            return arg.argumentText + " (" + arg.valueText + "%)";
-                        }
-                    }
-                }],
-                legend: {
-                    visible: false
-                },
-                tooltip: {
-                    enabled: true,
-                    customizeTooltip: function(arg) {
-                        return {
-                            text: arg.argumentText + ": %" + arg.valueText
-                        };
-                    }
-                }
+            
+            $('.menu-module-item').click(function(e) {
+                e.stopPropagation();
+                var moduleId = $(this).data('module');
+                var menu = $('#module-' + moduleId);
+                var icon = $(this).find('.toggle-icon');
+                
+                menu.slideToggle(300);
+                icon.toggleClass('rotate');
             });
-
+            
+            // Aktif menü öğesini işaretle
+            var currentFuseaction = new URLSearchParams(window.location.search).get('fuseaction');
+            if(currentFuseaction) {
+                $('.menu-object-item').each(function() {
+                    if($(this).attr('href').includes(currentFuseaction)) {
+                        $(this).addClass('menu-active');
+                        
+                        // Üst menüleri aç
+                        var moduleDiv = $(this).closest('.menu-objects');
+                        var moduleId = moduleDiv.attr('id');
+                        moduleDiv.show();
+                        $('.menu-module-item[data-module="' + moduleId.replace('module-', '') + '"]').find('.toggle-icon').addClass('rotate');
+                        
+                        var familyDiv = moduleDiv.closest('.menu-module');
+                        var familyId = familyDiv.attr('id');
+                        familyDiv.show();
+                        $('.menu-family-item[data-family="' + familyId.replace('family-', '') + '"]').find('.toggle-icon').addClass('rotate');
+                        
+                        var solutionDiv = familyDiv.closest('.menu-family');
+                        var solutionId = solutionDiv.attr('id');
+                        solutionDiv.show();
+                        $('.menu-solution[data-solution="' + solutionId.replace('solution-', '') + '"]').find('.toggle-icon').addClass('rotate');
+                    }
+                });
+            }
+            
             // Smooth scroll for anchor links
             $('a[href^="#"]').on('click', function(event) {
                 var target = $(this.getAttribute('href'));
@@ -371,5 +483,6 @@
             });
         });
     </script>
+    </cfif>
 </body>
 </html>

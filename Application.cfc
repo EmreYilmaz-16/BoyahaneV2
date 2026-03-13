@@ -28,6 +28,25 @@ Description			:
 		this.customtagpaths = '';
       	this.customtagpaths = ListAppend(this.customtagpaths,getDirectoryFromPath(getCurrentTemplatePath()) & "customtags");
 		this.customtagpaths = ListAppend(this.customtagpaths,getDirectoryFromPath(getCurrentTemplatePath()) & "Utility/customtag");
+		
+		// PostgreSQL DataSource Configuration
+		this.datasources["boyahane"] = {
+			class: 'org.postgresql.Driver',
+			bundleName: 'org.postgresql.jdbc',
+			bundleVersion: '42.7.2',
+			connectionString: 'jdbc:postgresql://postgres:5432/boyahane?useUnicode=true&characterEncoding=UTF-8',
+			username: 'boyahane_user',
+			password: 'boyahane_pass123',
+			connectionLimit: 100,
+			connectionTimeout: 1,
+			metaCacheTimeout: 60000,
+			blob: true,
+			clob: true,
+			validate: false
+		};
+		
+		// Default DSN
+		this.datasource = "boyahane";
 	</cfscript>
     <cfset Request.self="index.cfm">
     <!--- Sayfa request özellikleri --->
@@ -37,10 +56,7 @@ Description			:
         Functions:params, objects, langs, functions, workcube_app
 	------------------------------------------------------------------------>
 	<cffunction name="OnApplicationStart" access="public" returntype="boolean" output="false" hint="Uygulama başladığı anda çalıştırılacak kodlar. Tek defa çalıştırır.">
-		<cfset application.systemParam = createObject("component", "cfc.settings")>
-        <cfset structAppend(variables,application.systemParam.params())/>
-        <cfset application.systemFunctions = createObject("component", "cfc.functions")>
-        <cfset structAppend(variables,application.systemFunctions.langSet(dsn))/>
+		<!--- Application başlatma işlemleri buraya eklenebilir --->
 		<cfreturn true />
 	</cffunction>
     
@@ -79,10 +95,6 @@ Description			:
 	<cffunction name="onRequest" returnType="void">
 		<cfargument name="targetPage" type="string" required="true" /><!--- Burası index.cfm gelir. Ulaşılmak istenen dosya index.cfm içerisindeki wrkTemplate'tir. --->
 		<cfsetting showdebugoutput="no">
-			<!--- Application scope'tan değerleri variables'a kopyala (Performance optimization) --->
-			<cfset structAppend(variables,application.systemParam.params())/>
-       		<cfset structAppend(variables,application.systemFunctions)/>
-            
 			<cfscript>
                 attributes=structNew();
                 StructAppend(attributes, url, "no");
@@ -140,7 +152,7 @@ Description			:
         
 		<!--- Hata logla --->
 		<cflog file="application" type="error" text="Error in #EventName#: #Exception.message# - #Exception.detail#">
-		
+		<cfdump var="#Exception#">
 		<!--- Development modunda detaylı göster, production'da friendly message --->
 		<cfif structKeyExists(variables, "dsn") and findNoCase("_dev", variables.dsn)>
 			<cfdump var="#Exception#">
