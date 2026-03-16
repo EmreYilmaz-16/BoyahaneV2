@@ -1,5 +1,11 @@
 <cfprocessingdirective pageEncoding="utf-8">
 
+<!--- jQuery yükleme kontrolü (index.cfm window_type popup/ajaxpage ise jQuery yüklenmez) --->
+<cfif not structKeyExists(request, "jQueryLoaded")>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <cfset request.jQueryLoaded = true>
+</cfif>
+
 <!--- Form submit edildi mi kontrol et --->
 <cfif structKeyExists(form, "submit")>
     <cfparam name="form.hierarchy" default="">

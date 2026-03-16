@@ -96,10 +96,10 @@
                     <p class="mb-0">Kategori detayları ve bilgileri</p>
                 </div>
                 <div class="col-md-4 text-end">
-                    <a href="../form/edit_product_cat.cfm?id=#url.id#" class="btn btn-warning">
+                    <a href="/index.cfm?fuseaction=product.edit_product_cat&id=#url.id#" class="btn btn-warning">
                         <i class="fas fa-edit me-1"></i>Düzenle
                     </a>
-                    <a href="index.cfm?fuseaction=product.list_product_cat" class="btn btn-light">
+                    <a href="/index.cfm?fuseaction=product.list_product_cat" class="btn btn-light">
                         <i class="fas fa-arrow-left me-1"></i>Geri
                     </a>
                 </div>
@@ -288,13 +288,13 @@
                     </div>
                     <div class="card-body">
                         <div class="d-grid gap-2">
-                            <a href="../form/edit_product_cat.cfm?id=#url.id#" class="btn btn-warning">
+                            <a href="/index.cfm?fuseaction=product.edit_product_cat&id=#url.id#" class="btn btn-warning">
                                 <i class="fas fa-edit me-1"></i>Düzenle
                             </a>
                             <button class="btn btn-danger" onclick="deleteCategory()">
                                 <i class="fas fa-trash me-1"></i>Sil
                             </button>
-                            <a href="list_product_cat.cfm" class="btn btn-secondary">
+                            <a href="/index.cfm?fuseaction=product.list_product_cat" class="btn btn-secondary">
                                 <i class="fas fa-arrow-left me-1"></i>Liste'ye Dön
                             </a>
                         </div>
@@ -315,13 +315,13 @@
         function deleteCategory() {
             if (confirm('Bu kategoriyi silmek istediğinizden emin misiniz?\n\nBu işlem geri alınamaz!')) {
                 $.ajax({
-                    url: '../form/delete_product_cat.cfm',
+                    url: '/index.cfm?fuseaction=product.delete_product_cat',
                     method: 'POST',
                     data: { id: <cfoutput>#url.id#</cfoutput> },
                     success: function(response) {
                         if (response.success) {
                             alert(response.message);
-                            window.location.href = 'list_product_cat.cfm';
+                            window.location.href = '/index.cfm?fuseaction=product.list_product_cat';
                         } else {
                             alert('Hata: ' + response.message);
                         }

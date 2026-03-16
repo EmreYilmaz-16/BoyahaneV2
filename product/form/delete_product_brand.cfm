@@ -8,9 +8,9 @@
 <cfparam name="form.id" default="0">
 
 <!--- CFC çağrısı --->
-<cfinvoke component="product.cfc.product" method="deleteCategory" returnvariable="response">
+<cfinvoke component="product.cfc.product" method="deleteBrand" returnvariable="response">
     <cfinvokeargument name="id" value="#form.id#">
 </cfinvoke>
 
 <!--- JSON response döndür --->
-<cfoutput>#serializeJSON(response)#</cfoutput>
+<cfoutput>#response#</cfoutput>

@@ -1,39 +1,41 @@
 <cfprocessingdirective pageEncoding="utf-8">
 
-<!--- Kategorileri getir ve JSON'a çevir --->
-<cfquery name="getCategories" datasource="boyahane">
+<!--- Markaları getir ve JSON'a çevir --->
+<cfquery name="getBrands" datasource="boyahane">
     SELECT 
-        product_catid,
-        hierarchy,
-        product_cat,
+        brand_id,
+        brand_name,
+        brand_code,
         detail,
+        is_active,
+        is_internet,
         record_date,
-        record_emp,
-        update_date,
-        update_emp
+        update_date
     FROM 
-        product_cat
+        product_brands
     ORDER BY 
-        hierarchy, product_cat
+        brand_name
 </cfquery>
 
 <!--- Veriyi JSON formatına çevir --->
-<cfset categoriesArray = []>
-<cfloop query="getCategories">
-    <cfset categoryObj = {
-        "product_catid" = product_catid,
-        "hierarchy" = hierarchy,
-        "product_cat" = product_cat,
-        "detail" = detail,
+<cfset brandsArray = []>
+<cfloop query="getBrands">
+    <cfset brandObj = {
+        "brand_id" = brand_id,
+        "brand_name" = brand_name ?: "",
+        "brand_code" = brand_code ?: "",
+        "detail" = detail ?: "",
+        "is_active" = is_active,
+        "is_internet" = is_internet,
         "record_date" = isDate(record_date) ? dateFormat(record_date, "dd/mm/yyyy") & " " & timeFormat(record_date, "HH:mm") : "",
         "update_date" = isDate(update_date) ? dateFormat(update_date, "dd/mm/yyyy") & " " & timeFormat(update_date, "HH:mm") : ""
     }>
-    <cfset arrayAppend(categoriesArray, categoryObj)>
+    <cfset arrayAppend(brandsArray, brandObj)>
 </cfloop>
 
 <style>
     .page-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%);
         color: white;
         padding: 1rem 0;
         margin-bottom: 1.5rem;
@@ -46,78 +48,79 @@
     .page-header p {
         font-size: 0.875rem;
     }
-    .badge-hierarchy {
-        font-size: 0.75rem;
-        padding: 0.25em 0.5em;
-    }
-    #categoriesGrid {
+    #brandsGrid {
         height: 600px;
+    }
+    .status-badge {
+        display: inline-block;
+        padding: 0.25em 0.6em;
+        font-size: 0.75rem;
+        font-weight: 700;
+        line-height: 1;
+        text-align: center;
+        white-space: nowrap;
+        vertical-align: baseline;
+        border-radius: 0.25rem;
+    }
+    .status-active {
+        background-color: #28a745;
+        color: white;
+    }
+    .status-passive {
+        background-color: #dc3545;
+        color: white;
     }
 </style>
 
-    <div class="page-header">
-        <div class="container">
-            <div class="row align-items-center">
-                <div class="col-md-6">
-                    <h1><i class="fas fa-layer-group me-2"></i>Ürün Kategorileri</h1>
-                    <p class="mb-0">Tüm ürün kategorilerini görüntüleyin ve yönetin</p>
-                </div>
-                <div class="col-md-6 text-end">
-                    <button class="btn btn-light btn-sm" onclick="window.location.href='../form/add_product_cat.cfm'">
-                        <i class="fas fa-plus me-1"></i>Yeni Kategori
-                    </button>
-                </div>
+<div class="page-header">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <h1><i class="fas fa-tags me-2"></i>Ürün Markaları</h1>
+                <p class="mb-0">Tüm markaları görüntüleyin ve yönetin</p>
+            </div>
+            <div class="col-md-6 text-end">
+                <button class="btn btn-light btn-sm" onclick="addBrand()">
+                    <i class="fas fa-plus me-1"></i>Yeni Marka
+                </button>
             </div>
         </div>
     </div>
+</div>
 
-    
-        <!--- Başarı/Hata Mesajları --->
-        <cfif isDefined("url.success")>
-            <cfoutput>
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                <i class="fas fa-check-circle me-2"></i>
-                <cfif url.success eq "added">
-                    <strong>Başarılı!</strong> Kategori başarıyla eklendi.
-                <cfelseif url.success eq "updated">
-                    <strong>Başarılı!</strong> Kategori başarıyla güncellendi.
-                <cfelseif url.success eq "deleted">
-                    <strong>Başarılı!</strong> Kategori başarıyla silindi.
-                </cfif>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-            </cfoutput>
-        </cfif>
-        
-        <cfif isDefined("url.error")>
-            <cfoutput>
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <i class="fas fa-exclamation-circle me-2"></i>
-                <cfif url.error eq "notfound">
-                    <strong>Hata!</strong> Kategori bulunamadı.
-                <cfelse>
-                    <strong>Hata!</strong> Bir hata oluştu.
-                </cfif>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-            </cfoutput>
-        </cfif>
-
-        <!--- DevExtreme DataGrid --->
-        <div class="card shadow-sm">
-            <div class="card-header bg-white py-2">
-                <h6 class="mb-0"><i class="fas fa-list me-2"></i>Kategori Listesi</h6>
-            </div>
-            <div class="card-body p-2">
-                <div id="categoriesGrid"></div>
-            </div>
+<div class="container">
+    <!--- Başarı/Hata Mesajları --->
+    <cfif isDefined("url.success")>
+        <cfoutput>
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>
+            <cfif url.success eq "added">
+                <strong>Başarılı!</strong> Marka başarıyla eklendi.
+            <cfelseif url.success eq "updated">
+                <strong>Başarılı!</strong> Marka başarıyla güncellendi.
+            <cfelseif url.success eq "deleted">
+                <strong>Başarılı!</strong> Marka başarıyla silindi.
+            </cfif>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
-    
+        </cfoutput>
+    </cfif>
+
+    <!--- DevExtreme DataGrid --->
+    <div class="card shadow-sm">
+        <div class="card-header bg-white py-2">
+            <h6 class="mb-0"><i class="fas fa-list me-2"></i>Marka Listesi</h6>
+        </div>
+        <div class="card-body p-2">
+            <div id="brandsGrid"></div>
+        </div>
+    </div>
+</div>
 
 <cfoutput>
 <script>
 // Veriyi hazırla
-var categoriesData = #serializeJSON(categoriesArray)#;
+var brandsData = #serializeJSON(brandsArray)#;
 
 // jQuery ve DevExtreme yüklenene kadar bekle
 window.addEventListener('load', function() {
@@ -128,8 +131,8 @@ window.addEventListener('load', function() {
     
     // Grid'i başlat
     if (typeof $ !== 'undefined' && $.fn.dxDataGrid) {
-        $("##categoriesGrid").dxDataGrid({
-            dataSource: categoriesData,
+        $("##brandsGrid").dxDataGrid({
+            dataSource: brandsData,
             showBorders: true,
             showRowLines: true,
             showColumnLines: true,
@@ -192,7 +195,7 @@ window.addEventListener('load', function() {
             // Excel Export
             export: {
                 enabled: true,
-                fileName: 'urun_kategorileri_' + new Date().toISOString().slice(0,10),
+                fileName: 'markalar_' + new Date().toISOString().slice(0,10),
                 allowExportSelectedData: false
             },
             
@@ -205,32 +208,30 @@ window.addEventListener('load', function() {
             // Sütunlar
             columns: [
                 {
-                    dataField: 'product_catid',
+                    dataField: 'brand_id',
                     caption: 'ID',
                     width: 80,
                     alignment: 'center',
-                    dataType: 'number',
-                    sortOrder: 'desc'
+                    dataType: 'number'
                 },
                 {
-                    dataField: 'hierarchy',
-                    caption: 'Hiyerarşi',
-                    width: 120,
-                    alignment: 'center',
+                    dataField: 'brand_name',
+                    caption: 'Marka Adı',
+                    minWidth: 200,
                     cellTemplate: function(container, options) {
-                        if (options.value) {
-                            $('<span>').addClass('badge bg-primary').text(options.value).appendTo(container);
-                        } else {
-                            $('<span>').addClass('text-muted').text('-').appendTo(container);
-                        }
+                        $('<strong>').text(options.value || '-').appendTo(container);
                     }
                 },
                 {
-                    dataField: 'product_cat',
-                    caption: 'Kategori Adı',
-                    minWidth: 200,
+                    dataField: 'brand_code',
+                    caption: 'Marka Kodu',
+                    width: 150,
                     cellTemplate: function(container, options) {
-                        $('<strong>').text(options.value).appendTo(container);
+                        if (options.value) {
+                            container.text(options.value);
+                        } else {
+                            $('<span>').addClass('text-muted').text('-').appendTo(container);
+                        }
                     }
                 },
                 {
@@ -246,15 +247,34 @@ window.addEventListener('load', function() {
                     }
                 },
                 {
-                    dataField: 'record_date',
-                    caption: 'Kayıt Tarihi',
-                    width: 150,
+                    dataField: 'is_active',
+                    caption: 'Durum',
+                    width: 100,
                     alignment: 'center',
-                    dataType: 'string'
+                    cellTemplate: function(container, options) {
+                        if (options.value) {
+                            $('<span>').addClass('status-badge status-active').text('Aktif').appendTo(container);
+                        } else {
+                            $('<span>').addClass('status-badge status-passive').text('Pasif').appendTo(container);
+                        }
+                    }
                 },
                 {
-                    dataField: 'update_date',
-                    caption: 'Güncelleme Tarihi',
+                    dataField: 'is_internet',
+                    caption: 'İnternet',
+                    width: 80,
+                    alignment: 'center',
+                    cellTemplate: function(container, options) {
+                        if (options.value) {
+                            $('<i>').addClass('fas fa-check text-success').appendTo(container);
+                        } else {
+                            $('<i>').addClass('fas fa-times text-danger').appendTo(container);
+                        }
+                    }
+                },
+                {
+                    dataField: 'record_date',
+                    caption: 'Kayıt Tarihi',
                     width: 150,
                     alignment: 'center',
                     dataType: 'string'
@@ -279,7 +299,7 @@ window.addEventListener('load', function() {
                             .attr('title', 'Görüntüle')
                             .html('<i class="fas fa-eye"></i>')
                             .on('click', function() {
-                                viewCategory(options.data.product_catid);
+                                viewBrand(options.data.brand_id);
                             })
                             .appendTo(btnGroup);
                         
@@ -289,7 +309,7 @@ window.addEventListener('load', function() {
                             .attr('title', 'Düzenle')
                             .html('<i class="fas fa-edit"></i>')
                             .on('click', function() {
-                                editCategory(options.data.product_catid);
+                                editBrand(options.data.brand_id);
                             })
                             .appendTo(btnGroup);
                         
@@ -299,7 +319,7 @@ window.addEventListener('load', function() {
                             .attr('title', 'Sil')
                             .html('<i class="fas fa-trash"></i>')
                             .on('click', function() {
-                                deleteCategory(options.data.product_catid, options.data.product_cat);
+                                deleteBrand(options.data.brand_id, options.data.brand_name);
                             })
                             .appendTo(btnGroup);
                         
@@ -328,53 +348,78 @@ window.addEventListener('load', function() {
                 enabled: true,
                 text: 'Yükleniyor...'
             },
-            noDataText: 'Kategori bulunamadı'
+            noDataText: 'Marka bulunamadı'
         });
     }
 });
 
-function viewCategory(id) {
-    // Kategorileri veriden bul
-    var category = categoriesData.find(function(cat) {
-        return cat.product_catid === id;
+function addBrand() {
+    window.location.href = '/index.cfm?fuseaction=product.add_product_brand';
+}
+
+function viewBrand(id) {
+    // AJAX ile marka detaylarını getir
+    $.ajax({
+        url: '/product/cfc/product.cfc?method=getBrand',
+        method: 'GET',
+        data: { id: id },
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                showBrandModal(response.data);
+            } else {
+                DevExpress.ui.notify({
+                    message: response.message,
+                    type: 'error',
+                    displayTime: 3000
+                });
+            }
+        },
+        error: function() {
+            DevExpress.ui.notify({
+                message: 'Marka bilgileri alınırken bir hata oluştu!',
+                type: 'error',
+                displayTime: 3000
+            });
+        }
     });
-    
-    if (!category) {
-        DevExpress.ui.notify({
-            message: 'Kategori bulunamadı!',
-            type: 'error',
-            displayTime: 3000
-        });
-        return;
-    }
-    
-    // Modal içeriğini oluştur
+}
+
+function showBrandModal(brand) {
     var modalContent = $('<div>').css({'padding': '20px'});
     
     var detailsHtml = '<div class="row g-3">' +
         '<div class="col-md-6">' +
             '<label class="form-label text-muted">ID</label>' +
-            '<div class="fw-bold">' + category.product_catid + '</div>' +
+            '<div class="fw-bold">' + brand.brand_id + '</div>' +
         '</div>' +
         '<div class="col-md-6">' +
-            '<label class="form-label text-muted">Hiyerarşi</label>' +
-            '<div class="fw-bold">' + (category.hierarchy || '-') + '</div>' +
+            '<label class="form-label text-muted">Marka Kodu</label>' +
+            '<div class="fw-bold">' + (brand.brand_code || '-') + '</div>' +
         '</div>' +
         '<div class="col-12">' +
-            '<label class="form-label text-muted">Kategori Adı</label>' +
-            '<div class="fw-bold fs-5">' + category.product_cat + '</div>' +
+            '<label class="form-label text-muted">Marka Adı</label>' +
+            '<div class="fw-bold fs-5">' + brand.brand_name + '</div>' +
         '</div>' +
         '<div class="col-12">' +
             '<label class="form-label text-muted">Detay</label>' +
-            '<div>' + (category.detail || '-') + '</div>' +
+            '<div>' + (brand.detail || '-') + '</div>' +
+        '</div>' +
+        '<div class="col-md-6">' +
+            '<label class="form-label text-muted">Durum</label>' +
+            '<div>' + (brand.is_active ? '<span class="status-badge status-active">Aktif</span>' : '<span class="status-badge status-passive">Pasif</span>') + '</div>' +
+        '</div>' +
+        '<div class="col-md-6">' +
+            '<label class="form-label text-muted">İnternet Satış</label>' +
+            '<div>' + (brand.is_internet ? '<i class="fas fa-check text-success"></i> Evet' : '<i class="fas fa-times text-danger"></i> Hayır') + '</div>' +
         '</div>' +
         '<div class="col-md-6">' +
             '<label class="form-label text-muted">Kayıt Tarihi</label>' +
-            '<div>' + (category.record_date || '-') + '</div>' +
+            '<div>' + (brand.record_date || '-') + '</div>' +
         '</div>' +
         '<div class="col-md-6">' +
             '<label class="form-label text-muted">Güncelleme Tarihi</label>' +
-            '<div>' + (category.update_date || '-') + '</div>' +
+            '<div>' + (brand.update_date || '-') + '</div>' +
         '</div>' +
     '</div>';
     
@@ -383,7 +428,7 @@ function viewCategory(id) {
     // DevExtreme Popup oluştur
     var popupElement = $('<div>').appendTo('body');
     var popup = popupElement.dxPopup({
-        title: 'Kategori Detayları - ' + category.product_cat,
+        title: 'Marka Detayları - ' + brand.brand_name,
         contentTemplate: function() {
             return modalContent;
         },
@@ -404,7 +449,7 @@ function viewCategory(id) {
                     icon: 'edit',
                     onClick: function() {
                         popup.hide();
-                        editCategory(id);
+                        editBrand(brand.brand_id);
                     }
                 }
             },
@@ -428,19 +473,19 @@ function viewCategory(id) {
     popup.show();
 }
 
-function editCategory(id) {
-    window.location.href = '/index.cfm?fuseaction=product.edit_product_cat&id=' + id;
+function editBrand(id) {
+    window.location.href = '/index.cfm?fuseaction=product.edit_product_brands&id=' + id;
 }
 
-function deleteCategory(id, name) {
+function deleteBrand(id, name) {
     if (typeof DevExpress !== 'undefined' && DevExpress.ui && DevExpress.ui.dialog) {
         DevExpress.ui.dialog.confirm(
-            '"' + name + '" kategorisini silmek istediğinizden emin misiniz?\n\nBu işlem geri alınamaz!',
-            'Kategori Sil'
+            '"' + name + '" markasını silmek istediğinizden emin misiniz?\n\nBu işlem geri alınamaz!',
+            'Marka Sil'
         ).done(function(dialogResult) {
             if (dialogResult) {
                 $.ajax({
-                    url: '/product/cfc/product.cfc?method=deleteCategory',
+                    url: '/product/cfc/product.cfc?method=deleteBrand',
                     method: 'POST',
                     data: { id: id },
                     dataType: 'json',
@@ -472,7 +517,7 @@ function deleteCategory(id, name) {
                     },
                     error: function() {
                         DevExpress.ui.notify({
-                            message: 'Kategori silinirken bir hata oluştu!',
+                            message: 'Marka silinirken bir hata oluştu!',
                             type: 'error',
                             displayTime: 3000,
                             position: {
@@ -485,9 +530,8 @@ function deleteCategory(id, name) {
             }
         });
     } else {
-        // DevExtreme yüklü değilse standart confirm kullan
-        if (confirm('"' + name + '" kategorisini silmek istediğinizden emin misiniz?\n\nBu işlem geri alınamaz!')) {
-            fetch('/product/cfc/product.cfc?method=deleteCategory', {
+        if (confirm('"' + name + '" markasını silmek istediğinizden emin misiniz?\n\nBu işlem geri alınamaz!')) {
+            fetch('/product/cfc/product.cfc?method=deleteBrand', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
@@ -504,7 +548,7 @@ function deleteCategory(id, name) {
                 }
             })
             .catch(function() {
-                alert('Kategori silinirken bir hata oluştu!');
+                alert('Marka silinirken bir hata oluştu!');
             });
         }
     }

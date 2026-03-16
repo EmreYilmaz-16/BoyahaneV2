@@ -1,10 +1,16 @@
 <cfprocessingdirective pageEncoding="utf-8">
 
+<!--- jQuery yükleme kontrolü (index.cfm window_type popup/ajaxpage ise jQuery yüklenmez) --->
+<cfif not structKeyExists(request, "jQueryLoaded")>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <cfset request.jQueryLoaded = true>
+</cfif>
+
 <!--- ID parametresi kontrolü --->
 <cfparam name="url.id" default="0">
 
 <cfif val(url.id) eq 0>
-    <cflocation url="../display/list_product_cat.cfm" addtoken="false">
+    <cflocation url="/index.cfm?fuseaction=product.list_product_cat&error=notfound" addtoken="false">
     <cfabort>
 </cfif>
 
@@ -27,7 +33,7 @@
 
 <!--- Kategori bulunamadı --->
 <cfif getCategory.recordCount eq 0>
-    <cflocation url="../display/list_product_cat.cfm?error=notfound" addtoken="false">
+    <cflocation url="/index.cfm?fuseaction=product.list_product_cat&error=notfound" addtoken="false">
     <cfabort>
 </cfif>
 
@@ -57,7 +63,7 @@
             </cfquery>
             
             <!--- Başarılı --->
-            <cflocation url="../display/list_product_cat.cfm?success=updated" addtoken="false">
+            <cflocation url="/index.cfm?fuseaction=product.list_product_cat&success=updated" addtoken="false">
             <cfabort>
             
             <cfcatch type="any">
@@ -67,19 +73,8 @@
     </cfif>
 </cfif>
 
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kategori Düzenle</title>
-    
-    <!--- Bootstrap CSS --->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    
-    <!--- Font Awesome --->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-    
+
+
     <style>
         .page-header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -103,8 +98,7 @@
             margin-bottom: 1rem;
         }
     </style>
-</head>
-<body>
+
     <div class="page-header">
         <div class="container">
             <h1><i class="fas fa-edit me-2"></i>Kategori Düzenle</h1>
@@ -112,7 +106,7 @@
         </div>
     </div>
 
-    <div class="container">
+    
         <div class="row justify-content-center">
             <div class="col-lg-8">
                 <!--- Hata mesajı --->
@@ -153,7 +147,7 @@
                     </div>
                     <div class="card-body p-4">
                         <cfoutput>
-                        <form method="post" action="edit_product_cat.cfm?id=#url.id#" id="categoryForm">
+                        <form method="post" action="/index.cfm?fuseaction=product.edit_product_cat&id=#url.id#" id="categoryForm">
                             <div class="mb-3">
                                 <label for="hierarchy" class="form-label">
                                     <i class="fas fa-sitemap me-1"></i>Hiyerarşi
@@ -199,7 +193,7 @@
                             </div>
 
                             <div class="d-flex justify-content-between">
-                                <a href="../display/list_product_cat.cfm" class="btn btn-secondary">
+                                <a href="/index.cfm?fuseaction=product.list_product_cat" class="btn btn-secondary">
                                     <i class="fas fa-arrow-left me-1"></i>Geri Dön
                                 </a>
                                 <button type="submit" name="submit" class="btn btn-warning btn-lg">
@@ -212,10 +206,10 @@
                 </div>
             </div>
         </div>
-    </div>
+
 
     <!--- Bootstrap JS --->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
     
     <script>
         // Form validasyonu
@@ -230,5 +224,3 @@
             }
         });
     </script>
-</body>
-</html>
