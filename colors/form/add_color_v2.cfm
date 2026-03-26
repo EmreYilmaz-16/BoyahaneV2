@@ -168,7 +168,39 @@
 
 <script>
     var uri="/index.cfm?fuseaction=product.view_product_tree_ajax&stock_id=<cfoutput>#editStockId#</cfoutput>";
-    $.get(uri, function(data){
-       $("#CurrentTree").html(data);
+    $.ajax({
+        url: uri,
+        method: "GET",
+        dataType: "html"
+    }).done(function(data){
+        var $wrapper = $("<div>").html(data);
+        var scripts = [];
+
+        $wrapper.find("script").each(function(){
+            var $script = $(this);
+            scripts.push({
+                src: $script.attr("src"),
+                type: ($script.attr("type") || "").toLowerCase(),
+                text: $script.html()
+            });
+            $script.remove();
+        });
+
+        $("#CurrentTree").html($wrapper.html());
+
+        scripts.forEach(function(s){
+            if (s.type && s.type !== "text/javascript" && s.type !== "application/javascript") return;
+            var tag = document.createElement("script");
+            if (s.src) {
+                tag.src = s.src;
+            } else if (s.text) {
+                tag.text = s.text;
+            }
+            document.body.appendChild(tag);
+        });
+    }).fail(function(xhr){
+        var msg = "Ürün ağacı yüklenemedi.";
+        if (xhr && xhr.status) msg += " (HTTP " + xhr.status + ")";
+        $("#CurrentTree").html('<div class="alert alert-warning mb-0">' + msg + '</div>');
     });
 </script>
