@@ -491,15 +491,15 @@ function toggleRowType(type) {
             });
         });
     }
-
-    function init() { ensureDX(run); }
+    function init() {
+        if (typeof DevExpress !== 'undefined' && DevExpress.ui && typeof DevExpress.ui.dxTreeList === 'function') { run(); } else { loadDX(run); }
+    }
     if (document.readyState === 'complete') { init(); } else { window.addEventListener('load', init); }
 })();
 
 function getTreeOptions() {
-    var safeTreeData = Array.isArray(treeData) ? treeData : [];
     return {
-        dataSource: safeTreeData,
+        dataSource: treeData,
         keyExpr: 'product_tree_id',
         parentIdExpr: 'related_product_tree_id',
         rootValue: 0,
@@ -618,9 +618,6 @@ function getTreeInstance() {
 
 function initTree() {
     var options = getTreeOptions();
-    var oldInstance = getTreeInstance();
-    if (oldInstance) oldInstance.dispose();
-
     if (window.jQuery && typeof window.jQuery.fn.dxTreeList === 'function') {
         window.jQuery('##treeGrid').dxTreeList(options);
         return;
