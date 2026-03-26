@@ -21,53 +21,32 @@
     ORDER BY brand_name
 </cfquery>
 
-<style>
-    .page-header {
-        background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
-        color: white;
-        padding: 1rem 0;
-        margin-bottom: 1.5rem;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    .page-header h1 {
-        font-size: 1.5rem;
-        margin-bottom: 0.25rem;
-    }
-    .form-section {
-        background: #f8f9fa;
-        border-left: 3px solid #2196F3;
-        padding: 1rem;
-        margin-bottom: 1.5rem;
-    }
-    .form-section h5 {
-        color: #2196F3;
-        margin-bottom: 1rem;
-    }
-</style>
 
 <div class="page-header">
-    <div class="container">
-        <div class="row align-items-center">
-            <div class="col-md-6">
-                <h1><i class="fas fa-plus-circle me-2"></i>Yeni Ürün Ekle</h1>
-                <p class="mb-0">Sisteme yeni ürün ekleyin</p>
-            </div>
-            <div class="col-md-6 text-end">
-                <button class="btn btn-light btn-sm" onclick="window.location.href='/index.cfm?fuseaction=product.list_product'">
-                    <i class="fas fa-list me-1"></i>Ürün Listesi
-                </button>
-            </div>
+    <div class="page-header-left">
+        <div class="page-header-icon">
+            <i class="fas fa-box-open"></i>
+        </div>
+        <div class="page-header-title">
+            <h1>Yeni Ürün Ekle</h1>
+            <p>Sisteme yeni ürün ekleyin</p>
         </div>
     </div>
+    <a href="/index.cfm?fuseaction=product.list_product" class="btn-back">
+        <i class="fas fa-arrow-left"></i>Ürün Listesi
+    </a>
 </div>
 
-<div class="container">
-    <div class="card shadow-sm">
+<div class="px-3">
+    <div class="grid-card">
         <div class="card-body">
             <form id="productForm" method="post">
                 <!--- Temel Bilgiler --->
-                <div class="form-section">
-                    <h5><i class="fas fa-info-circle me-2"></i>Temel Bilgiler</h5>
+                <div class="grid-card mb-3">
+                    <div class="grid-card-header">
+                        <div class="grid-card-header-title"><i class="fas fa-info-circle"></i>Temel Bilgiler</div>
+                    </div>
+                    <div class="card-body p-3">
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label for="product_code" class="form-label">Ürün Kodu</label>
@@ -114,11 +93,15 @@
                             <textarea class="form-control" id="product_detail2" name="product_detail2" rows="2" placeholder="Ek detay bilgisi"></textarea>
                         </div>
                     </div>
+                    </div>
                 </div>
-                
+
                 <!--- Finansal Bilgiler --->
-                <div class="form-section">
-                    <h5><i class="fas fa-dollar-sign me-2"></i>Finansal Bilgiler</h5>
+                <div class="grid-card mb-3">
+                    <div class="grid-card-header">
+                        <div class="grid-card-header-title"><i class="fas fa-dollar-sign"></i>Finansal Bilgiler</div>
+                    </div>
+                    <div class="card-body p-3">
                     <div class="row g-3">
                         <div class="col-md-4">
                             <label for="tax" class="form-label">KDV Oranı (%)</label>
@@ -145,11 +128,15 @@
                             <input type="text" class="form-control" id="shelf_life" name="shelf_life" placeholder="Ör: 12 ay">
                         </div>
                     </div>
+                    </div>
                 </div>
-                
+
                 <!--- Durum ve Özellikler --->
-                <div class="form-section">
-                    <h5><i class="fas fa-cog me-2"></i>Durum ve Özellikler</h5>
+                <div class="grid-card mb-3">
+                    <div class="grid-card-header">
+                        <div class="grid-card-header-title"><i class="fas fa-cog"></i>Durum ve Özellikler</div>
+                    </div>
+                    <div class="card-body p-3">
                     <div class="row g-3">
                         <div class="col-md-3">
                             <div class="form-check form-switch">
@@ -178,20 +165,20 @@
                             </div>
                         </div>
                     </div>
+                    </div>
                 </div>
-                
+
                 <!--- Form Butonları --->
-                <div class="row">
-                    <div class="col-12">
-                        <hr>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save me-1"></i>Kaydet
-                        </button>
-                        <button type="button" class="btn btn-secondary" onclick="window.location.href='/index.cfm?fuseaction=product.list_product'">
-                            <i class="fas fa-times me-1"></i>İptal
-                        </button>
-                        <button type="reset" class="btn btn-warning">
-                            <i class="fas fa-undo me-1"></i>Formu Temizle
+                <div class="d-flex justify-content-between align-items-center">
+                    <button type="reset" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-undo me-1"></i>Formu Temizle
+                    </button>
+                    <div class="d-flex gap-2">
+                        <a href="/index.cfm?fuseaction=product.list_product" class="btn-back">
+                            <i class="fas fa-times"></i>İptal
+                        </a>
+                        <button type="submit" class="btn-save">
+                            <i class="fas fa-save"></i>Kaydet
                         </button>
                     </div>
                 </div>
@@ -206,13 +193,11 @@
 <script>
 // Marka dropdown'ını yenile
 function refreshBrandDropdown(brandId) {
-    console.log('refreshBrandDropdown çağrıldı, brandId:', brandId);
     $.ajax({
         url: '/product/cfc/product.cfc?method=getBrands',
         method: 'GET',
         dataType: 'json',
         success: function(brands) {
-            console.log('Markalar getirildi:', brands);
             var dropdown = $('#brand_id');
             dropdown.empty();
             dropdown.append('<option value="0">Marka Seçiniz</option>');
@@ -228,7 +213,6 @@ function refreshBrandDropdown(brandId) {
             // Yeni eklenen markayı seç
             if (brandId) {
                 dropdown.val(brandId);
-                console.log('Yeni marka seçildi:', brandId);
             }
         },
         error: function(xhr, status, error) {
@@ -272,9 +256,7 @@ function openBrandModal() {
 
 // Child sayfadan mesaj dinle
 window.addEventListener('message', function(event) {
-    console.log('Mesaj alındı:', event.data);
     if (event.data && event.data.type === 'brandAdded') {
-        console.log('Marka eklendi mesajı alındı, brand_id:', event.data.brandId);
         // Marka eklendi, dropdown'ı güncelle
         refreshBrandDropdown(event.data.brandId);
         // Popup'u kapat

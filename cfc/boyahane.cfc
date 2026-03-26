@@ -1,6 +1,6 @@
 <cfcomponent>
-<cfset dsn = "catalyst_prod">
-<cfset dsn3 = "catalyst_prod_#session.ep.COMPANY_ID#">
+<cfset dsn = "boyahane">
+<cfset dsn3 = "boyahane">
 <cffunction name="checkLogin" access="remote" returntype="any" returnFormat="json">
 <cfargument  name="ships_id" default="">
 <cfquery name="getPeriods" datasource=#dsn#>
@@ -35,11 +35,11 @@ ST.STOCK_ID,
 S.SHIP_ID,
 S.RECORD_DATE,
 #getPeriods.PERIOD_ID# as PERIOD
-FROM catalyst_prod_#getPeriods.PERIOD_YEAR#_1.SHIP_INFO_PLUS AS SIP
-LEFT JOIN catalyst_prod_#getPeriods.PERIOD_YEAR#_1.SHIP AS S ON SIP.SHIP_ID=S.SHIP_ID
-LEFT JOIN catalyst_prod_#getPeriods.PERIOD_YEAR#_1.SHIP_ROW AS SR ON  SR.SHIP_ID=S.SHIP_ID
+FROM #dsn#.SHIP_INFO_PLUS AS SIP
+LEFT JOIN #dsn#.SHIP AS S ON SIP.SHIP_ID=S.SHIP_ID
+LEFT JOIN #dsn#.SHIP_ROW AS SR ON  SR.SHIP_ID=S.SHIP_ID
 LEFT JOIN #dsn3#.STOCKS AS ST ON SR.STOCK_ID=ST.STOCK_ID
-LEFT JOIN catalyst_prod.COMPANY AS C ON C.COMPANY_ID=S.COMPANY_ID
+LEFT JOIN #dsn3#.COMPANY AS C ON C.COMPANY_ID=S.COMPANY_ID
 LEFT JOIN #dsn3#.SETUP_PROD_RETURN_CATS AS PRTC ON PRTC.RETURN_CAT_ID=CONVERT(INT,SIP.PROPERTY4)
 <cfif currentrow neq getPeriods.recordcount> UNION</cfif>
     </cfloop>
@@ -104,7 +104,7 @@ ORDER BY RECORD_DATE DESC
     </cfscript>
     </cfloop>
 
-     <cfreturn Replace(SerializeJSON(arr),'//','')>
+     <cfreturn arr>
 
 </cffunction>
 <cffunction name="getRelatedParties" access="remote" returntype="any" returnFormat="json">3
@@ -118,12 +118,12 @@ ORDER BY RECORD_DATE DESC
 <cfelse>
 <cfset ORDER_ID_LIST=0>
 </cfif>
-<cfquery name="getRelRows" datasource="#dsn#_1">
+<cfquery name="getRelRows" datasource="#dsn#">
     SELECT ORR.QUANTITY,ORR.AMOUNT2,ORDER_NUMBER,ORR.PRODUCT_NAME2,PTR.STAGE,S.STOCK_CODE_2,ORR.ORDER_ROW_CURRENCY,ORR.ORDER_ROW_ID,O.RECORD_DATE 
-    FROM #dsn3#.ORDERS AS O 
-    LEFT JOIN #dsn3#.ORDER_ROW AS ORR ON ORR.ORDER_ID=O.ORDER_ID 
-    LEFT JOIN #dsn3#.STOCKS AS S ON S.STOCK_ID=ORR.STOCK_ID
-    LEFT JOIN catalyst_prod.PROCESS_TYPE_ROWS as PTR ON PTR.PROCESS_ROW_ID=O.ORDER_STAGE
+    FROM ORDERS AS O 
+    LEFT JOIN ORDER_ROW AS ORR ON ORR.ORDER_ID=O.ORDER_ID 
+    LEFT JOIN STOCKS AS S ON S.STOCK_ID=ORR.STOCK_ID
+    LEFT JOIN PROCESS_TYPE_ROWS as PTR ON PTR.PROCESS_ROW_ID=O.ORDER_STAGE
     WHERE 1=1  
     AND ORR.ORDER_ROW_CURRENCY IN(-5,-1)
     AND ORR.ORDER_ID IN(#ORDER_ID_LIST#)
@@ -159,17 +159,17 @@ ORDER BY RECORD_DATE DESC
       //  arrayAppend(retArr, item)
     </cfscript>
 </cfif>
-<cfreturn Replace(SerializeJSON(retArr),'//','')>
+<cfreturn retArr>
 </cffunction>
 
 <cffunction name="getShipinfa" access="remote" returntype="any" returnFormat="json">
 <cfargument  name="ship_id" default="0">
 <cfargument  name="period_id" default="0">
 <cfquery name="getOrd" datasource="#dsn#">
-SELECT S.SHIP_NUMBER,ORR.AMOUNT FROM #dsn3#.ORDER_TO_SHIP_PRT AS OSP
-LEFT JOIN catalyst_prod_2021_1.SHIP AS S ON OSP.SHIP_ID=S.SHIP_ID
-LEFT JOIN #dsn3#.ORDERS AS O ON OSP.ORDER_ID=O.ORDER_ID
-LEFT JOIN #dsn3#.ORDER_ROW AS ORR ON O.ORDER_ID=ORR.ORDER_ID
+SELECT S.SHIP_NUMBER,ORR.AMOUNT FROM ORDER_TO_SHIP_PRT AS OSP
+LEFT JOIN SHIP AS S ON OSP.SHIP_ID=S.SHIP_ID
+LEFT JOIN ORDERS AS O ON OSP.ORDER_ID=O.ORDER_ID
+LEFT JOIN ORDER_ROW AS ORR ON O.ORDER_ID=ORR.ORDER_ID
 WHERE OSP.SHIP_ID=#arguments.ship_id# AND OSP.PERIOD_ID=#arguments.period_id#
 </cfquery>
 <cfset arr=arrayNew(1)>
@@ -190,10 +190,11 @@ item.metre=0;
 <cffunction  name="getCompany" access="remote" returntype="any" returnFormat="json">
 <cfargument  name="company_name">
 
-<cfquery name="getComp" datasource="catalyst_prod">
-    SELECT FULLNAME,C.MEMBER_CODE,C.COMPANY_ID,CP.COMPANY_PARTNER_NAME+' '+CP.COMPANY_PARTNER_SURNAME AS COMPANY_PARTNER,CP.PARTNER_ID FROM catalyst_prod.COMPANY AS C 
-    LEFT JOIN catalyst_prod.COMPANY_PARTNER AS CP ON C.COMPANY_ID=CP.COMPANY_ID WHERE 1=1 <cfif len(arguments.company_name)>and C.FULLNAME LIKE  '%#arguments.company_name#%'</cfif>
+<cfquery name="getComp" datasource="#dsn#">
+    SELECT FULLNAME,C.MEMBER_CODE,C.COMPANY_ID,CP.COMPANY_PARTNER_NAME||' '||CP.COMPANY_PARTNER_SURNAME AS COMPANY_PARTNER,CP.PARTNER_ID FROM COMPANY AS C 
+    LEFT JOIN COMPANY_PARTNER AS CP ON C.COMPANY_ID=CP.COMPANY_ID WHERE 1=1 <cfif len(arguments.company_name)>and (C.FULLNAME ILIKE  '%#arguments.company_name#%' or C.NICKNAME ILIKE '%#arguments.company_name#%')</cfif>
 </cfquery>
+
 <cfset arr=arrayNew(1)>
 
 <cfloop query="getComp">
@@ -207,7 +208,7 @@ item.metre=0;
     arrayAppend(arr, item)
     </cfscript>
 </cfloop>
- <cfreturn Replace(SerializeJSON(arr),'//','')>
+ <cfreturn arr>
 </cffunction>
 <cffunction  name="saveTree" access="remote" returntype="any" returnFormat="json">
   <!---<cfset deneme = deserializeJSON(arguments)>----->
@@ -216,7 +217,7 @@ item.metre=0;
     <cfdump  var="#aaa#">
     <cfset bbb=deserializeJSON(aaa)>
     <cfdump  var="#bbb#">
-     <cfreturn Replace(SerializeJSON(aaa),'//','')>
+     <cfreturn aaa>
 </cffunction>
 <cffunction  name="save_bookmark" access="remote" returntype="any" returnFormat="json">
   <!---<cfset deneme = deserializeJSON(arguments)>----->
@@ -225,7 +226,7 @@ item.metre=0;
         INSERT INTO BOYAHANE_SHORTCUTS_EMPLOYEE (SHORCUT_NAME,SHORTCUT_URL,IS_BLANK,EMPLOYEE_ID) 
         VALUES ('#arguments.bookmark#','#mid(arguments.bookmark_url,2,len(arguments.bookmark_url))#',<cfif isDefined("arguments.is_new_page")>1<cfelse>0</cfif>,#session.ep.userid#)
    </cfquery>
-     <cfreturn Replace(SerializeJSON(arguments),'//','')>
+     <cfreturn arguments>
 </cffunction>
 <cffunction name="getProdTreeWithName" access="remote" returntype="any" returnFormat="json">
     <cfargument  name="keyword" default="">
@@ -237,7 +238,7 @@ item.metre=0;
                     ,PRODUCT_CODE                   
                     ,PU.MAIN_UNIT
                     ,S.PRODUCT_UNIT_ID FROM STOCKS AS S 
-            LEFT JOIN catalyst_prod_product.PRODUCT_UNIT AS PU ON PU.PRODUCT_UNIT_ID = S.PRODUCT_UNIT_ID 
+            LEFT JOIN #dsn#_product.PRODUCT_UNIT AS PU ON PU.PRODUCT_UNIT_ID = S.PRODUCT_UNIT_ID 
             WHERE 1=1 and( PRODUCT_NAME like '%#arguments.keyword#%' or PRODUCT_CODE like '%#arguments.keyword#%' )
         </cfquery>
         <cfloop query="getstok">
@@ -251,7 +252,7 @@ item.metre=0;
                     ,S.PRODUCT_UNIT_ID
                 FROM #dsn3#.PRODUCT_TREE AS PT
                 LEFT JOIN #dsn3#.STOCKS AS S ON S.STOCK_ID = PT.RELATED_ID
-                LEFT JOIN catalyst_prod_product.PRODUCT_UNIT AS PU ON PU.PRODUCT_UNIT_ID = S.PRODUCT_UNIT_ID
+                LEFT JOIN #dsn#_product.PRODUCT_UNIT AS PU ON PU.PRODUCT_UNIT_ID = S.PRODUCT_UNIT_ID
                 WHERE PT.STOCK_ID = #STOCK_ID#
             </cfquery>
             <cfscript>
@@ -303,7 +304,7 @@ item.metre=0;
 
             </cfscript>
         </cfloop>
-        <cfreturn Replace(SerializeJSON(retArr),'//','')>
+        <cfreturn retArr>
     </cfif>
 </cffunction>
 <cffunction name="getProdTreeWithName_arr" access="remote" returntype="any" returnFormat="json">
@@ -319,7 +320,7 @@ item.metre=0;
  WHEN PRODUCT_CODE LIKE '150.03%' THEN '2'
  end as tip
         ,S.PRODUCT_UNIT_ID FROM STOCKS AS S 
-        LEFT JOIN catalyst_prod_product.PRODUCT_UNIT AS PU ON PU.PRODUCT_UNIT_ID = S.PRODUCT_UNIT_ID 
+        LEFT JOIN #dsn#_product.PRODUCT_UNIT AS PU ON PU.PRODUCT_UNIT_ID = S.PRODUCT_UNIT_ID 
         WHERE 1=1 <cfif len(arguments.keyword)>and( PRODUCT_NAME like '%#arguments.keyword#%' or PRODUCT_CODE like '%#arguments.keyword#%' )</cfif>
         <cfif len(arguments.stock_id)>and S.STOCK_ID=#arguments.stock_id#</cfif>
     </cfquery>
@@ -339,7 +340,7 @@ item.metre=0;
  end as tip
             FROM #dsn3#.PRODUCT_TREE AS PT
             LEFT JOIN #dsn3#.STOCKS AS S ON S.STOCK_ID = PT.RELATED_ID
-            LEFT JOIN catalyst_prod_product.PRODUCT_UNIT AS PU ON PU.PRODUCT_UNIT_ID = S.PRODUCT_UNIT_ID
+            LEFT JOIN #dsn#_product.PRODUCT_UNIT AS PU ON PU.PRODUCT_UNIT_ID = S.PRODUCT_UNIT_ID
             WHERE PT.STOCK_ID = #STOCK_ID#
         </cfquery>  
         <CFSET TREE_LEVEL_1=arrayNew(1)>          
@@ -359,7 +360,7 @@ item.metre=0;
  end as tip
                     FROM #dsn3#.PRODUCT_TREE AS PT
                     LEFT JOIN #dsn3#.STOCKS AS S ON S.STOCK_ID = PT.RELATED_ID
-                    LEFT JOIN catalyst_prod_product.PRODUCT_UNIT AS PU ON PU.PRODUCT_UNIT_ID = S.PRODUCT_UNIT_ID
+                    LEFT JOIN #dsn#_product.PRODUCT_UNIT AS PU ON PU.PRODUCT_UNIT_ID = S.PRODUCT_UNIT_ID
                     WHERE PT.STOCK_ID = #getTree.STOCK_ID#
                 </cfquery>
                 <CFSET TREE_LEVEL_2=arrayNew(1)>  
@@ -378,7 +379,7 @@ item.metre=0;
  end as tip
                             FROM #dsn3#.PRODUCT_TREE AS PT
                             LEFT JOIN #dsn3#.STOCKS AS S ON S.STOCK_ID = PT.RELATED_ID
-                            LEFT JOIN catalyst_prod_product.PRODUCT_UNIT AS PU ON PU.PRODUCT_UNIT_ID = S.PRODUCT_UNIT_ID
+                            LEFT JOIN #dsn#_product.PRODUCT_UNIT AS PU ON PU.PRODUCT_UNIT_ID = S.PRODUCT_UNIT_ID
                             WHERE PT.STOCK_ID = #getTreelvl2.STOCK_ID#
                         </cfquery>
                         <CFSET TREE_LEVEL_3=arrayNew(1)>  
@@ -460,13 +461,16 @@ item.metre=0;
         </cfscript>  
     </cfloop>
 <!----<cfdump  var="#retArr#">----->
-<cfreturn Replace(SerializeJSON(RETURN_ARRAY),'//','')>
+<cfreturn RETURN_ARRAY>
 
 </cffunction>
 <cffunction  name="get_comp_kumas" access="remote" returntype="any" returnFormat="json">
 <cfargument  name="company_id">
-<cfquery name="company_products" datasource="catalyst_prod">
-    select STOCK_CODE AS PRODUCT_CODE,ISNULL(STOCK_CODE_2,'')+' '+PRODUCT_NAME AS PRODUCT_NAME,PRODUCT_ID,STOCK_ID,IS_INVENTORY from #dsn3#.STOCKS where COMPANY_ID =#arguments.company_id# AND IS_MAIN_STOCK=1
+<cfquery name="company_products" datasource="#dsn#">
+    select s.STOCK_CODE AS PRODUCT_CODE, COALESCE(s.stock_code_2,'')||' '||COALESCE(p.product_name,'') AS product_name, s.PRODUCT_ID, s.STOCK_ID
+    from STOCKS s
+    LEFT JOIN product p ON p.product_id = s.product_id
+    where p.COMPANY_ID =#arguments.company_id# AND s.IS_MAIN_STOCK=true
 </cfquery>
 <cfset arr=arrayNew(1)>
 
@@ -477,17 +481,17 @@ item.metre=0;
     item.PRODUCT_NAME=PRODUCT_NAME;
     item.PRODUCT_ID=PRODUCT_ID;
     item.STOCK_ID=STOCK_ID;
-    item.IS_INVENTORY=IS_INVENTORY;
+    item.IS_INVENTORY=true;
     arrayAppend(arr, item)
     </cfscript>
 </cfloop>
-<cfreturn Replace(SerializeJSON(arr),'//','')>
+<cfreturn arr>
 </cffunction>
 <cffunction name="getProdTreeWithName_yeni" access="remote" returntype="any" returnFormat="json">
     <cfargument  name="keyword" default="">
     <cfargument  name="stock_id" default="">
     <cfinclude  template="aga_ret.cfm">
-    <cfreturn Replace(SerializeJSON(RETURN_ARRAY),'//','')>
+    <cfreturn RETURN_ARRAY>
 </cffunction>
 <cffunction  name="AgacKayitEt"  access="remote" returntype="any" returnFormat="json">
      
@@ -509,7 +513,7 @@ item.metre=0;
 <cfargument  name="att_ship_id">
 <cfargument  name="att_period_id">
 <cfquery name="getCompPeriod" datasource="#dsn#">
-   SELECT PERIOD_YEAR,OUR_COMPANY_ID FROM catalyst_prod.SETUP_PERIOD WHERE PERIOD_ID=#arguments.att_period_id#
+   SELECT PERIOD_YEAR,OUR_COMPANY_ID FROM #dsn#.SETUP_PERIOD WHERE PERIOD_ID=#arguments.att_period_id#
 </cfquery>
 <cfquery name="getShip" datasource="#dsn#_#getCompPeriod.PERIOD_YEAR#_#getCompPeriod.OUR_COMPANY_ID#">
     SELECT * FROM #dsn#_#getCompPeriod.PERIOD_YEAR#_#getCompPeriod.OUR_COMPANY_ID#.SHIP_ROW where SHIP_ID =#arguments.att_ship_id#
@@ -529,12 +533,12 @@ item.metre=0;
     arrayAppend(arr, item)
 </cfscript>
 </cfloop>
-<cfreturn Replace(SerializeJSON(arr),'//','')>
+<cfreturn arr>
 </cffunction>
 <cffunction  name="get_product_Cat" access="remote" returntype="any" returnFormat="json">
 <cfargument  name="keyword">
 
-<cfquery name="getComp" datasource="catalyst_prod">
+<cfquery name="getComp" datasource="#dsn#">
     SELECT PRODUCT_CATID,HIERARCHY,PRODUCT_CAT 
     FROM #dsn3#.PRODUCT_CAT WHERE 1 = 1 AND (HIERARCHY LIKE '%#arguments.keyword#%' OR PRODUCT_CAT LIKE '%#arguments.keyword#%')
 </cfquery>
@@ -551,7 +555,7 @@ item.metre=0;
     arrayAppend(arr, item)
     </cfscript>
 </cfloop>
- <cfreturn Replace(SerializeJSON(arr),'//','')>
+ <cfreturn arr>
 </cffunction>
 <cffunction  name="wrk_query" access="remote" returntype="any" returnFormat="json">
 
@@ -572,7 +576,7 @@ item.metre=0;
 <cfset "jsquery.#li#"=mya>
 </cfloop>
 
-<cfreturn Replace(SerializeJSON(jsquery),'//','')>
+<cfreturn jsquery>
 </cffunction>
 <cffunction   name="saveProduct"  access="remote" returntype="any" returnFormat="json">
 <cfdump  var="#arguments#">
@@ -632,14 +636,14 @@ item.metre=0;
 <cfinclude  template="/Modules/kumas/query/add_import_product.cfm">
 <cfinclude  template="/Modules/kumas/query/insertProductInfoPlus.cfm">
 
-<cfreturn Replace(SerializeJSON(arguments),'//','')>
+<cfreturn arguments>
 </cffunction>
 <cffunction  name="getKumasLAR" access="remote" returntype="any" returnFormat="json">
 <cfquery name="getList" datasource="#dsn#">
     SELECT S.PRODUCT_CODE,C.FULLNAME,S.STOCK_ID,S.PRODUCT_ID,PRODUCT_NAME,PB.BRAND_NAME,PC.PRODUCT_CAT FROM #dsn3#.STOCKS AS S 
-    LEFT JOIN catalyst_prod.COMPANY AS C ON S.COMPANY_ID=C.COMPANY_ID
-    LEFT JOIN catalyst_prod_product.PRODUCT_BRANDS as PB ON PB.BRAND_ID=S.BRAND_ID
-    LEFT JOIN catalyst_prod_product.PRODUCT_CAT AS PC ON PC.PRODUCT_CATID=S.PRODUCT_CATID
+    LEFT JOIN #dsn#.COMPANY AS C ON S.COMPANY_ID=C.COMPANY_ID
+    LEFT JOIN #dsn#_product.PRODUCT_BRANDS as PB ON PB.BRAND_ID=S.BRAND_ID
+    LEFT JOIN #dsn#_product.PRODUCT_CAT AS PC ON PC.PRODUCT_CATID=S.PRODUCT_CATID
     WHERE IS_MAIN_STOCK =1
 </cfquery>
 <cfset ReturnArray=arrayNew(1)>
@@ -655,14 +659,14 @@ item.metre=0;
 </cfscript>
 </cfloop>
 
-<cfreturn Replace(SerializeJSON(ReturnArray),'//','')>
+<cfreturn ReturnArray>
 </cffunction>
 
 <cffunction  name="getWorkList" access="remote" returntype="any" returnFormat="json">
 <cfargument  name="work_type">
 <cfquery name="getList" datasource="#dsn#">
   SELECT O.ORDER_HEAD,O.ORDER_ID,SPC.STAGE,ORR.STOCK_ID,ORR.ORDER_ROW_CURRENCY,S.STOCK_CODE,S.PRODUCT_NAME,s.STOCK_CODE_2,s.PROPERTY,ORR.ORDER_ROW_ID,ORR.QUANTITY FROM #dsn3#.ORDERS as O
-LEFT JOIN catalyst_prod.PROCESS_TYPE_ROWS AS SPC ON SPC.PROCESS_ROW_ID=O.ORDER_STAGE
+LEFT JOIN #dsn#.PROCESS_TYPE_ROWS AS SPC ON SPC.PROCESS_ROW_ID=O.ORDER_STAGE
 LEFT JOIN #dsn3#.ORDER_ROW AS ORR ON ORR.ORDER_ID=O.ORDER_ID
 LEFT JOIN #dsn3#.STOCKS AS S ON S.STOCK_ID=ORR.STOCK_ID
 WHERE 1=1 <cfif argumentS.work_type neq 0>AND ORDER_STAGE=#arguments.work_type#</cfif>
@@ -682,7 +686,7 @@ AND S.IS_PRODUCTION=1
 </cfscript>
 </cfloop>
 
-<cfreturn Replace(SerializeJSON(ReturnArray),'//','')>
+<cfreturn ReturnArray>
 </cffunction>
 <cffunction  name="getWorkStations"  access="remote" returntype="any" returnFormat="json">
 <cfargument  name="UpStationId" default="1">
@@ -700,14 +704,14 @@ AND S.IS_PRODUCTION=1
 </cfscript>
 </cfloop>
 
-<cfreturn Replace(SerializeJSON(ReturnArray),'//','')>
+<cfreturn ReturnArray>
 </cffunction>
 <cffunction  name="getMessages"  access="remote" returntype="any" returnFormat="json">
 <cfargument  name="user_id" default="1">
 <cfquery name="getM" datasource="#dsn#">
 select top 1 BOYAHANE_MESSAGES.*,E.EMPLOYEE_NAME,E.EMPLOYEE_SURNAME,E.PHOTO
-from catalyst_prod.BOYAHANE_MESSAGES 
-LEFT JOIN catalyst_prod.EMPLOYEES AS E ON E.EMPLOYEE_ID=FROM_USER_ID
+from #dsn#.BOYAHANE_MESSAGES 
+LEFT JOIN #dsn#.EMPLOYEES AS E ON E.EMPLOYEE_ID=FROM_USER_ID
 WHERE IS_READ=0 AND TO_USER_ID=177 order by MESSAGE_DATE desc
 </cfquery>
 
@@ -740,7 +744,7 @@ WHERE IS_READ=0 AND TO_USER_ID=177 order by MESSAGE_DATE desc
 </cfscript>
 </cfloop>
 ----->
-<cfreturn Replace(SerializeJSON(returnValues),'//','')>
+<cfreturn returnValues>
 </cffunction>
 <cffunction  name="getWorks"  access="remote" returntype="any" returnFormat="json">
 <cfargument  name="work_start_date" >
@@ -757,7 +761,7 @@ WHERE IS_READ=0 AND TO_USER_ID=177 order by MESSAGE_DATE desc
 FROM #dsn3#.PRODUCTION_ORDERS AS PO
 LEFT JOIN #dsn3#.PRODUCTION_ORDERS_ROW AS POR ON PO.P_ORDER_ID=POR.PRODUCTION_ORDER_ID
 LEFT JOIN #dsn3#.ORDERS AS O ON O.ORDER_ID=POR.ORDER_ID
-LEFT JOIN catalyst_prod.COMPANY AS C ON C.COMPANY_ID=O.COMPANY_ID
+LEFT JOIN #dsn#.COMPANY AS C ON C.COMPANY_ID=O.COMPANY_ID
 LEFT JOIN #dsn3#.STOCKS AS S ON S.STOCK_ID=PO.STOCK_ID
     WHERE PO.START_DATE >=#current_start_date # and  PO.FINISH_DATE<=#current_end_date#  and po.STATION_ID IN(SELECT STATION_ID FROM #dsn3#.WORKSTATIONS WHERE UP_STATION=#arguments.up_station_id#)
 </cfquery> 
@@ -780,7 +784,7 @@ LEFT JOIN #dsn3#.STOCKS AS S ON S.STOCK_ID=PO.STOCK_ID
 </cfscript>
 </cfloop>
 
-<cfreturn Replace(SerializeJSON(ReturnArray),'//','')>
+<cfreturn ReturnArray>
 </cffunction>
 <cffunction name="UpdateProductionOrders" access="remote" returntype="any" returnFormat="json">
 <cfset station_id_fi=listGetAt(arguments.station_id, 1)>
@@ -816,11 +820,11 @@ SELECT POS.AMOUNT AS AM1
 	,PO.STOCK_ID
 	,SMR.AMOUNT
 	,S.PRODUCT_CODE
-FROM catalyst_prod_1.PRODUCTION_ORDERS_STOCKS AS POS
-LEFT JOIN catalyst_prod_1.PRODUCTION_ORDERS AS PO ON PO.P_ORDER_ID = POS.P_ORDER_ID
-LEFT JOIN catalyst_prod_1.STOCKS AS S ON S.STOCK_ID = POS.STOCK_ID
-LEFT JOIN catalyst_prod_1.SPECT_MAIN_ROW AS SMR ON SMR.SPECT_MAIN_ROW_ID=POS.SPECT_MAIN_ROW_ID
---LEFT JOIN catalyst_prod_1.PRODUCT_TREE AS PT ON PT.STOCK_ID = PO.STOCK_ID
+FROM #dsn#_1.PRODUCTION_ORDERS_STOCKS AS POS
+LEFT JOIN #dsn#_1.PRODUCTION_ORDERS AS PO ON PO.P_ORDER_ID = POS.P_ORDER_ID
+LEFT JOIN #dsn#_1.STOCKS AS S ON S.STOCK_ID = POS.STOCK_ID
+LEFT JOIN #dsn#_1.SPECT_MAIN_ROW AS SMR ON SMR.SPECT_MAIN_ROW_ID=POS.SPECT_MAIN_ROW_ID
+--LEFT JOIN #dsn#_1.PRODUCT_TREE AS PT ON PT.STOCK_ID = PO.STOCK_ID
 	--AND PT.DETAIL = POS.PRTOTM_DETAIL
 	--AND PT.RELATED_ID = S.STOCK_ID
 WHERE POS.P_ORDER_ID = #ARGUMENTS.p_order_id#
@@ -863,7 +867,7 @@ WHERE POS.P_ORDER_ID=#ARGUMENTS.p_order_id#------>
 
     </cfif>
 
-<cfreturn Replace(SerializeJSON(arguments),'//','')>
+<cfreturn arguments>
 </cffunction>
 <cffunction  name="getWorksWithStationGroup" access="remote" returntype="any" returnFormat="json">
 <cfargument  name="up_station_id">
@@ -888,12 +892,12 @@ WHERE POS.P_ORDER_ID=#ARGUMENTS.p_order_id#------>
     LEFT JOIN #dsn3#.PRODUCTION_ORDERS_ROW AS POR   ON PO.P_ORDER_ID = POR.PRODUCTION_ORDER_ID
     LEFT JOIN #dsn3#.ORDERS AS O ON O.ORDER_ID = POR.ORDER_ID
     LEFT JOIN #dsn3#.ORDER_ROW AS ORR ON ORR.ORDER_ROW_ID = POR.ORDER_ROW_ID
-    LEFT JOIN catalyst_prod.COMPANY AS C ON C.COMPANY_ID = O.COMPANY_ID
+    LEFT JOIN #dsn#.COMPANY AS C ON C.COMPANY_ID = O.COMPANY_ID
     LEFT JOIN #dsn3#.PRODUCTION_OPERATION AS POP ON POP.P_ORDER_ID = PO.P_ORDER_ID
     LEFT JOIN #dsn3#.STOCKS AS S ON S.STOCK_ID = PO.STOCK_ID
     LEFT JOIN #dsn3#.WORKSTATIONS AS WS ON WS.STATION_ID = PO.STATION_ID
     LEFT JOIN #dsn3#.OPERATION_TYPES AS OT ON OT.OPERATION_TYPE_ID = POP.OPERATION_TYPE_ID
-    LEFT JOIN catalyst_prod.PROCESS_TYPE_ROWS AS PTR ON PTR.PROCESS_ROW_ID = PO.PROD_ORDER_STAGE
+    LEFT JOIN #dsn#.PROCESS_TYPE_ROWS AS PTR ON PTR.PROCESS_ROW_ID = PO.PROD_ORDER_STAGE
 	where PO.STATION_ID IN(SELECT STATION_ID FROM #dsn3#.WORKSTATIONS WHERE UP_STATION=#arguments.up_station_id#)
   --  AND PO.STATUS=1
 </cfquery>
@@ -944,7 +948,7 @@ arrayAppend(arr, item);
 
 </cfloop>
 
-<cfreturn replace(serializeJSON(arr), "//", "")>
+<cfreturn arr>
 </cffunction>
 
 </cfcomponent>

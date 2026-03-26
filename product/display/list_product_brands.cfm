@@ -33,62 +33,22 @@
     <cfset arrayAppend(brandsArray, brandObj)>
 </cfloop>
 
-<style>
-    .page-header {
-        background: linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%);
-        color: white;
-        padding: 1rem 0;
-        margin-bottom: 1.5rem;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    .page-header h1 {
-        font-size: 1.5rem;
-        margin-bottom: 0.25rem;
-    }
-    .page-header p {
-        font-size: 0.875rem;
-    }
-    #brandsGrid {
-        height: 600px;
-    }
-    .status-badge {
-        display: inline-block;
-        padding: 0.25em 0.6em;
-        font-size: 0.75rem;
-        font-weight: 700;
-        line-height: 1;
-        text-align: center;
-        white-space: nowrap;
-        vertical-align: baseline;
-        border-radius: 0.25rem;
-    }
-    .status-active {
-        background-color: #28a745;
-        color: white;
-    }
-    .status-passive {
-        background-color: #dc3545;
-        color: white;
-    }
-</style>
-
 <div class="page-header">
-    <div class="container">
-        <div class="row align-items-center">
-            <div class="col-md-6">
-                <h1><i class="fas fa-tags me-2"></i>Ürün Markaları</h1>
-                <p class="mb-0">Tüm markaları görüntüleyin ve yönetin</p>
-            </div>
-            <div class="col-md-6 text-end">
-                <button class="btn btn-light btn-sm" onclick="addBrand()">
-                    <i class="fas fa-plus me-1"></i>Yeni Marka
-                </button>
-            </div>
+    <div class="page-header-left">
+        <div class="page-header-icon">
+            <i class="fas fa-tags"></i>
+        </div>
+        <div class="page-header-title">
+            <h1>Ürün Markaları</h1>
+            <p>Tüm markaları görüntüleyin ve yönetin</p>
         </div>
     </div>
+    <button class="btn-add" onclick="addBrand()">
+        <i class="fas fa-plus"></i>Yeni Marka
+    </button>
 </div>
 
-<div class="container">
+<div class="px-3">
     <!--- Başarı/Hata Mesajları --->
     <cfif isDefined("url.success")>
         <cfoutput>
@@ -107,9 +67,12 @@
     </cfif>
 
     <!--- DevExtreme DataGrid --->
-    <div class="card shadow-sm">
-        <div class="card-header bg-white py-2">
-            <h6 class="mb-0"><i class="fas fa-list me-2"></i>Marka Listesi</h6>
+    <div class="grid-card">
+        <div class="grid-card-header">
+            <div class="grid-card-header-title">
+                <i class="fas fa-list"></i>Marka Listesi
+            </div>
+            <span class="record-count" id="recordCount">Yükleniyor...</span>
         </div>
         <div class="card-body p-2">
             <div id="brandsGrid"></div>
@@ -295,7 +258,7 @@ window.addEventListener('load', function() {
                         
                         // Görüntüle butonu
                         $('<button>')
-                            .addClass('btn btn-sm btn-info')
+                            .addClass('grid-btn grid-btn-view')
                             .attr('title', 'Görüntüle')
                             .html('<i class="fas fa-eye"></i>')
                             .on('click', function() {
@@ -305,7 +268,7 @@ window.addEventListener('load', function() {
                         
                         // Düzenle butonu
                         $('<button>')
-                            .addClass('btn btn-sm btn-warning')
+                            .addClass('grid-btn grid-btn-edit')
                             .attr('title', 'Düzenle')
                             .html('<i class="fas fa-edit"></i>')
                             .on('click', function() {
@@ -315,7 +278,7 @@ window.addEventListener('load', function() {
                         
                         // Sil butonu
                         $('<button>')
-                            .addClass('btn btn-sm btn-danger')
+                            .addClass('grid-btn grid-btn-del')
                             .attr('title', 'Sil')
                             .html('<i class="fas fa-trash"></i>')
                             .on('click', function() {
@@ -348,7 +311,11 @@ window.addEventListener('load', function() {
                 enabled: true,
                 text: 'Yükleniyor...'
             },
-            noDataText: 'Marka bulunamadı'
+            noDataText: 'Marka bulunamadı',
+            onContentReady: function(e) {
+                var count = e.component.totalCount();
+                $('##recordCount').text(count + ' kayıt');
+            }
         });
     }
 });

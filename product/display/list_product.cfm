@@ -67,66 +67,26 @@
     })>
 </cfloop>
 
-<style>
-    .page-header {
-        background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
-        color: white;
-        padding: 1rem 0;
-        margin-bottom: 1.5rem;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    .page-header h1 {
-        font-size: 1.5rem;
-        margin-bottom: 0.25rem;
-    }
-    .page-header p {
-        font-size: 0.875rem;
-    }
-    #productsGrid {
-        height: 600px;
-    }
-    .status-badge {
-        display: inline-block;
-        padding: 0.25em 0.6em;
-        font-size: 0.75rem;
-        font-weight: 700;
-        line-height: 1;
-        text-align: center;
-        white-space: nowrap;
-        vertical-align: baseline;
-        border-radius: 0.25rem;
-    }
-    .status-active {
-        background-color: #28a745;
-        color: white;
-    }
-    .status-passive {
-        background-color: #dc3545;
-        color: white;
-    }
-</style>
-
 <div class="page-header">
-    <div class="container">
-        <div class="row align-items-center">
-            <div class="col-md-6">
-                <h1><i class="fas fa-box-open me-2"></i>Ürünler</h1>
-                <p class="mb-0">Tüm ürünleri görüntüleyin ve yönetin</p>
-            </div>
-            <div class="col-md-6 text-end">
-                <button class="btn btn-light btn-sm" onclick="addProduct()">
-                    <i class="fas fa-plus me-1"></i>Yeni Ürün
-                </button>
-            </div>
+    <div class="page-header-left">
+        <div class="page-header-icon">
+            <i class="fas fa-box-open"></i>
+        </div>
+        <div class="page-header-title">
+            <h1>Ürünler</h1>
+            <p>Tüm ürünleri görüntüleyin ve yönetin</p>
         </div>
     </div>
+    <button class="btn-add" onclick="addProduct()">
+        <i class="fas fa-plus"></i>Yeni Ürün
+    </button>
 </div>
 
-<div class="container">
+<div class="px-3">
     <!--- Başarı/Hata Mesajları --->
     <cfif isDefined("url.success")>
         <cfoutput>
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <div class="alert alert-success alert-dismissible fade show mb-3" role="alert">
             <i class="fas fa-check-circle me-2"></i>
             <cfif url.success eq "added">
                 <strong>Başarılı!</strong> Ürün başarıyla eklendi.
@@ -141,9 +101,12 @@
     </cfif>
 
     <!--- DevExtreme DataGrid --->
-    <div class="card shadow-sm">
-        <div class="card-header bg-white py-2">
-            <h6 class="mb-0"><i class="fas fa-list me-2"></i>Ürün Listesi</h6>
+    <div class="grid-card">
+        <div class="grid-card-header">
+            <div class="grid-card-header-title">
+                <i class="fas fa-list"></i>Ürün Listesi
+            </div>
+            <span class="record-count" id="recordCount">Yükleniyor...</span>
         </div>
         <div class="card-body p-2">
             <div id="productsGrid"></div>
@@ -365,7 +328,7 @@ window.addEventListener('load', function() {
                 },
                 {
                     caption: 'İşlemler',
-                    width: 180,
+                    width: 220,
                     alignment: 'center',
                     allowFiltering: false,
                     allowSorting: false,
@@ -379,7 +342,7 @@ window.addEventListener('load', function() {
                         
                         // Görüntüle butonu
                         $('<button>')
-                            .addClass('btn btn-sm btn-info')
+                            .addClass('grid-btn grid-btn-view')
                             .attr('title', 'Görüntüle')
                             .html('<i class="fas fa-eye"></i>')
                             .on('click', function() {
@@ -389,7 +352,7 @@ window.addEventListener('load', function() {
                         
                         // Düzenle butonu
                         $('<button>')
-                            .addClass('btn btn-sm btn-warning')
+                            .addClass('grid-btn grid-btn-edit')
                             .attr('title', 'Düzenle')
                             .html('<i class="fas fa-edit"></i>')
                             .on('click', function() {
@@ -399,11 +362,22 @@ window.addEventListener('load', function() {
                         
                         // Sil butonu
                         $('<button>')
-                            .addClass('btn btn-sm btn-danger')
+                            .addClass('grid-btn grid-btn-del')
                             .attr('title', 'Sil')
                             .html('<i class="fas fa-trash"></i>')
                             .on('click', function() {
                                 deleteProduct(options.data.product_id, options.data.product_name);
+                            })
+                            .appendTo(btnGroup);
+
+                        // Hareketler butonu
+                        $('<button>')
+                            .addClass('grid-btn grid-btn-info')
+                            .attr('title', 'Hareketler')
+                            .html('<i class="fas fa-history"></i>')
+                            .css({'background-color': '##6f42c1', 'color': '##fff', 'border': 'none', 'border-radius': '4px', 'padding': '4px 8px', 'cursor': 'pointer'})
+                            .on('click', function() {
+                                showMovementsPopup(options.data.product_id, options.data.product_name);
                             })
                             .appendTo(btnGroup);
                         
@@ -432,7 +406,11 @@ window.addEventListener('load', function() {
                 enabled: true,
                 text: 'Yükleniyor...'
             },
-            noDataText: 'Ürün bulunamadı'
+            noDataText: 'Ürün bulunamadı',
+            onContentReady: function(e) {
+                var count = e.component.totalCount();
+                $('##recordCount').text(count + ' kayıt');
+            }
         });
     }
 });
@@ -578,7 +556,177 @@ function showProductModal(product) {
 }
 
 function editProduct(id) {
-    window.location.href = 'index.cfm?fusaction=product.edit_product.cfm?id=' + id;
+    window.location.href = '/index.cfm?fuseaction=product.edit_product&id=' + id;
+}
+
+function showMovementsPopup(productId, productName) {
+    var allRows = [];
+
+    function renderMovementsTable(rows) {
+        var tableWrap = $('##mvTable_' + productId);
+        if (!rows || rows.length === 0) {
+            tableWrap.html('<div class="alert alert-info"><i class="fas fa-info-circle me-2"></i>Seçilen depoya ait hareket bulunamadı.</div>');
+            return;
+        }
+        // Bakiye: satırları eski→yeni sırala, kümülatif hesapla, tekrar ters çevir
+        var rowsAsc = rows.slice().reverse();
+        var runBal = 0, balances = [];
+        for (var b = 0; b < rowsAsc.length; b++) {
+            runBal += (parseFloat(rowsAsc[b].stock_in) || 0) - (parseFloat(rowsAsc[b].stock_out) || 0);
+            balances.unshift(runBal);
+        }
+        var html = '<div style="overflow-x:auto"><table class="table table-sm table-bordered table-hover table-striped" style="font-size:13px">';
+        html += '<thead class="table-dark"><tr>';
+        html += '<th>Tarih</th><th>Fiş No</th><th>Fiş Tipi</th><th>Stok Kodu</th>';
+        html += '<th style="text-align:right">Giriş</th><th style="text-align:right">Çıkış</th>';
+        html += '<th style="text-align:right">Bakiye</th>';
+        html += '<th>Depo</th><th>Lokasyon</th><th>Lot No</th><th>Raf</th>';
+        html += '</tr></thead><tbody>';
+        var totalIn = 0, totalOut = 0;
+        for (var i = 0; i < rows.length; i++) {
+            var r = rows[i];
+            var tipClass = '';
+            var pt = r.process_type || 0;
+            if (pt === 1 || pt === 20)      tipClass = 'text-success';   // Giriş / Alış İrs.
+            else if (pt === 2 || pt === 10) tipClass = 'text-danger';    // Çıkış / Satış İrs.
+            else if (pt === 3 || pt === 40) tipClass = 'text-primary';   // Transfer
+            else if (pt === 4)              tipClass = 'text-warning';   // Sayım
+            else if (pt === 30)             tipClass = 'text-secondary'; // İade
+            else                            tipClass = 'text-muted';
+            totalIn  += parseFloat(r.stock_in)  || 0;
+            totalOut += parseFloat(r.stock_out) || 0;
+            var bal = balances[i];
+            var balColor = bal > 0 ? '##198754' : (bal < 0 ? '##dc3545' : '##555');
+            html += '<tr>';
+            html += '<td>' + (r.process_date || '-') + '</td>';
+            html += '<td><strong>' + (r.fis_number || '-') + '</strong></td>';
+            html += '<td><span class="' + tipClass + ' fw-bold">' + (r.fis_type_label || '-') + '</span></td>';
+            html += '<td>' + (r.stock_code || '-') + '</td>';
+            html += '<td style="text-align:right;color:##198754">' + (r.stock_in > 0 ? parseFloat(r.stock_in).toFixed(2) : '-') + '</td>';
+            html += '<td style="text-align:right;color:##dc3545">' + (r.stock_out > 0 ? parseFloat(r.stock_out).toFixed(2) : '-') + '</td>';
+            html += '<td style="text-align:right;font-weight:bold;color:' + balColor + '">' + bal.toFixed(2) + '</td>';
+            html += '<td>' + (r.department_head || '-') + '</td>';
+            html += '<td>' + (r.department_location || '-') + '</td>';
+            html += '<td>' + (r.lot_no || '-') + '</td>';
+            html += '<td>' + (r.shelf_number || '-') + '</td>';
+            html += '</tr>';
+        }
+        var netBal = totalIn - totalOut;
+        var netBalColor = netBal > 0 ? '##198754' : (netBal < 0 ? '##dc3545' : '##555');
+        html += '</tbody><tfoot class="table-secondary"><tr>';
+        html += '<td colspan="4"><strong>TOPLAM</strong></td>';
+        html += '<td style="text-align:right;color:##198754"><strong>' + totalIn.toFixed(2) + '</strong></td>';
+        html += '<td style="text-align:right;color:##dc3545"><strong>' + totalOut.toFixed(2) + '</strong></td>';
+        html += '<td style="text-align:right;font-weight:bold;color:' + netBalColor + '"><strong>' + netBal.toFixed(2) + '</strong></td>';
+        html += '<td colspan="4"></td></tr></tfoot>';
+        html += '</table></div>';
+        html += '<p class="text-muted mt-1" style="font-size:12px"><i class="fas fa-info-circle"></i> ' + rows.length + ' hareket kayıtı listelendi.</p>';
+        tableWrap.html(html);
+    }
+
+    function applyDepoFilter() {
+        var sel = $('##mvDepoFilter_' + productId).val();
+        var filtered = sel === '__all__'
+            ? allRows
+            : allRows.filter(function(r) {
+                var key = (r.department_head || '') + '||' + (r.department_location || '');
+                return key === sel;
+            });
+        renderMovementsTable(filtered);
+    }
+
+    var popupElement = $('<div>').appendTo('body');
+    var popup = popupElement.dxPopup({
+        titleTemplate: function() {
+            return $('<div>').html('<i class="fas fa-history" style="margin-right:6px"></i> Stok Hareketleri — ' + productName);
+        },
+        width: '92%',
+        maxWidth: 1150,
+        height: 'auto',
+        maxHeight: '88vh',
+        showTitle: true,
+        dragEnabled: true,
+        closeOnOutsideClick: true,
+        showCloseButton: true,
+        contentTemplate: function() {
+            var wrap = $('<div>').css({'padding': '10px'});
+            wrap.html('<div class="text-center py-4"><i class="fas fa-spinner fa-spin fa-2x"></i><p class="mt-2 text-muted">Yükleniyor...</p></div>');
+            return wrap;
+        },
+        toolbarItems: [
+            {
+                widget: 'dxButton',
+                location: 'after',
+                toolbar: 'bottom',
+                options: { text: 'Kapat', onClick: function() { popup.hide(); } }
+            }
+        ],
+        onShowing: function() {
+            $.ajax({
+                url: '/product/cfc/product.cfc?method=getProductMovements',
+                method: 'GET',
+                data: { product_id: productId },
+                dataType: 'json',
+                success: function(response) {
+                    var content = popup.$content();
+                    content.empty();
+                    if (!response.success) {
+                        content.html('<div class="alert alert-danger">' + (response.message || 'Hata oluştu') + '</div>');
+                        return;
+                    }
+                    allRows = response.data || [];
+                    if (allRows.length === 0) {
+                        content.html('<div class="alert alert-info"><i class="fas fa-info-circle me-2"></i>Bu ürüne ait stok hareketi bulunamadı.</div>');
+                        return;
+                    }
+                    // Benzersiz depo-lokasyon kombinasyonları
+                    var depos = [];
+                    var depoSeen = {};
+                    for (var d = 0; d < allRows.length; d++) {
+                        var dhead = allRows[d].department_head || '';
+                        var dloc  = allRows[d].department_location || '';
+                        var dkey  = dhead + '||' + dloc;
+                        var dlabel = dhead + (dloc ? ' — ' + dloc : '');
+                        if (dkey && !depoSeen[dkey]) { depoSeen[dkey] = true; depos.push({key: dkey, label: dlabel}); }
+                    }
+                    depos.sort(function(a, b) { return a.label.localeCompare(b.label); });
+
+                    // Filtre satırı
+                    var filterHtml = '<div class="d-flex align-items-center gap-2 mb-2 p-2 bg-light border rounded">';
+                    filterHtml += '<label class="fw-bold mb-0" style="white-space:nowrap"><i class="fas fa-warehouse me-1"></i>Depo / Lokasyon:</label>';
+                    filterHtml += '<select id="mvDepoFilter_' + productId + '" class="form-select form-select-sm" style="max-width:340px">';
+                    filterHtml += '<option value="__all__">-- Tümü --</option>';
+                    for (var d2 = 0; d2 < depos.length; d2++) {
+                        filterHtml += '<option value="' + depos[d2].key.replace(/"/g, '&quot;') + '">' + depos[d2].label + '</option>';
+                    }
+                    filterHtml += '</select>';
+                    filterHtml += '<span class="text-muted ms-2" style="font-size:12px">Toplam <strong>' + allRows.length + '</strong> hareket</span>';
+                    filterHtml += '</div>';
+                    filterHtml += '<div id="mvTable_' + productId + '"></div>';
+
+                    content.html(filterHtml);
+
+                    // Filtre değişince tabloyu yenile
+                    content.find('##mvDepoFilter_' + productId).on('change', function() {
+                        applyDepoFilter();
+                        popup.repaint();
+                    });
+
+                    // İlk render
+                    renderMovementsTable(allRows);
+                    popup.repaint();
+                },
+                error: function() {
+                    popup.$content().html('<div class="alert alert-danger">Veriler alınırken bir hata oluştu!</div>');
+                }
+            });
+        },
+        onHidden: function() {
+            popupElement.remove();
+        }
+    }).dxPopup('instance');
+
+    popup.show();
 }
 
 function deleteProduct(id, name) {

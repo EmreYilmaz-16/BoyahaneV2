@@ -23,8 +23,8 @@ Description			:
 		this.sessionTimeout = CreateTimeSpan(0,2,0,0);
 		this.clientManagement = True;
 		this.setClientCookies = True;
-		this.secureJSON = true;
-		this.secureJSONPrefix = "//";
+		this.secureJSON = false;
+		this.secureJSONPrefix = "";
 		this.customtagpaths = '';
       	this.customtagpaths = ListAppend(this.customtagpaths,getDirectoryFromPath(getCurrentTemplatePath()) & "customtags");
 		this.customtagpaths = ListAppend(this.customtagpaths,getDirectoryFromPath(getCurrentTemplatePath()) & "Utility/customtag");

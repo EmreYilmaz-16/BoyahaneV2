@@ -75,79 +75,58 @@
 
 
 
-    <style>
-        .page-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 2rem 0;
-            margin-bottom: 2rem;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        .form-card {
-            border: none;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
-        }
-        .required-field::after {
-            content: " *";
-            color: red;
-        }
-        .info-badge {
-            background: #f8f9fa;
-            padding: 0.5rem 1rem;
-            border-left: 3px solid #667eea;
-            margin-bottom: 1rem;
-        }
-    </style>
 
-    <div class="page-header">
-        <div class="container">
-            <h1><i class="fas fa-edit me-2"></i>Kategori Düzenle</h1>
-            <p class="mb-0">Kategori bilgilerini güncelleyin</p>
+
+<cfoutput>
+<div class="page-header">
+    <div class="page-header-left">
+        <div class="page-header-icon">
+            <i class="fas fa-layer-group"></i>
+        </div>
+        <div class="page-header-title">
+            <h1>Kategori Düzenle</h1>
+            <p>#getCategory.product_cat#</p>
         </div>
     </div>
+    <span class="record-count">ID: #getCategory.product_catid#</span>
+</div>
+</cfoutput>
 
-    
-        <div class="row justify-content-center">
-            <div class="col-lg-8">
-                <!--- Hata mesajı --->
-                <cfif isDefined("errorMsg")>
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        <i class="fas fa-exclamation-circle me-2"></i>
-                        <cfoutput>#errorMsg#</cfoutput>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                </cfif>
+<div class="px-3">
+    <!--- Hata mesajı --->
+    <cfif isDefined("errorMsg")>
+        <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            <cfoutput>#errorMsg#</cfoutput>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    </cfif>
 
-                <!--- Kayıt bilgileri --->
-                <cfoutput>
-                <div class="info-badge">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <small class="text-muted">
-                                <i class="fas fa-hashtag me-1"></i><strong>ID:</strong> #getCategory.product_catid#
-                            </small>
-                        </div>
-                        <div class="col-md-6">
-                            <small class="text-muted">
-                                <i class="fas fa-calendar me-1"></i><strong>Kayıt:</strong> 
-                                <cfif isDate(getCategory.record_date)>
-                                    #dateFormat(getCategory.record_date, "dd/mm/yyyy")# #timeFormat(getCategory.record_date, "HH:mm")#
-                                <cfelse>
-                                    -
-                                </cfif>
-                            </small>
-                        </div>
-                    </div>
-                </div>
-                </cfoutput>
-
-                <div class="card form-card">
-                    <div class="card-header bg-warning text-dark">
-                        <h5 class="mb-0"><i class="fas fa-layer-group me-2"></i>Kategori Bilgileri</h5>
-                    </div>
-                    <div class="card-body p-4">
+    <div class="grid-card">
+        <div class="grid-card-header">
+            <div class="grid-card-header-title">
+                <i class="fas fa-edit"></i>Kategori Bilgileri
+            </div>
+        </div>
+        <div class="card-body p-4">
                         <cfoutput>
                         <form method="post" action="/index.cfm?fuseaction=product.edit_product_cat&id=#url.id#" id="categoryForm">
+
+                            <!--- Kayıt bilgileri --->
+                            <div class="d-flex gap-4 mb-4">
+                                <cfif isDate(getCategory.record_date)>
+                                    <span class="form-note">
+                                        <i class="fas fa-calendar me-1"></i><strong>Kayıt:</strong>
+                                        #dateFormat(getCategory.record_date, "dd/mm/yyyy")# #timeFormat(getCategory.record_date, "HH:mm")#
+                                    </span>
+                                </cfif>
+                                <cfif isDate(getCategory.update_date)>
+                                    <span class="form-note">
+                                        <i class="fas fa-clock me-1"></i><strong>Güncelleme:</strong>
+                                        #dateFormat(getCategory.update_date, "dd/mm/yyyy")# #timeFormat(getCategory.update_date, "HH:mm")#
+                                    </span>
+                                </cfif>
+                            </div>
                             <div class="mb-3">
                                 <label for="hierarchy" class="form-label">
                                     <i class="fas fa-sitemap me-1"></i>Hiyerarşi
@@ -193,25 +172,20 @@
                             </div>
 
                             <div class="d-flex justify-content-between">
-                                <a href="/index.cfm?fuseaction=product.list_product_cat" class="btn btn-secondary">
-                                    <i class="fas fa-arrow-left me-1"></i>Geri Dön
+                                <a href="/index.cfm?fuseaction=product.list_product_cat" class="btn-back">
+                                    <i class="fas fa-arrow-left"></i>Geri Dön
                                 </a>
-                                <button type="submit" name="submit" class="btn btn-warning btn-lg">
-                                    <i class="fas fa-save me-1"></i>Değişiklikleri Kaydet
+                                <button type="submit" name="submit" class="btn-save">
+                                    <i class="fas fa-save"></i>Değişiklikleri Kaydet
                                 </button>
                             </div>
                         </form>
                         </cfoutput>
                     </div>
-                </div>
-            </div>
-        </div>
+    </div>
+</div>
 
-
-    <!--- Bootstrap JS --->
-    
-    
-    <script>
+<script>
         // Form validasyonu
         document.getElementById('categoryForm').addEventListener('submit', function(e) {
             const productCat = document.getElementById('product_cat').value.trim();

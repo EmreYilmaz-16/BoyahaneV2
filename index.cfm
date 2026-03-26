@@ -55,162 +55,13 @@
     <!--- DevExtreme CSS --->
     <link rel="stylesheet" href="https://cdn3.devexpress.com/jslib/23.2.5/css/dx.common.css">
     <link rel="stylesheet" href="https://cdn3.devexpress.com/jslib/23.2.5/css/dx.light.css">
-    
+    <link rel="stylesheet" href="/assets/css/custom.css">
     <!--- Custom CSS --->
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f8f9fa;
-        }
-        .navbar-brand {
-            font-weight: bold;
-            font-size: 1.5rem;
-        }
-        .main-content {
-            min-height: calc(100vh - 120px);
-        }
-        .footer {
-            background-color: #343a40;
-            color: white;
-            padding: 20px 0;
-            margin-top: 50px;
-        }
-        .card-custom {
-            transition: transform 0.2s;
-            height: 100%;
-        }
-        .card-custom:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-        
-        /* Sidebar Styles */
-        .sidebar {
-            position: fixed;
-            top: 56px;
-            left: 0;
-            bottom: 0;
-            width: 280px;
-            background-color: #2c3e50;
-            overflow-y: auto;
-            z-index: 1000;
-            transition: all 0.3s;
-        }
-        
-        .sidebar::-webkit-scrollbar {
-            width: 6px;
-        }
-        
-        .sidebar::-webkit-scrollbar-track {
-            background: #1a252f;
-        }
-        
-        .sidebar::-webkit-scrollbar-thumb {
-            background: #34495e;
-            border-radius: 3px;
-        }
-        
-        .content-wrapper {
-            margin-left: 280px;
-            transition: all 0.3s;
-        }
-        
-        .menu-solution {
-            color: #ecf0f1;
-            padding: 12px 20px;
-            cursor: pointer;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            transition: all 0.2s;
-        }
-        
-        .menu-solution:hover {
-            background-color: #34495e;
-        }
-        
-        .menu-solution i {
-            margin-right: 10px;
-            width: 20px;
-        }
-        
-        .menu-family {
-            background-color: #1a252f;
-            border-left: 3px solid #3498db;
-        }
-        
-        .menu-family-item {
-            color: #bdc3c7;
-            padding: 10px 20px 10px 40px;
-            cursor: pointer;
-            transition: all 0.2s;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-        }
-        
-        .menu-family-item:hover {
-            background-color: #243447;
-            color: #fff;
-        }
-        
-        .menu-module {
-            background-color: #16202b;
-        }
-        
-        .menu-module-item {
-            color: #95a5a6;
-            padding: 8px 20px 8px 60px;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-size: 0.9rem;
-            border-bottom: 1px solid rgba(255,255,255,0.03);
-        }
-        
-        .menu-module-item:hover {
-            background-color: #1c2a38;
-            color: #ecf0f1;
-        }
-        
-        .menu-object-item {
-            color: #7f8c8d;
-            padding: 6px 20px 6px 80px;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-size: 0.85rem;
-            border-bottom: 1px solid rgba(255,255,255,0.02);
-        }
-        
-        .menu-object-item:hover {
-            background-color: #1e2d3d;
-            color: #bdc3c7;
-            padding-left: 85px;
-        }
-        
-        .menu-object-item i {
-            margin-right: 8px;
-            font-size: 0.75rem;
-        }
-        
-        .menu-active {
-            background-color: #3498db !important;
-            color: #fff !important;
-            font-weight: 500;
-        }
-        
-        .toggle-icon {
-            float: right;
-            transition: transform 0.3s;
-        }
-        
-        .toggle-icon.rotate {
-            transform: rotate(90deg);
-        }
-        
-        .sidebar-header {
-            padding: 15px 20px;
-            background-color: #1a252f;
-            border-bottom: 2px solid #3498db;
-            color: #ecf0f1;
-            font-weight: bold;
-        }
-    </style>
+    
+    <!--- jQuery ve Bootstrap JS (head'de yükle - sayfaiçi scriptlerin erişimi için) --->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/ui/1.13.3/jquery-ui.min.js" integrity="sha256-sw0iNNXmOJbQhYFuC9OF2kOlD5KQKe1y5lfBn4C9Sjg=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
     </cfif>
 </head>
 <body>
@@ -242,11 +93,19 @@
     </cfif>
     
     <cfif showLayout>
-    <!--- Navigation Bar --->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <!--- Navigation Bar - Fixed Top --->
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
         <div class="container-fluid">
+            <button class="btn btn-sm d-lg-none me-2" id="sidebarToggle" type="button"
+                    style="background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.2);border-radius:7px;">
+                <i class="fas fa-bars"></i>
+            </button>
             <a class="navbar-brand" href="index.cfm">
-                <i class="fas fa-industry me-2"></i>Rasih Çelik Boyahane
+                <div class="brand-icon"><i class="fas fa-industry"></i></div>
+                <div class="brand-text">
+                    <span class="brand-sub">Boyahane Yönetim Sistemi</span>
+                    <span class="brand-main">Rasih Çelik</span>
+                </div>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
@@ -275,7 +134,8 @@
                     </li>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fas fa-user-circle"></i> <cfoutput>#session.user.fullname#</cfoutput>
+                            <span class="user-avatar"><cfoutput>#Left(session.user.fullname, 1)#</cfoutput></span>
+                            <cfoutput>#session.user.fullname#</cfoutput>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
                             <li class="dropdown-header">
@@ -298,7 +158,7 @@
     <!--- Sidebar Menu --->
     <div class="sidebar">
         <div class="sidebar-header">
-            <i class="fas fa-sitemap me-2"></i>Menü
+            <i class="fas fa-th-large"></i>Ana Menü
         </div>
         
         <cfoutput query="getSolutions">
@@ -353,13 +213,16 @@
             </div>
         </cfoutput>
     </div>
+    
+    <!--- Sidebar Backdrop for Mobile --->
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
     </cfif>
 
     <!--- Main Content --->
     <cfif showLayout>
     <div class="content-wrapper">
     </cfif>
-        <div class="container-fluid main-content mt-4">
+        <div class="container-fluid main-content">
         <cfif isDefined("attributes.fuseaction") and attributes.fuseaction neq "">
             <cfif getObject.recordCount>
                     <cfinclude template="#getObject.file_path#">
@@ -380,19 +243,15 @@
     </cfif>
 
     <cfif showLayout>
-    <!--- Footer --->
-    <footer class="footer mt-5">
+    <!--- Footer - Fixed Bottom --->
+    <footer class="footer">
         <div class="container-fluid">
-            <div class="row">
+            <div class="row align-items-center w-100">
                 <div class="col-md-6 text-center text-md-start">
-                    <p class="mb-0">
-                        <i class="fas fa-copyright me-1"></i>2026 Rasih Çelik Boyahane - Tüm hakları saklıdır
-                    </p>
+                    <i class="fas fa-copyright me-1"></i>2026 Rasih Çelik Boyahane &mdash; Tüm hakları saklıdır
                 </div>
                 <div class="col-md-6 text-center text-md-end">
-                    <p class="mb-0">
-                        Powered by <strong>Workcube Catalyst</strong>
-                    </p>
+                    Powered by <strong>Workcube Catalyst</strong>
                 </div>
             </div>
         </div>
@@ -400,12 +259,6 @@
     </cfif>
 
     <cfif loadAssets>
-    <!--- jQuery --->
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
-    
-    <!--- Bootstrap JS --->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
-    
     <!--- DevExtreme JS --->
     <script src="https://cdn3.devexpress.com/jslib/23.2.5/js/dx.all.js"></script>
     
@@ -415,6 +268,27 @@
     <!--- Custom JavaScript --->
     <script>
         $(document).ready(function() {
+            // Mobil menü toggle
+            $('#sidebarToggle').click(function() {
+                $('.sidebar').toggleClass('show');
+                $('#sidebarBackdrop').toggleClass('show');
+            });
+            
+            // Sidebar backdrop veya dışına tıklandığında kapat (mobil)
+            $('#sidebarBackdrop').click(function() {
+                $('.sidebar').removeClass('show');
+                $(this).removeClass('show');
+            });
+            
+            $(document).click(function(event) {
+                if ($(window).width() <= 768) {
+                    if (!$(event.target).closest('.sidebar, #sidebarToggle').length) {
+                        $('.sidebar').removeClass('show');
+                        $('#sidebarBackdrop').removeClass('show');
+                    }
+                }
+            });
+            
             // Menü toggle işlemleri
             $('.menu-solution').click(function() {
                 var solutionId = $(this).data('solution');
@@ -445,6 +319,14 @@
                 icon.toggleClass('rotate');
             });
             
+            // Menü öğesine tıklandığında mobilde sidebar'ı kapat
+            $('.menu-object-item').click(function() {
+                if ($(window).width() <= 768) {
+                    $('.sidebar').removeClass('show');
+                    $('#sidebarBackdrop').removeClass('show');
+                }
+            });
+            
             // Aktif menü öğesini işaretle
             var currentFuseaction = new URLSearchParams(window.location.search).get('fuseaction');
             if(currentFuseaction) {
@@ -471,14 +353,17 @@
                 });
             }
             
-            // Smooth scroll for anchor links
+            // Smooth scroll for anchor links (for content-wrapper)
             $('a[href^="#"]').on('click', function(event) {
                 var target = $(this.getAttribute('href'));
                 if(target.length) {
                     event.preventDefault();
-                    $('html, body').stop().animate({
-                        scrollTop: target.offset().top - 70
-                    }, 1000);
+                    var scrollContainer = $('.content-wrapper');
+                    if(scrollContainer.length) {
+                        scrollContainer.stop().animate({
+                            scrollTop: target.offset().top - scrollContainer.offset().top + scrollContainer.scrollTop() - 20
+                        }, 1000);
+                    }
                 }
             });
         });

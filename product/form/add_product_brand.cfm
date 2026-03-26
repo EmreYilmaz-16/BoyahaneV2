@@ -10,115 +10,101 @@
     <cfset request.jQueryLoaded = true>
 </cfif>
 
-<style>
-    .page-header {
-        background: linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%);
-        color: white;
-        padding: 1rem 0;
-        margin-bottom: 1.5rem;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    .page-header h1 {
-        font-size: 1.5rem;
-        margin-bottom: 0.25rem;
-    }
-    .form-section {
-        background: #f8f9fa;
-        border-left: 3px solid #9C27B0;
-        padding: 1rem;
-        margin-bottom: 1.5rem;
-    }
-    .form-section h5 {
-        color: #9C27B0;
-        margin-bottom: 1rem;
-    }
-</style>
-
 <cfif not isPopup>
 <div class="page-header">
-    <div class="container">
-        <div class="row align-items-center">
-            <div class="col-md-6">
-                <h1><i class="fas fa-plus-circle me-2"></i>Yeni Marka Ekle</h1>
-                <p class="mb-0">Sisteme yeni marka ekleyin</p>
-            </div>
-            <div class="col-md-6 text-end">
-                <button class="btn btn-light btn-sm" onclick="window.location.href='/index.cfm?fuseaction=product.list_product_brands'">
-                    <i class="fas fa-list me-1"></i>Marka Listesi
-                </button>
-            </div>
+    <div class="page-header-left">
+        <div class="page-header-icon">
+            <i class="fas fa-tags"></i>
+        </div>
+        <div class="page-header-title">
+            <h1>Yeni Marka Ekle</h1>
+            <p>Sisteme yeni marka ekleyin</p>
         </div>
     </div>
+    <a href="/index.cfm?fuseaction=product.list_product_brands" class="btn-back">
+        <i class="fas fa-list"></i>Marka Listesi
+    </a>
 </div>
 </cfif>
 
-<div class="container">
-    <div class="card shadow-sm">
-        <div class="card-body">
-            <form id="brandForm" method="post">
-                <!--- Temel Bilgiler --->
-                <div class="form-section">
-                    <h5><i class="fas fa-info-circle me-2"></i>Temel Bilgiler</h5>
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label for="brand_name" class="form-label">Marka Adı <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="brand_name" name="brand_name" required placeholder="Marka adını giriniz">
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <label for="brand_code" class="form-label">Marka Kodu</label>
-                            <input type="text" class="form-control" id="brand_code" name="brand_code" placeholder="Marka kodu (opsiyonel)">
-                        </div>
-                        
-                        <div class="col-12">
-                            <label for="detail" class="form-label">Detay</label>
-                            <textarea class="form-control" id="detail" name="detail" rows="3" placeholder="Marka detayı"></textarea>
-                        </div>
+<div class="px-3 pb-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="grid-card">
+                <div class="grid-card-header">
+                    <div class="grid-card-header-title">
+                        <i class="fas fa-tags"></i>Marka Bilgileri
                     </div>
                 </div>
-                
-                <!--- Durum ve Özellikler --->
-                <div class="form-section">
-                    <h5><i class="fas fa-cog me-2"></i>Durum ve Özellikler</h5>
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="is_active" name="is_active" value="1" checked>
-                                <label class="form-check-label" for="is_active">
-                                    <i class="fas fa-power-off me-1"></i>Marka Aktif
-                                </label>
+                <div class="p-4">
+                    <form id="brandForm">
+
+                        <!--- Temel Bilgiler --->
+                        <div class="mb-1 pb-2" style="border-bottom:1px solid #eef1f6;">
+                            <div class="grid-card-header-title mb-3">
+                                <i class="fas fa-info-circle"></i>Temel Bilgiler
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="brand_name" class="form-label required-field">Marka Adı</label>
+                                    <input type="text" class="form-control" id="brand_name" name="brand_name" required placeholder="Marka adını giriniz">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="brand_code" class="form-label">Marka Kodu</label>
+                                    <input type="text" class="form-control" id="brand_code" name="brand_code" placeholder="Marka kodu (opsiyonel)">
+                                </div>
+                                <div class="col-12">
+                                    <label for="detail" class="form-label">Detay</label>
+                                    <textarea class="form-control" id="detail" name="detail" rows="3" placeholder="Marka detayı"></textarea>
+                                </div>
                             </div>
                         </div>
-                        
-                        <div class="col-md-6">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="is_internet" name="is_internet" value="1">
-                                <label class="form-check-label" for="is_internet">
-                                    <i class="fas fa-globe me-1"></i>İnternet Satış
-                                </label>
+
+                        <!--- Durum ve Özellikler --->
+                        <div class="mt-4 mb-4">
+                            <div class="grid-card-header-title mb-3">
+                                <i class="fas fa-cog"></i>Durum ve Özellikler
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="is_active" name="is_active" value="1" checked>
+                                        <label class="form-check-label form-label mb-0" for="is_active">
+                                            <i class="fas fa-power-off me-1"></i>Marka Aktif
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="is_internet" name="is_internet" value="1">
+                                        <label class="form-check-label form-label mb-0" for="is_internet">
+                                            <i class="fas fa-globe me-1"></i>İnternet Satış
+                                        </label>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </div>
-                
-                <!--- Form Butonları --->
-                <div class="row">
-                    <div class="col-12">
-                        <hr>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save me-1"></i>Kaydet
-                        </button>
-                        <cfif not isPopup>
-                            <button type="button" class="btn btn-secondary" onclick="window.location.href='/index.cfm?fuseaction=product.list_product_brands'">
-                                <i class="fas fa-times me-1"></i>İptal
+
+                        <!--- Butonlar --->
+                        <div class="d-flex justify-content-between align-items-center pt-3" style="border-top:1px solid #eef1f6;">
+                            <button type="button" class="btn btn-light btn-sm" onclick="this.closest('form').reset()">
+                                <i class="fas fa-undo me-1"></i>Temizle
                             </button>
-                        </cfif>
-                        <button type="reset" class="btn btn-warning">
-                            <i class="fas fa-undo me-1"></i>Formu Temizle
-                        </button>
-                    </div>
+                            <div class="d-flex gap-2">
+                                <cfif not isPopup>
+                                <a href="/index.cfm?fuseaction=product.list_product_brands" class="btn btn-light">
+                                    <i class="fas fa-times me-1"></i>İptal
+                                </a>
+                                </cfif>
+                                <button type="submit" class="btn-save">
+                                    <i class="fas fa-save"></i>Kaydet
+                                </button>
+                            </div>
+                        </div>
+
+                    </form>
                 </div>
-            </form>
+            </div>
         </div>
     </div>
 </div>
@@ -147,7 +133,7 @@ $(document).ready(function() {
         console.log('Gönderilen veri:', formData);
         
         $.ajax({
-            url: '../cfc/product.cfc?method=saveBrand',
+            url: '/product/cfc/product.cfc?method=saveBrand',
             method: 'POST',
             data: formData,
             dataType: 'json',

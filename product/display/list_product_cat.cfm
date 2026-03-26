@@ -31,88 +31,66 @@
     <cfset arrayAppend(categoriesArray, categoryObj)>
 </cfloop>
 
-<style>
-    .page-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 1rem 0;
-        margin-bottom: 1.5rem;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    .page-header h1 {
-        font-size: 1.5rem;
-        margin-bottom: 0.25rem;
-    }
-    .page-header p {
-        font-size: 0.875rem;
-    }
-    .badge-hierarchy {
-        font-size: 0.75rem;
-        padding: 0.25em 0.5em;
-    }
-    #categoriesGrid {
-        height: 600px;
-    }
-</style>
-
-    <div class="page-header">
-        <div class="container">
-            <div class="row align-items-center">
-                <div class="col-md-6">
-                    <h1><i class="fas fa-layer-group me-2"></i>Ürün Kategorileri</h1>
-                    <p class="mb-0">Tüm ürün kategorilerini görüntüleyin ve yönetin</p>
-                </div>
-                <div class="col-md-6 text-end">
-                    <button class="btn btn-light btn-sm" onclick="window.location.href='../form/add_product_cat.cfm'">
-                        <i class="fas fa-plus me-1"></i>Yeni Kategori
-                    </button>
-                </div>
-            </div>
+<div class="page-header">
+    <div class="page-header-left">
+        <div class="page-header-icon">
+            <i class="fas fa-layer-group"></i>
+        </div>
+        <div class="page-header-title">
+            <h1>Ürün Kategorileri</h1>
+            <p>Tüm ürün kategorilerini görüntüleyin ve yönetin</p>
         </div>
     </div>
+    <button class="btn-add" onclick="addCategory()">
+        <i class="fas fa-plus"></i>Yeni Kategori
+    </button>
+</div>
 
-    
-        <!--- Başarı/Hata Mesajları --->
-        <cfif isDefined("url.success")>
-            <cfoutput>
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                <i class="fas fa-check-circle me-2"></i>
-                <cfif url.success eq "added">
-                    <strong>Başarılı!</strong> Kategori başarıyla eklendi.
-                <cfelseif url.success eq "updated">
-                    <strong>Başarılı!</strong> Kategori başarıyla güncellendi.
-                <cfelseif url.success eq "deleted">
-                    <strong>Başarılı!</strong> Kategori başarıyla silindi.
-                </cfif>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-            </cfoutput>
-        </cfif>
-        
-        <cfif isDefined("url.error")>
-            <cfoutput>
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <i class="fas fa-exclamation-circle me-2"></i>
-                <cfif url.error eq "notfound">
-                    <strong>Hata!</strong> Kategori bulunamadı.
-                <cfelse>
-                    <strong>Hata!</strong> Bir hata oluştu.
-                </cfif>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-            </cfoutput>
-        </cfif>
-
-        <!--- DevExtreme DataGrid --->
-        <div class="card shadow-sm">
-            <div class="card-header bg-white py-2">
-                <h6 class="mb-0"><i class="fas fa-list me-2"></i>Kategori Listesi</h6>
-            </div>
-            <div class="card-body p-2">
-                <div id="categoriesGrid"></div>
-            </div>
+<div class="px-3">
+    <!--- Başarı/Hata Mesajları --->
+    <cfif isDefined("url.success")>
+        <cfoutput>
+        <div class="alert alert-success alert-dismissible fade show mb-3" role="alert">
+            <i class="fas fa-check-circle me-2"></i>
+            <cfif url.success eq "added">
+                <strong>Başarılı!</strong> Kategori başarıyla eklendi.
+            <cfelseif url.success eq "updated">
+                <strong>Başarılı!</strong> Kategori başarıyla güncellendi.
+            <cfelseif url.success eq "deleted">
+                <strong>Başarılı!</strong> Kategori başarıyla silindi.
+            </cfif>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
-    
+        </cfoutput>
+    </cfif>
+
+    <cfif isDefined("url.error")>
+        <cfoutput>
+        <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            <cfif url.error eq "notfound">
+                <strong>Hata!</strong> Kategori bulunamadı.
+            <cfelse>
+                <strong>Hata!</strong> Bir hata oluştu.
+            </cfif>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        </cfoutput>
+    </cfif>
+
+    <!--- DevExtreme DataGrid --->
+    <div class="grid-card">
+        <div class="grid-card-header">
+            <div class="grid-card-header-title">
+                <i class="fas fa-list"></i>Kategori Listesi
+            </div>
+            <span class="record-count" id="recordCount">Yükleniyor...</span>
+        </div>
+        <div class="card-body p-2">
+            <div id="categoriesGrid"></div>
+        </div>
+    </div>
+</div>
 
 <cfoutput>
 <script>
@@ -275,7 +253,7 @@ window.addEventListener('load', function() {
                         
                         // Görüntüle butonu
                         $('<button>')
-                            .addClass('btn btn-sm btn-info')
+                            .addClass('grid-btn grid-btn-view')
                             .attr('title', 'Görüntüle')
                             .html('<i class="fas fa-eye"></i>')
                             .on('click', function() {
@@ -285,7 +263,7 @@ window.addEventListener('load', function() {
                         
                         // Düzenle butonu
                         $('<button>')
-                            .addClass('btn btn-sm btn-warning')
+                            .addClass('grid-btn grid-btn-edit')
                             .attr('title', 'Düzenle')
                             .html('<i class="fas fa-edit"></i>')
                             .on('click', function() {
@@ -295,7 +273,7 @@ window.addEventListener('load', function() {
                         
                         // Sil butonu
                         $('<button>')
-                            .addClass('btn btn-sm btn-danger')
+                            .addClass('grid-btn grid-btn-del')
                             .attr('title', 'Sil')
                             .html('<i class="fas fa-trash"></i>')
                             .on('click', function() {
@@ -328,10 +306,18 @@ window.addEventListener('load', function() {
                 enabled: true,
                 text: 'Yükleniyor...'
             },
-            noDataText: 'Kategori bulunamadı'
+            noDataText: 'Kategori bulunamadı',
+            onContentReady: function(e) {
+                var count = e.component.totalCount();
+                $('##recordCount').text(count + ' kayıt');
+            }
         });
     }
 });
+
+function addCategory() {
+    window.location.href = '/index.cfm?fuseaction=product.add_product_cat';
+}
 
 function viewCategory(id) {
     // Kategorileri veriden bul

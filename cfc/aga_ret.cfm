@@ -1,93 +1,95 @@
 
-<cfquery name="getstok" datasource="#dsn#_1">
-    SELECT DISTINCT S.PRODUCT_NAME
+<cfquery name="getstok" datasource="#dsn#">
+    SELECT DISTINCT P.PRODUCT_NAME
     ,S.STOCK_ID
-    ,PRODUCT_CODE                   
+    ,P.PRODUCT_CODE                   
     ,PU.MAIN_UNIT
     ,PC.DETAIL
     ,PC.LIST_ORDER_NO 
-                        ,CASE WHEN PRODUCT_CODE LIKE '150.01%' THEN '0'
- WHEN PRODUCT_CODE LIKE '150.02%' THEN '1'
- WHEN PRODUCT_CODE LIKE '150.03%' THEN '2'
+                        ,CASE WHEN P.PRODUCT_CODE LIKE '150.01%' THEN '0'
+ WHEN P.PRODUCT_CODE LIKE '150.02%' THEN '1'
+ WHEN P.PRODUCT_CODE LIKE '150.03%' THEN '2'
  end as tip
-    ,S.PRODUCT_UNIT_ID FROM STOCKS AS S 
-    LEFT JOIN catalyst_prod_product.PRODUCT_UNIT AS PU ON PU.PRODUCT_UNIT_ID = S.PRODUCT_UNIT_ID 
-    LEFT JOIN PRODUCT_CAT AS PC ON PC.PRODUCT_CATID=S.PRODUCT_CATID
-    WHERE 1=1 <cfif len(arguments.keyword)> and( PRODUCT_NAME like '%#arguments.keyword#%' or PRODUCT_CODE like '%#arguments.keyword#%' )</cfif>
+    ,S.PRODUCT_UNIT_ID FROM STOCKS AS S
+    LEFT JOIN product AS P ON P.product_id = S.product_id
+    LEFT JOIN PRODUCT_UNIT AS PU ON PU.PRODUCT_UNIT_ID = S.PRODUCT_UNIT_ID 
+    LEFT JOIN PRODUCT_CAT AS PC ON PC.PRODUCT_CATID = P.PRODUCT_CATID
+    WHERE 1=1 <cfif len(arguments.keyword)> and( P.PRODUCT_NAME ILIKE '%#arguments.keyword#%' or P.PRODUCT_CODE ILIKE '%#arguments.keyword#%' )</cfif>
     <cfif len(arguments.stock_id)>and S.STOCK_ID =#arguments.stock_id#</cfif>
-    AND PRODUCT_STATUS=1
+    AND P.PRODUCT_STATUS = TRUE
 </cfquery>
 
 <cfset RETURN_ARRAY = arrayNew(1)>
 <cfloop query="getstok">
-    <cfquery name="getTree" datasource="#dsn#_1">
-        SELECT S.PRODUCT_NAME
+    <cfquery name="getTree" datasource="#dsn#">
+        SELECT P.PRODUCT_NAME
         ,S.STOCK_ID
         ,PT.AMOUNT
         ,PT.LINE_NUMBER
-        ,PRODUCT_CODE
+        ,P.PRODUCT_CODE
         ,PU.MAIN_UNIT
          ,PC.DETAIL
     ,PC.LIST_ORDER_NO
-                            ,CASE WHEN PRODUCT_CODE LIKE '150.01%' THEN '0'
- WHEN PRODUCT_CODE LIKE '150.02%' THEN '1'
- WHEN PRODUCT_CODE LIKE '150.03%' THEN '2'
+                            ,CASE WHEN P.PRODUCT_CODE LIKE '150.01%' THEN '0'
+ WHEN P.PRODUCT_CODE LIKE '150.02%' THEN '1'
+ WHEN P.PRODUCT_CODE LIKE '150.03%' THEN '2'
  end as tip
-        ,S.PRODUCT_NAME
         ,S.PRODUCT_UNIT_ID
-        FROM catalyst_prod_1.PRODUCT_TREE AS PT
-        LEFT JOIN catalyst_prod_1.STOCKS AS S ON S.STOCK_ID = PT.RELATED_ID
-        LEFT JOIN catalyst_prod_product.PRODUCT_UNIT AS PU ON PU.PRODUCT_UNIT_ID = S.PRODUCT_UNIT_ID
-        LEFT JOIN PRODUCT_CAT AS PC ON PC.PRODUCT_CATID=S.PRODUCT_CATID
+        FROM PRODUCT_TREE AS PT
+        LEFT JOIN STOCKS AS S ON S.STOCK_ID = PT.RELATED_ID
+        LEFT JOIN product AS P ON P.product_id = S.product_id
+        LEFT JOIN PRODUCT_UNIT AS PU ON PU.PRODUCT_UNIT_ID = S.PRODUCT_UNIT_ID
+        LEFT JOIN PRODUCT_CAT AS PC ON PC.PRODUCT_CATID = P.PRODUCT_CATID
         WHERE PT.STOCK_ID = #getstok.STOCK_ID# AND S.STOCK_ID IS NOT NULL
         ORDER BY LINE_NUMBER
     </cfquery>  
     <CFSET TREE_LEVEL_1=arrayNew(1)>          
     <cfif getTree.recordcount>
         <cfloop query="getTree">                    
-            <cfquery name="getTreelvl2" datasource="#dsn#_1">
-                SELECT S.PRODUCT_NAME
+            <cfquery name="getTreelvl2" datasource="#dsn#">
+                SELECT P.PRODUCT_NAME
                 ,S.STOCK_ID
                 ,PT.AMOUNT
                 ,PT.LINE_NUMBER
-                ,PRODUCT_CODE
+                ,P.PRODUCT_CODE
                 ,PU.MAIN_UNIT
                             ,PC.DETAIL
     ,PC.LIST_ORDER_NO
-                     ,CASE WHEN PRODUCT_CODE LIKE '150.01%' THEN '0'
- WHEN PRODUCT_CODE LIKE '150.02%' THEN '1'
- WHEN PRODUCT_CODE LIKE '150.03%' THEN '2'
+                     ,CASE WHEN P.PRODUCT_CODE LIKE '150.01%' THEN '0'
+ WHEN P.PRODUCT_CODE LIKE '150.02%' THEN '1'
+ WHEN P.PRODUCT_CODE LIKE '150.03%' THEN '2'
  end as tip
-                ,S.PRODUCT_NAME
                 ,S.PRODUCT_UNIT_ID
-                FROM catalyst_prod_1.PRODUCT_TREE AS PT
-                LEFT JOIN catalyst_prod_1.STOCKS AS S ON S.STOCK_ID = PT.RELATED_ID
-                LEFT JOIN catalyst_prod_product.PRODUCT_UNIT AS PU ON PU.PRODUCT_UNIT_ID = S.PRODUCT_UNIT_ID
-                LEFT JOIN PRODUCT_CAT AS PC ON PC.PRODUCT_CATID=S.PRODUCT_CATID
+                FROM PRODUCT_TREE AS PT
+                LEFT JOIN STOCKS AS S ON S.STOCK_ID = PT.RELATED_ID
+                LEFT JOIN product AS P ON P.product_id = S.product_id
+                LEFT JOIN PRODUCT_UNIT AS PU ON PU.PRODUCT_UNIT_ID = S.PRODUCT_UNIT_ID
+                LEFT JOIN PRODUCT_CAT AS PC ON PC.PRODUCT_CATID = P.PRODUCT_CATID
                 WHERE PT.STOCK_ID = #getTree.STOCK_ID#
                 ORDER BY LINE_NUMBER
             </cfquery>
             <CFSET TREE_LEVEL_2=arrayNew(1)>  
             <cfif getTreelvl2.recordcount>
                 <cfloop query="getTreelvl2">
-                    <cfquery name="getTreelvl3" datasource="#dsn#_1">
-                        SELECT S.PRODUCT_NAME
+                    <cfquery name="getTreelvl3" datasource="#dsn#">
+                        SELECT P.PRODUCT_NAME
                         ,S.STOCK_ID
                         ,PT.AMOUNT
                         ,PT.LINE_NUMBER
-                        ,PRODUCT_CODE
+                        ,P.PRODUCT_CODE
                           ,PC.DETAIL
     ,PC.LIST_ORDER_NO                                            
-                                            ,CASE WHEN PRODUCT_CODE LIKE '150.01%' THEN '0'
- WHEN PRODUCT_CODE LIKE '150.02%' THEN '1'
- WHEN PRODUCT_CODE LIKE '150.03%' THEN '2'
+                                            ,CASE WHEN P.PRODUCT_CODE LIKE '150.01%' THEN '0'
+ WHEN P.PRODUCT_CODE LIKE '150.02%' THEN '1'
+ WHEN P.PRODUCT_CODE LIKE '150.03%' THEN '2'
  end as tip
                         ,PU.MAIN_UNIT                                
                         ,S.PRODUCT_UNIT_ID
-                        FROM catalyst_prod_1.PRODUCT_TREE AS PT
-                        LEFT JOIN catalyst_prod_1.STOCKS AS S ON S.STOCK_ID = PT.RELATED_ID
-                        LEFT JOIN catalyst_prod_product.PRODUCT_UNIT AS PU ON PU.PRODUCT_UNIT_ID = S.PRODUCT_UNIT_ID
-                         LEFT JOIN PRODUCT_CAT AS PC ON PC.PRODUCT_CATID=S.PRODUCT_CATID
+                        FROM PRODUCT_TREE AS PT
+                        LEFT JOIN STOCKS AS S ON S.STOCK_ID = PT.RELATED_ID
+                        LEFT JOIN product AS P ON P.product_id = S.product_id
+                        LEFT JOIN PRODUCT_UNIT AS PU ON PU.PRODUCT_UNIT_ID = S.PRODUCT_UNIT_ID
+                        LEFT JOIN PRODUCT_CAT AS PC ON PC.PRODUCT_CATID = P.PRODUCT_CATID
                         WHERE PT.STOCK_ID = #getTreelvl2.STOCK_ID#
                         ORDER BY LINE_NUMBER
                     </cfquery>
