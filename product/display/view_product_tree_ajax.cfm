@@ -434,140 +434,118 @@ function toggleRowType(type) {
 
 /* ─── Init ─── */
 (function() {
-    function run() {
-        DevExpress.localization.locale('tr');
-        initTree();
-    }
-    function loadDX(cb) {
-        var h = document.head;
-        function addCSS(href) { var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = href; h.appendChild(l); }
-        function addJS(src, next) { var s = document.createElement('script'); s.src = src; s.onload = next; h.appendChild(s); }
-        addCSS('https://cdn3.devexpress.com/jslib/23.2.5/css/dx.common.css');
-        addCSS('https://cdn3.devexpress.com/jslib/23.2.5/css/dx.light.css');
-        addJS('https://cdn3.devexpress.com/jslib/23.2.5/js/dx.all.js', function() {
-            addJS('https://cdn3.devexpress.com/jslib/23.2.5/js/localization/dx.messages.tr.js', cb);
-        });
-    }
-    function init() {
-        if (typeof DevExpress !== 'undefined') { run(); } else { loadDX(run); }
-    }
+    function init() { initTree(); }
     if (document.readyState === 'complete') { init(); } else { window.addEventListener('load', init); }
 })();
 
-function initTree() {
-    $('##treeGrid').dxTreeList({
-        dataSource: treeData,
-        keyExpr: 'product_tree_id',
-        parentIdExpr: 'related_product_tree_id',
-        rootValue: 0,
-        showBorders: true, showRowLines: true, showColumnLines: true,
-        rowAlternationEnabled: true, columnAutoWidth: true,
-        allowColumnReordering: true, allowColumnResizing: true, columnResizingMode: 'widget',
-        autoExpandAll: true,
-        paging: { enabled: false },
-        filterRow: { visible: true },
-        headerFilter: { visible: true },
-        searchPanel: { visible: true, width: 240, placeholder: 'Ara...' },
-        sorting: { mode: 'multiple' },
-        columnChooser: { enabled: true, mode: 'select', title: 'Sütun Seçimi' },
-        scrolling: { mode: 'standard' },
-        onContentReady: function(e) {
-            var total = e.component.getVisibleRows().length;
-            document.getElementById('recordCount').textContent = total + ' satır';
-        },
-        columns: [
-            { dataField: 'line_number',
-              caption: '##',
-              width: 55, alignment: 'center', dataType: 'number'
-            },
-            {
-                caption: 'Satır',
-                minWidth: 220,
-                cellTemplate: function(c, o) {
-                    var d = o.data;
-                    var isOp = d.operation_type_id > 0 && d.component_stock_id === 0;
-                    if (isOp) {
-                        $('<span>').addClass('badge bg-warning text-dark me-1').html('<i class="fas fa-cogs"></i>').appendTo(c);
-                        $('<span>').text(d.operation_type_name || 'Operasyon').appendTo(c);
-                    } else {
-                        $('<span>').addClass('fw-semibold me-1').text(d.component_stock_code || '').appendTo(c);
-                        if (d.component_name) {
-                            $('<span>').addClass('small text-muted').text('— ' + d.component_name).appendTo(c);
-                        }
-                    }
-                }
-            },
-            { dataField: 'amount',
-              caption: 'Miktar',
-              width: 90, alignment: 'right', dataType: 'number',
-              format: { type: 'fixedPoint', precision: 4 }
-            },
-            { dataField: 'unit_name',
-              caption: 'Birim',
-              width: 75
-            },
-            { dataField: 'station_name',
-              caption: 'İstasyon',
-              width: 160,
-              cellTemplate: function(c, o) { $('<span>').addClass('small').text(o.value || '-').appendTo(c); }
-            },
-            { dataField: 'fire_rate',
-              caption: 'Fire %',
-              width: 70, alignment: 'right', dataType: 'number',
-              format: { type: 'fixedPoint', precision: 2 },
-              cellTemplate: function(c, o) {
-                  if (o.value) $('<span>').addClass('small text-warning').text(o.value + '%').appendTo(c);
-              }
-            },
-            {
-              caption: 'Bayraklar', width: 120, allowSorting: false, allowFiltering: false,
-              cellTemplate: function(c, o) {
-                  var d = o.data;
-                  if (d.is_phantom)   $('<span>').addClass('badge bg-warning text-dark small me-1').text('Sanal').appendTo(c);
-                  if (d.is_configure) $('<span>').addClass('badge bg-info text-dark small me-1').text('Konfigüre').appendTo(c);
-                  if (d.is_sevk)      $('<span>').addClass('badge bg-secondary small').text('Sevk').appendTo(c);
-              }
-            },
-            { dataField: 'detail',
-              caption: 'Detay',
-              minWidth: 120,
-              cellTemplate: function(c, o) { $('<span>').addClass('small text-muted').text(o.value || '').appendTo(c); }
-            },
-            {
-                caption: 'İşlemler', width: 135, alignment: 'center', allowSorting: false, allowFiltering: false,
-                cellTemplate: function(c, o) {
-                    var d = o.data;
-                    var g = $('<div>').addClass('d-flex gap-1 justify-content-center');
-                    if (d.is_sub_bom) {
-                        /* Alt ağaç satırı — kendi BOM sayfasına yönlendir */
-                        $('<a>').addClass('btn btn-sm btn-outline-secondary')
-                            .attr('title', 'Kendi Ağacını Görüntüle')
-                            .attr('href', 'index.cfm?fuseaction=product.view_product_tree&stock_id=' + d.bom_owner_stock_id)
-                            .html('<i class="fas fa-external-link-alt"></i>')
-                            .appendTo(g);
-                    } else {
-                        $('<button>').addClass('btn btn-sm btn-outline-success').attr('title', 'Alt Satır Ekle')
-                            .html('<i class="fas fa-plus"></i>')
-                            .on('click', function() { openAddModal(d.product_tree_id); })
-                            .appendTo(g);
-                        $('<button>').addClass('btn btn-sm btn-outline-primary').attr('title', 'Düzenle')
-                            .html('<i class="fas fa-edit"></i>')
-                            .on('click', function() { openEditModal(d); })
-                            .appendTo(g);
-                        $('<button>').addClass('btn btn-sm btn-outline-danger').attr('title', 'Sil')
-                            .html('<i class="fas fa-trash"></i>')
-                            .on('click', function() { deleteRow(d.product_tree_id); })
-                            .appendTo(g);
-                    }
-                    g.appendTo(c);
-                }
-            }
-        ]
-    });
+function escapeHtml(v) {
+    return String(v == null ? '' : v)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
+function uiNotify(message, type) {
+    if (window.DevExpress && DevExpress.ui && typeof DevExpress.ui.notify === 'function') {
+        DevExpress.ui.notify(message, type || 'info', 2500);
+    } else {
+        alert(message);
+    }
+}
+
+function uiConfirm(message, title, cb) {
+    if (window.DevExpress && DevExpress.ui && DevExpress.ui.dialog && typeof DevExpress.ui.dialog.confirm === 'function') {
+        DevExpress.ui.dialog.confirm(message, title || 'Onay').then(cb);
+    } else {
+        cb(confirm(message));
+    }
+}
+
+function formatNumber(v, digits) {
+    var n = Number(v || 0);
+    return isNaN(n) ? '0' : n.toFixed(digits || 0);
+}
+
+function initTree() { refreshTree(); }
+
 function refreshTree() {
-    $('##treeGrid').dxTreeList('instance').option('dataSource', treeData);
+    var rows = Array.isArray(treeData) ? treeData.slice() : [];
+    var childrenByParent = {};
+    rows.forEach(function(row) {
+        var pid = Number(row.related_product_tree_id || 0);
+        if (!childrenByParent[pid]) childrenByParent[pid] = [];
+        childrenByParent[pid].push(row);
+    });
+    Object.keys(childrenByParent).forEach(function(pid) {
+        childrenByParent[pid].sort(function(a, b) {
+            return Number(a.line_number || 0) - Number(b.line_number || 0) ||
+                   Number(a.product_tree_id || 0) - Number(b.product_tree_id || 0);
+        });
+    });
+
+    var html = [];
+    html.push('<div class="table-responsive">');
+    html.push('<table class="table table-sm table-bordered align-middle mb-0">');
+    html.push('<thead class="table-light"><tr>');
+    html.push('<th style="width:60px">##</th><th>Satır</th><th style="width:100px">Miktar</th><th style="width:90px">Birim</th><th style="width:170px">İstasyon</th><th style="width:90px">Fire %</th><th style="width:140px">Bayraklar</th><th>Detay</th><th style="width:160px">İşlemler</th>');
+    html.push('</tr></thead><tbody>');
+
+    function renderRows(parentId, depth) {
+        var list = childrenByParent[parentId] || [];
+        list.forEach(function(d) {
+            var isOp = Number(d.operation_type_id || 0) > 0 && Number(d.component_stock_id || 0) === 0;
+            var flags = [];
+            if (d.is_phantom) flags.push('<span class="badge bg-warning text-dark me-1">Sanal</span>');
+            if (d.is_configure) flags.push('<span class="badge bg-info text-dark me-1">Konfigüre</span>');
+            if (d.is_sevk) flags.push('<span class="badge bg-secondary">Sevk</span>');
+            var actions = [];
+            if (d.is_sub_bom) {
+                actions.push('<a class="btn btn-sm btn-outline-secondary" title="Kendi Ağacını Görüntüle" href="index.cfm?fuseaction=product.view_product_tree&stock_id=' + Number(d.bom_owner_stock_id || 0) + '"><i class="fas fa-external-link-alt"></i></a>');
+            } else {
+                actions.push('<button type="button" class="btn btn-sm btn-outline-success" title="Alt Satır Ekle" onclick="openAddModal(' + Number(d.product_tree_id || 0) + ')"><i class="fas fa-plus"></i></button>');
+                actions.push('<button type="button" class="btn btn-sm btn-outline-primary" title="Düzenle" onclick="openEditModalById(' + Number(d.product_tree_id || 0) + ')"><i class="fas fa-edit"></i></button>');
+                actions.push('<button type="button" class="btn btn-sm btn-outline-danger" title="Sil" onclick="deleteRow(' + Number(d.product_tree_id || 0) + ')"><i class="fas fa-trash"></i></button>');
+            }
+
+            html.push('<tr>');
+            html.push('<td class="text-center">' + escapeHtml(d.line_number || 0) + '</td>');
+            html.push('<td><div style="padding-left:' + (depth * 18) + 'px">');
+            if (isOp) {
+                html.push('<span class="badge bg-warning text-dark me-1"><i class="fas fa-cogs"></i></span>' + escapeHtml(d.operation_type_name || 'Operasyon'));
+            } else {
+                html.push('<span class="fw-semibold me-1">' + escapeHtml(d.component_stock_code || '') + '</span>');
+                if (d.component_name) html.push('<span class="small text-muted">— ' + escapeHtml(d.component_name) + '</span>');
+            }
+            html.push('</div></td>');
+            html.push('<td class="text-end">' + escapeHtml(formatNumber(d.amount, 4)) + '</td>');
+            html.push('<td>' + escapeHtml(d.unit_name || '') + '</td>');
+            html.push('<td>' + escapeHtml(d.station_name || '-') + '</td>');
+            html.push('<td class="text-end">' + escapeHtml(formatNumber(d.fire_rate, 2)) + '</td>');
+            html.push('<td>' + flags.join('') + '</td>');
+            html.push('<td><span class="small text-muted">' + escapeHtml(d.detail || '') + '</span></td>');
+            html.push('<td><div class="d-flex gap-1 justify-content-center">' + actions.join('') + '</div></td>');
+            html.push('</tr>');
+
+            renderRows(Number(d.product_tree_id || 0), depth + 1);
+        });
+    }
+
+    renderRows(0, 0);
+    if (!rows.length) {
+        html.push('<tr><td colspan="9" class="text-center text-muted py-3">Kayıt bulunamadı.</td></tr>');
+    }
+    html.push('</tbody></table></div>');
+
+    document.getElementById('treeGrid').innerHTML = html.join('');
+    document.getElementById('recordCount').textContent = rows.length + ' satır';
+}
+
+function openEditModalById(id) {
+    var row = (Array.isArray(treeData) ? treeData : []).find(function(x) { return Number(x.product_tree_id) === Number(id); });
+    if (!row) return;
+    openEditModal(row);
 }
 
 function buildParentSelect(excludeId) {
@@ -651,16 +629,16 @@ function saveRow() {
     if (rowType === 'malzeme') {
         var compStockId = document.getElementById('f_component_stock_id').value;
         if (!compStockId || compStockId == '0') {
-            DevExpress.ui.notify('Bileşen stok seçimi zorunludur.', 'warning', 2500); return;
+            uiNotify('Bileşen stok seçimi zorunludur.', 'warning'); return;
         }
         var amount = parseFloat(document.getElementById('f_amount').value);
         if (isNaN(amount) || amount <= 0) {
-            DevExpress.ui.notify('Miktar sıfırdan büyük olmalıdır.', 'warning', 2500); return;
+            uiNotify('Miktar sıfırdan büyük olmalıdır.', 'warning'); return;
         }
     } else {
         var opTypeId = document.getElementById('f_operation_type_id').value;
         if (!opTypeId || opTypeId == '0') {
-            DevExpress.ui.notify('Operasyon tipi seçimi zorunludur.', 'warning', 2500); return;
+            uiNotify('Operasyon tipi seçimi zorunludur.', 'warning'); return;
         }
     }
 
@@ -693,7 +671,7 @@ function saveRow() {
         btn.innerHTML = '<i class="fas fa-save me-1"></i>Kaydet';
         if (res && res.success) {
             bootstrap.Modal.getInstance(document.getElementById('rowModal')).hide();
-            DevExpress.ui.notify(res.mode === 'added' ? 'Satır eklendi.' : 'Satır güncellendi.', 'success', 2500);
+            uiNotify(res.mode === 'added' ? 'Satır eklendi.' : 'Satır güncellendi.', 'success');
             if (res.row) {
                 if (res.mode === 'added') {
                     treeData.push(res.row);
@@ -707,36 +685,36 @@ function saveRow() {
                 location.reload();
             }
         } else {
-            DevExpress.ui.notify((res && res.message) || 'Kayıt başarısız.', 'error', 3500);
+            uiNotify((res && res.message) || 'Kayıt başarısız.', 'error');
         }
     }, 'json').fail(function() {
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-save me-1"></i>Kaydet';
-        DevExpress.ui.notify('Sunucu hatası.', 'error', 3000);
+        uiNotify('Sunucu hatası.', 'error');
     });
 }
 
 function deleteRow(id) {
     var row = treeData.find(function(x) { return x.product_tree_id === id; });
     var label = row ? (row.component_stock_code || row.operation_type_name || ('ID:' + id)) : ('ID:' + id);
-    DevExpress.ui.dialog.confirm(
+    uiConfirm(
         '"' + label + '" satırını ve tüm alt satırlarını silmek istiyor musunuz?',
-        'Silme Onayı'
-    ).then(function(ok) {
+        'Silme Onayı',
+        function(ok) {
         if (!ok) return;
         $.post('/product/form/delete_product_tree_row.cfm',
             { product_tree_id: id, root_stock_id: rootStockId },
             function(res) {
                 if (res && res.success) {
-                    DevExpress.ui.notify('Satır silindi.', 'success', 2500);
+                    uiNotify('Satır silindi.', 'success');
                     var deleted = res.deleted_ids || [id];
                     treeData = treeData.filter(function(x) { return deleted.indexOf(x.product_tree_id) === -1; });
                     refreshTree();
                     document.getElementById('recordCount').textContent = treeData.length + ' satır';
                 } else {
-                    DevExpress.ui.notify((res && res.message) || 'Silme başarısız.', 'error', 3500);
+                    uiNotify((res && res.message) || 'Silme başarısız.', 'error');
                 }
-            }, 'json').fail(function() { DevExpress.ui.notify('Sunucu hatası.', 'error', 3000); });
+            }, 'json').fail(function() { uiNotify('Sunucu hatası.', 'error'); });
     });
 }
 </script>
