@@ -188,36 +188,16 @@
 
         $("#CurrentTree").html($wrapper.html());
 
-        function runScriptsInOrder(index) {
-            if (index >= scripts.length) return;
-            var s = scripts[index];
-            if (s.type && s.type !== "text/javascript" && s.type !== "application/javascript") {
-                runScriptsInOrder(index + 1);
-                return;
-            }
-
-            /* Sayfada zaten yüklü jQuery'yi tekrar yükleyip plugin'leri sıfırlamayalım */
-            if (s.src && s.src.toLowerCase().indexOf("jquery") !== -1) {
-                runScriptsInOrder(index + 1);
-                return;
-            }
-
+        scripts.forEach(function(s){
+            if (s.type && s.type !== "text/javascript" && s.type !== "application/javascript") return;
             var tag = document.createElement("script");
-            tag.async = false;
-
             if (s.src) {
                 tag.src = s.src;
-                tag.onload = function() { runScriptsInOrder(index + 1); };
-                tag.onerror = function() { runScriptsInOrder(index + 1); };
-                document.body.appendChild(tag);
-            } else {
-                if (s.text) tag.text = s.text;
-                document.body.appendChild(tag);
-                runScriptsInOrder(index + 1);
+            } else if (s.text) {
+                tag.text = s.text;
             }
-        }
-
-        runScriptsInOrder(0);
+            document.body.appendChild(tag);
+        });
     }).fail(function(xhr){
         var msg = "Ürün ağacı yüklenemedi.";
         if (xhr && xhr.status) msg += " (HTTP " + xhr.status + ")";
