@@ -162,6 +162,20 @@
 </div>
 
 </div><!--- row --->
+
+<!--- ─── Ürün / Kumaş BOM Ağacı ─── --->
+<div id="productTreeCard" style="display:none;" class="mt-3">
+    <div class="grid-card">
+        <div class="grid-card-header">
+            <div class="grid-card-header-title"><i class="fas fa-sitemap"></i>Ürün / Kumaş BOM Ağacı</div>
+            <span class="record-count" id="bomRecordCount"></span>
+        </div>
+        <div class="card-body p-2">
+            <div id="productBomTree"></div>
+        </div>
+    </div>
+</div>
+
 </div><!--- px-3 --->
 
 <!--- ─── Popup container'lar ─── --->
@@ -178,6 +192,7 @@ window.addEventListener('load', function() {
     if (typeof DevExpress !== 'undefined') DevExpress.localization.locale('tr');
     initCompanySelect();
     initPopups();
+    initRecipeTree();
     <cfif isEdit>
     loadExistingRecipe(#editStockId#);
     loadProductsByCompany(#getColor.company_id#, #getColor.product_id#);
@@ -221,17 +236,21 @@ function initCompanySelect() {
             $('##h_company_id').val(e.value || '');
             $('##h_product_id').val('');
             if (e.value) loadProductsByCompany(e.value, null);
-            else clearProductSelect();
+            else { clearProductSelect(); clearProductTree(); }
         }
     });
 }
 
 function loadProductsByCompany(companyId, selectedProductId) {
     $.get('/colors/api/get_company_products.cfm', { company_id: companyId }, function(res) {
-        if (!res || !res.length) { clearProductSelect(); return; }
+        if (!res || !res.length) { clearProductSelect(); clearProductTree(); return; }
         if ($('##productSelect').data('dxSelectBox')) {
             $('##productSelect').dxSelectBox('instance').option('dataSource', res);
-            if (selectedProductId) $('##productSelect').dxSelectBox('instance').option('value', selectedProductId);
+            if (selectedProductId) {
+                $('##productSelect').dxSelectBox('instance').option('value', selectedProductId);
+                var item = res.find(function(x) { return x.product_id == selectedProductId; });
+                if (item && item.stock_id) loadProductTree(item.stock_id);
+            }
         } else {
             $('##productSelect').dxSelectBox({
                 dataSource: res,
@@ -241,8 +260,17 @@ function loadProductsByCompany(companyId, selectedProductId) {
                 searchExpr: ['product_name','stock_code'],
                 placeholder: 'Urun / Kumas sec...',
                 value: selectedProductId || null,
-                onValueChanged: function(e) { $('##h_product_id').val(e.value || ''); }
+                onValueChanged: function(e) {
+                    $('##h_product_id').val(e.value || '');
+                    var sel = e.component.option('selectedItem');
+                    if (sel && sel.stock_id) loadProductTree(sel.stock_id);
+                    else clearProductTree();
+                }
             });
+            if (selectedProductId) {
+                var item = res.find(function(x) { return x.product_id == selectedProductId; });
+                if (item && item.stock_id) loadProductTree(item.stock_id);
+            }
         }
     }, 'json');
 }
@@ -253,23 +281,115 @@ function clearProductSelect() {
     }
 }
 
+function loadProductTree(stockId) {
+    document.getElementById('bomRecordCount').textContent = 'Yükleniyor...';
+    document.getElementById('productTreeCard').style.display = '';
+    $.get('/colors/api/get_product_tree.cfm', { stock_id: stockId }, function(data) {
+        if (!data || !data.length) {
+            document.getElementById('bomRecordCount').textContent = 'BOM bulunamadı';
+            if ($('##productBomTree').data('dxTreeList')) {
+                $('##productBomTree').dxTreeList('instance').option('dataSource', []);
+            }
+            return;
+        }
+        document.getElementById('bomRecordCount').textContent = data.length + ' satır';
+        if ($('##productBomTree').data('dxTreeList')) {
+            $('##productBomTree').dxTreeList('instance').option('dataSource', data);
+            return;
+        }
+        $('##productBomTree').dxTreeList({
+            dataSource        : data,
+            keyExpr           : 'product_tree_id',
+            parentIdExpr      : 'related_product_tree_id',
+            rootValue         : 0,
+            showBorders       : true,
+            showRowLines      : true,
+            showColumnLines   : true,
+            rowAlternationEnabled: true,
+            columnAutoWidth   : true,
+            allowColumnReordering: true,
+            allowColumnResizing : true,
+            columnResizingMode  : 'widget',
+            autoExpandAll     : true,
+            paging            : { enabled: false },
+            filterRow         : { visible: true },
+            searchPanel       : { visible: true, width: 220, placeholder: 'Ara...' },
+            sorting           : { mode: 'multiple' },
+            scrolling         : { mode: 'standard' },
+            onContentReady    : function(e) {
+                var total = e.component.getVisibleRows().length;
+                document.getElementById('bomRecordCount').textContent = total + ' satır';
+            },
+            columns: [
+                { dataField: 'line_number', caption: '##', width: 50, alignment: 'center', dataType: 'number' },
+                {
+                    caption: 'Bileşen', minWidth: 220,
+                    cellTemplate: function(c, o) {
+                        var d = o.data;
+                        var isOp = d.operation_type_id > 0 && d.component_stock_id === 0;
+                        if (isOp) {
+                            $('<span>').addClass('badge bg-warning text-dark me-1').html('<i class="fas fa-cogs"></i>').appendTo(c);
+                            $('<span>').text(d.operation_type_name || 'Operasyon').appendTo(c);
+                        } else {
+                            $('<span>').addClass('fw-semibold me-1').text(d.component_stock_code || '').appendTo(c);
+                            if (d.component_name) $('<span>').addClass('small text-muted').text('— ' + d.component_name).appendTo(c);
+                        }
+                    }
+                },
+                { dataField: 'amount', caption: 'Miktar', width: 90, alignment: 'right', dataType: 'number',
+                  format: { type: 'fixedPoint', precision: 4 } },
+                { dataField: 'unit_name', caption: 'Birim', width: 70 },
+                { dataField: 'station_name', caption: 'İstasyon', width: 150,
+                  cellTemplate: function(c, o) { $('<span>').addClass('small').text(o.value || '-').appendTo(c); } },
+                { dataField: 'fire_rate', caption: 'Fire %', width: 70, alignment: 'right', dataType: 'number',
+                  format: { type: 'fixedPoint', precision: 2 },
+                  cellTemplate: function(c, o) {
+                      if (o.value) $('<span>').addClass('small text-warning').text(o.value + '%').appendTo(c);
+                  }
+                },
+                { caption: 'Bayraklar', width: 120, allowSorting: false, allowFiltering: false,
+                  cellTemplate: function(c, o) {
+                      var d = o.data;
+                      if (d.is_phantom)   $('<span>').addClass('badge bg-warning text-dark small me-1').text('Sanal').appendTo(c);
+                      if (d.is_configure) $('<span>').addClass('badge bg-info text-dark small me-1').text('Konfigüre').appendTo(c);
+                      if (d.is_sevk)      $('<span>').addClass('badge bg-secondary small').text('Sevk').appendTo(c);
+                  }
+                },
+                { dataField: 'detail', caption: 'Detay', minWidth: 120,
+                  cellTemplate: function(c, o) { $('<span>').addClass('small text-muted').text(o.value || '').appendTo(c); } }
+            ]
+        });
+    }, 'json');
+}
+
+function clearProductTree() {
+    document.getElementById('productTreeCard').style.display = 'none';
+    if ($('##productBomTree').data('dxTreeList')) {
+        $('##productBomTree').dxTreeList('instance').option('dataSource', []);
+    }
+}
+
 function loadExistingRecipe(stockId) {
     $.get('/colors/api/get_recipe.cfm', { stock_id: stockId }, function(res) {
         if (!res || !res.length) return;
-        var html = '<ul class="list-group"><li data-id="0" class="list-group-item py-1 px-2">'
-                 + '<ul class="urun_agac_liste" id="urun_0_0" style="margin-top:8px">';
-        res.forEach(function(row, idx) {
-            var tip = parseInt(row.tip) || 0;
-            html += '<li style="margin-top:5px" data-id="' + row.stock_id + '" data-parent="0">'
-                  + '<div style="display:flex;align-items:center;gap:6px">'
-                  + '<input type="text" style="width:25px" value="' + (idx + 1) + '">'
-                  + escHtml(row.stock_code || '') + ' ' + escHtml(row.product_name || '')
-                  + '<button style="margin-inline-start:auto" class="btn btn-sm btn-danger" onclick="reminner(this,0,0)">-</button>'
-                  + '<input type="number" class="form-control form-control-sm RT_' + tip + '" onchange="RenkHesapla()" style="width:70px" value="' + (parseFloat(row.amount) || 0) + '">'
-                  + '</div></li>';
+        recipeData = res.map(function(row) {
+            return {
+                product_tree_id        : row.product_tree_id || row.row_id,
+                related_product_tree_id: row.related_product_tree_id || 0,
+                stock_id               : row.stock_id || 0,
+                stock_code             : row.stock_code || '',
+                product_name           : row.product_name || '',
+                amount                 : parseFloat(row.amount) || 0,
+                unit_id                : row.unit_id || 0,
+                unit_name              : '',
+                tip                    : parseInt(row.tip) || 0,
+                line_number            : row.line_number || 0,
+                is_operation           : parseInt(row.is_operation) || 0,
+                operation_type_id      : row.operation_type_id || 0,
+                operation_type_name    : ''
+            };
         });
-        html += '</ul></li></ul>';
-        $('##CurrentTree').html(html);
+        initRecipeTree();
         RenkHesapla();
     }, 'json');
 }
@@ -280,12 +400,26 @@ function saveColor() {
     if (!companyId || companyId == '0') { DevExpress.ui.notify('Musteri secimi zorunludur.', 'warning', 2500); return; }
 
     var recipeItems = [];
-    $('##CurrentTree .urun_agac_liste li[data-id]').each(function() {
-        var sid = parseInt($(this).data('id'));
-        var amt = parseFloat($(this).find('input[type=number]').val()) || 0;
-        if (sid > 0) recipeItems.push({ stock_id: sid, amount: amt, unit_id: 0 });
+    recipeData.forEach(function(row) {
+        if (row.related_product_tree_id !== 0) return; /* sadece kök öğeleri işle; çocuklar operation grubuyla eklenir */
+        if (row.is_operation) {
+            var gKey = 'gop_' + Math.abs(row.product_tree_id);
+            recipeItems.push({ stock_id: 0, amount: row.amount || 1, unit_id: 0,
+                               is_operation: 1, operation_type_id: row.operation_type_id,
+                               line_order: row.line_number, parent_id: gKey });
+            recipeData.filter(function(c) { return c.related_product_tree_id === row.product_tree_id; })
+                      .forEach(function(child) {
+                recipeItems.push({ stock_id: child.stock_id, amount: child.amount, unit_id: child.unit_id || 0,
+                                   is_operation: 0, operation_type_id: 0,
+                                   line_order: child.line_number, parent_id: gKey });
+            });
+        } else {
+            recipeItems.push({ stock_id: row.stock_id, amount: row.amount, unit_id: row.unit_id || 0,
+                               is_operation: 0, operation_type_id: 0,
+                               line_order: row.line_number, parent_id: '' });
+        }
     });
-    if (!recipeItems.length) { DevExpress.ui.notify('Recete bos olamaz.', 'warning', 2500); return; }
+    if (!recipeItems.length) { DevExpress.ui.notify('Reçete boş olamaz.', 'warning', 2500); return; }
 
     var btn = document.getElementById('btnSave');
     btn.disabled = true;
@@ -309,7 +443,7 @@ function saveColor() {
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-save"></i> Kaydet';
         if (res && res.success) {
-            window.location.href = 'index.cfm?fuseaction=colors.list_colors&success=' + (res.mode || 'added');
+        //    window.location.href = 'index.cfm?fuseaction=colors.list_colors&success=' + (res.mode || 'added');
         } else {
             DevExpress.ui.notify((res && res.message) || 'Kayit basarisiz.', 'error', 3500);
         }

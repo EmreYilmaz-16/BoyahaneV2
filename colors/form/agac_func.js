@@ -1,281 +1,266 @@
-var row_num = 0;
-var _prodPopupParentSid = 0;
-var _prodPopupRowNum   = 0;
+var _prodPopupParentTreeId = 0;
 var OperationModal = { show: function(){ if(typeof operationPopup !== 'undefined' && operationPopup) operationPopup.show(); } };
 var ProductModal   = { show: function(){ if(typeof renkEklePopup  !== 'undefined' && renkEklePopup)  renkEklePopup.show();  } };
-var denememem = "";
-function OpenOperationPopup() {
-    OperationModal.show()
+
+var recipeData  = [];
+var _tempIdCtr  = 0;
+function nextTempId() { return --_tempIdCtr; }
+
+/* ─── dxTreeList: başlatma / yenileme ─── */
+function initRecipeTree() {
+    if ($('#CurrentTree').data('dxTreeList')) { refreshRecipeTree(); return; }
+    $('#CurrentTree').dxTreeList({
+        dataSource          : new DevExpress.data.ArrayStore({ key: 'product_tree_id', data: recipeData }),
+        keyExpr             : 'product_tree_id',
+        parentIdExpr        : 'related_product_tree_id',
+        rootValue           : 0,
+        showBorders         : true,
+        showRowLines        : true,
+        showColumnLines     : true,
+        rowAlternationEnabled: true,
+        columnAutoWidth     : true,
+        autoExpandAll       : true,
+        paging              : { enabled: false },
+        editing             : { mode: 'cell', allowUpdating: true, selectTextOnEditStart: true, startEditAction: 'click' },
+        onCellValueChanged  : function(e) { if (e.column.dataField === 'amount') RenkHesapla(); },
+        columns: [
+            {
+                dataField  : 'line_number',
+                caption    : '#',
+                width      : 55,
+                alignment  : 'center',
+                dataType   : 'number',
+                allowEditing: true
+            },
+            {
+                caption     : 'Bileşen',
+                minWidth    : 200,
+                allowEditing: false,
+                cellTemplate: function(c, o) {
+                    var d = o.data;
+                    if (d.is_operation) {
+                        $('<span>').addClass('badge bg-warning text-dark me-1').html('<i class="fas fa-cogs"></i>').appendTo(c);
+                        $('<span>').text(d.operation_type_name || 'Operasyon').appendTo(c);
+                    } else {
+                        if (d.stock_code) $('<span>').addClass('fw-semibold me-1').text(d.stock_code).appendTo(c);
+                        if (d.product_name) $('<span>').addClass('text-muted small').text(d.stock_code ? '— ' + d.product_name : d.product_name).appendTo(c);
+                    }
+                }
+            },
+            {
+                dataField  : 'amount',
+                caption    : 'Miktar',
+                width      : 110,
+                alignment  : 'right',
+                dataType   : 'number',
+                allowEditing: true,
+                format     : { type: 'fixedPoint', precision: 4 }
+            },
+            {
+                caption     : 'Tip',
+                width       : 110,
+                allowEditing: false,
+                allowSorting: false,
+                cellTemplate: function(c, o) {
+                    var d = o.data;
+                    if (!d.is_operation) {
+                        var t      = parseInt(d.tip) || 0;
+                        var labels = ['Boyarmadde', 'Yardımcı', 'Kimyasal'];
+                        var cls    = ['bg-danger', 'bg-warning text-dark', 'bg-info text-dark'];
+                        if (labels[t]) $('<span>').addClass('badge ' + cls[t] + ' small').text(labels[t]).appendTo(c);
+                    }
+                }
+            },
+            {
+                caption     : 'İşlemler',
+                width       : 90,
+                alignment   : 'center',
+                allowSorting: false,
+                allowEditing: false,
+                cellTemplate: function(c, o) {
+                    var d = o.data;
+                    var g = $('<div>').addClass('d-flex gap-1 justify-content-center');
+                    if (!d.is_operation) {
+                        $('<button>').addClass('btn btn-sm btn-outline-success p-1').attr('title', 'Alt Satır Ekle')
+                            .html('<i class="fas fa-plus"></i>')
+                            .on('click', function(ev) { ev.stopPropagation(); OpenProductpopup(d.product_tree_id); })
+                            .appendTo(g);
+                    }
+                    $('<button>').addClass('btn btn-sm btn-outline-danger p-1').attr('title', 'Sil')
+                        .html('<i class="fas fa-trash"></i>')
+                        .on('click', function(ev) { ev.stopPropagation(); removeRecipeRow(d.product_tree_id); })
+                        .appendTo(g);
+                    g.appendTo(c);
+                }
+            }
+        ]
+    });
 }
+
+function refreshRecipeTree() {
+    var inst = $('#CurrentTree').data('dxTreeList') ? $('#CurrentTree').dxTreeList('instance') : null;
+    if (!inst) { initRecipeTree(); return; }
+    inst.option('dataSource', new DevExpress.data.ArrayStore({ key: 'product_tree_id', data: recipeData }));
+}
+
+function removeRecipeRow(treeId) {
+    var toRemove = [treeId];
+    (function collectChildren(pid) {
+        recipeData.forEach(function(r) {
+            if (r.related_product_tree_id === pid) {
+                toRemove.push(r.product_tree_id);
+                collectChildren(r.product_tree_id);
+            }
+        });
+    })(treeId);
+    recipeData = recipeData.filter(function(r) { return toRemove.indexOf(r.product_tree_id) === -1; });
+    refreshRecipeTree();
+    RenkHesapla();
+}
+
+/* ─── Operasyon popup ─── */
+function OpenOperationPopup() { OperationModal.show(); }
+
+/* ─── Boya arama popup ─── */
 function SearchProd() {
-    var ResultArea = $("#Div_1");
-    var keyword = $("#Modkeyword").val();
+    var keyword = $('#Modkeyword').val();
     $.ajax({
-        url: "cfc/boyahane.cfc?method=getProdTreeWithName_yeni&keyword=" + keyword, success: function (retdat) {
-            var obj_list = (Array.isArray(retdat) ? retdat : JSON.parse(retdat))
-            SatirDoldur(obj_list)
-
-        }
-    })
+        url    : 'cfc/boyahane.cfc?method=getProdTreeWithName_yeni&keyword=' + encodeURIComponent(keyword),
+        success: function(retdat) { SatirDoldur(Array.isArray(retdat) ? retdat : JSON.parse(retdat)); }
+    });
 }
-function keypp(elem,ev){
-    if(ev.keyCode==13){
-        SearchProd()
-    }
-}
-function keypps(elem,ev){
-    if(ev.keyCode==13){
-        SearchProd_2()
-    }
-}
+function keypp(elem, ev)  { if (ev.keyCode === 13) SearchProd();   }
+function keypps(elem, ev) { if (ev.keyCode === 13) SearchProd_2(); }
+/* Popup sonuç listesi — sadece önizleme, ağaca eklemez */
 function SatirDoldur(data) {
-    DonecekData = "";
-    for (let i = 0; i < data.length; i++) {
-        var Urun = "<ul class='list-group'>";
-        Urun += "<li class='list-group-item'>" + data[i].PRODUCT_NAME
-        Urun += "<button style='float:right' class='btn btn-sm btn-danger'onclick='AgacaEkle(" + data[i].STOCK_ID + ")'>+</button>"
-        var o_lvl_1 = data[i].TREE;
-        if (o_lvl_1.length) {
-            Urun += "<ul>";
-            for (let j = 0; j < o_lvl_1.length; j++) {
-                Urun += "<li>" + o_lvl_1[j].PRODUCT_NAME
-                Urun += "</li>"
+    var html = '';
+    for (var i = 0; i < data.length; i++) {
+        html += '<ul class="list-group"><li class="list-group-item py-1">' + escHtml(data[i].PRODUCT_NAME || '');
+        html += '<button style="float:right" class="btn btn-sm btn-success" onclick="AgacaEkle(' + data[i].STOCK_ID + ')">+</button>';
+        var tree = data[i].TREE || [];
+        if (tree.length) {
+            html += '<ul>';
+            for (var j = 0; j < tree.length; j++) {
+                if (tree[j].IS_OPERATION == 1) continue;
+                html += '<li class="small text-muted">' + escHtml(tree[j].PRODUCT_NAME || '') + '</li>';
             }
-            Urun += "</ul>";
+            html += '</ul>';
         }
-        Urun += "</li>"
-        Urun += "</ul>";
-        DonecekData += Urun;
+        html += '</li></ul>';
     }
-
-    $("#Div_1").html(DonecekData)
-
+    $('#Div_1').html(html);
 }
+
+/* Seçilen ürünün BOM satırlarını recipeData'ya kök seviyede ekle */
 function SatirDoldur_1(data) {
-    DonecekData = "";
-    for (let i = 0; i < data.length; i++) {
-        var Urun = "<ul class='list-group'>";
-        Urun += "<li data-id='" + data[i].STOCK_ID + "' data-parent='0' data-row='" + row_num + "' class='list-group-item'><input type='text' id='line_order_" + row_num + "_" + data[i].STOCK_ID + "' value='" + row_num + "'>" + data[i].PRODUCT_NAME
-        Urun += "<button style='float:right' class='btn btn-sm btn-warning'onclick='remProd(this," + data[i].STOCK_ID + "," + row_num + ")'>-</button><button style='float:right' class='btn btn-sm btn-primary'onclick='OpenProductpopup(" + data[i].STOCK_ID + "," + row_num + ")'>+</button>"
-        var o_lvl_1 = data[i].TREE;
-        if (o_lvl_1.length) {
-            Urun += "<ul class='urun_agac_liste' style='margin-top:15px' id='urun_" + row_num + "_" + data[i].STOCK_ID + "'>";
-            for (let j = 0; j < o_lvl_1.length; j++) {
-                Urun += "<li style='margin-top:5px' data-id='" + o_lvl_1[j].STOCK_ID + "' data-parent='" + data[i].STOCK_ID + "' ><div style='display:flex'><input type='text' style='width:25px' id='line_order_" + row_num + "_" + o_lvl_1[j].STOCK_ID + "' value='" + o_lvl_1[j].LINE_NUMBER + "'>" + o_lvl_1[j].PRODUCT_NAME
-                Urun += "<button style='float:right; margin-inline-start: auto' class='btn btn-sm btn-danger'onclick='reminner(this," + data[i].STOCK_ID + "," + row_num + ")'>-</button><input type='number' class='form-control form-control-sm RT_" + o_lvl_1[j].TIP + "' onchange='RenkHesapla()' style='width:70px' id='amount_" + row_num + "_" + o_lvl_1[j].STOCK_ID + "' value='" + o_lvl_1[j].AMOUNT + "'></div></li>"
-            }
-            Urun += "</ul>";
+    for (var i = 0; i < data.length; i++) {
+        var d    = data[i];
+        var tree = d.TREE || [];
+        var lineChild = 0;
+        for (var j = 0; j < tree.length; j++) {
+            var t = tree[j];
+            if (t.IS_OPERATION != 1) lineChild++;
+            recipeData.push({
+                product_tree_id        : nextTempId(),
+                related_product_tree_id: 0,
+                stock_id               : t.STOCK_ID || 0,
+                stock_code             : '',
+                product_name           : t.PRODUCT_NAME || '',
+                amount                 : parseFloat(t.AMOUNT) || 0,
+                unit_id                : t.PRODUCT_UNIT_ID || 0,
+                unit_name              : t.MAIN_UNIT || '',
+                tip                    : parseInt(t.tip) || 0,
+                line_number            : t.IS_OPERATION == 1 ? 0 : lineChild,
+                is_operation           : t.IS_OPERATION == 1 ? 1 : 0,
+                operation_type_id      : t.OPERATION_TYPE_ID || 0,
+                operation_type_name    : t.OPERATION_TYPE_NAME || ''
+            });
         }
-        Urun += "</li>"
-        Urun += "</ul>";
-        DonecekData += Urun;
-        $("#urun_" + row_num + "_" + data[i].STOCK_ID).sortable({});
     }
-    $("#CurrentTree").append(DonecekData)
-
-    row_num++;
-
+    refreshRecipeTree();
+    RenkHesapla();
 }
+/* Alt bileşen arama popup için önizleme listesi */
 function SatirDoldur_2(data) {
-    DonecekData = "";
-    for (let i = 0; i < data.length; i++) {
-        var Urun = "<ul class='list-group'>";
-        Urun += "<li class='list-group-item'>" + data[i].PRODUCT_NAME
-        Urun += "<button style='float:right' class='btn btn-sm btn-danger'onclick='icineEkle(" + data[i].STOCK_ID + ")'>+</button>"
-        var o_lvl_1 = data[i].TREE;
-        if (o_lvl_1.length) {
-            Urun += "<ul>";
-            for (let j = 0; j < o_lvl_1.length; j++) {
-                Urun += "<li>" + o_lvl_1[j].PRODUCT_NAME
-                Urun += "</li>"
-            }
-            Urun += "</ul>";
-        }
-        Urun += "</li>"
-        Urun += "</ul>";
-        DonecekData += Urun;
+    var html = '';
+    for (var i = 0; i < data.length; i++) {
+        html += '<ul class="list-group"><li class="list-group-item py-1">' + escHtml(data[i].PRODUCT_NAME || '');
+        html += '<button style="float:right" class="btn btn-sm btn-success" onclick="icineEkle(' + data[i].STOCK_ID + ')">+</button>';
+        html += '</li></ul>';
     }
-
-    $("#Div_1_PROD").html(DonecekData)
-
+    $('#Div_1_PROD').html(html);
 }
+
 function AgacaEkle(stock_id) {
     $.ajax({
-        url: "cfc/boyahane.cfc?method=getProdTreeWithName_yeni&stock_id=" + stock_id, success: function (retdat) {
-            var obj_list = (Array.isArray(retdat) ? retdat : JSON.parse(retdat))
-            console.log(retdat)
-            SatirDoldur_1(obj_list)
-
-        }
-    })
+        url    : 'cfc/boyahane.cfc?method=getProdTreeWithName_yeni&stock_id=' + stock_id,
+        success: function(retdat) { SatirDoldur_1(Array.isArray(retdat) ? retdat : JSON.parse(retdat)); }
+    });
 }
+
 function SearchProd_2() {
-    var ResultArea = $("#Div_1_PROD");
-    var keyword = $("#Prokeyword").val();
+    var keyword = $('#Prokeyword').val();
     $.ajax({
-        url: "cfc/boyahane.cfc?method=getProdTreeWithName_yeni&keyword=" + keyword, success: function (retdat) {
-            var obj_list = (Array.isArray(retdat) ? retdat : JSON.parse(retdat))
-            SatirDoldur_2(obj_list)
+        url    : 'cfc/boyahane.cfc?method=getProdTreeWithName_yeni&keyword=' + encodeURIComponent(keyword),
+        success: function(retdat) { SatirDoldur_2(Array.isArray(retdat) ? retdat : JSON.parse(retdat)); }
+    });
+}
 
-        }
-    })
+/* ─── Alt satır popup ─── */
+function OpenProductpopup(parentTreeId) {
+    _prodPopupParentTreeId = parentTreeId;
+    ProductModal.show();
 }
-function OpenProductpopup(sid, rown) {
-    _prodPopupParentSid = sid;
-    _prodPopupRowNum    = rown;
-    ProductModal.show()
-}
+
+/* Seçilen ürünü parentTreeId'nin altına ekle */
 function icineEkle(stock_id) {
-    var amk  = _prodPopupParentSid;
-    var amk2 = _prodPopupRowNum;
+    var parentId = _prodPopupParentTreeId;
     $.ajax({
-        url: "cfc/boyahane.cfc?method=getProdTreeWithName_yeni&stock_id=" + stock_id, success: function (retdat) {
-            var obj_list = (Array.isArray(retdat) ? retdat : JSON.parse(retdat))
-            console.log(retdat)
-            var eek = "<li style='margin-top:5px' data-renkCol='"+obj_list[0].DETAIL+"'  data-id='" + obj_list[0].STOCK_ID + "' data-parent='" + amk + "'><div style='display:flex'><input type='text' style='width:25px' class='' id='line_order_" + amk2 + "_" + obj_list[0].STOCK_ID + "' value='" + obj_list[0].LINE_NUMBER + "'>" + obj_list[0].PRODUCT_NAME + "<button style='float:right; margin-inline-start: auto' class='btn btn-sm btn-danger'onclick='reminner(this,1,2)'>-</button><input type='number' class='form-control form-control-sm RT_" + obj_list[0].TIP + "' onchange='RenkHesapla()' style='width:70px' id='amount_" + amk2 + "_" + obj_list[0].STOCK_ID + "' value='" + obj_list[0].AMOUNT + "'></div></li>"
-            console.log(eek)
-            $("#urun_" + amk2 + "_" + amk).append(eek)
-            $(".urun_agac_liste").sortable();
+        url    : 'cfc/boyahane.cfc?method=getProdTreeWithName_yeni&stock_id=' + stock_id,
+        success: function(retdat) {
+            var obj = Array.isArray(retdat) ? retdat : JSON.parse(retdat);
+            if (!obj || !obj.length) return;
+            var d        = obj[0];
+            var siblings = recipeData.filter(function(r) { return r.related_product_tree_id === parentId; }).length;
+            recipeData.push({
+                product_tree_id        : nextTempId(),
+                related_product_tree_id: parentId,
+                stock_id               : d.STOCK_ID || 0,
+                stock_code             : '',
+                product_name           : d.PRODUCT_NAME || '',
+                amount                 : parseFloat(d.AMOUNT) || 0,
+                unit_id                : d.PRODUCT_UNIT_ID || 0,
+                unit_name              : d.MAIN_UNIT || '',
+                tip                    : parseInt(d.tip) || 0,
+                line_number            : siblings + 1,
+                is_operation           : d.IS_OPERATION ? 1 : 0,
+                operation_type_id      : d.OPERATION_TYPE_ID || 0,
+                operation_type_name    : d.OPERATION_TYPE_NAME || ''
+            });
+            refreshRecipeTree();
             RenkHesapla();
         }
-    })
+    });
 }
 
-function remProd(elem, a, b) {
-    $(elem).parent().parent().remove();
-    RenkHesapla();
-}
-function reminner(elem, a, b) {
-    $(elem).parent().parent().remove();
-    RenkHesapla();
-}
+function remProd()   {}
+function reminner()  {}
+
 function RenkHesapla() {
-    var oranlarL = $(".RT_0")
-    var orant = 0;
-    for (let i = 0; i < oranlarL.length; i++) {
-        orant += parseFloat($(oranlarL[i]).val())
-    }
-    console.log(orant)
-    var RenkTonu = 1;
-    if (orant < 0.2) { } else if (orant < 0.5) { RenkTonu = 2 } else if ( orant < 1) { RenkTonu = 3 }else if (orant < 2) { RenkTonu = 4 }else if (orant < 3) { RenkTonu = 5 }else if (orant > 3) { RenkTonu = 6 }
-    console.log(RenkTonu)
-    $("#f_renk_tonu").val(RenkTonu)
+    var total = 0;
+    recipeData.forEach(function(r) {
+        if (!r.is_operation && parseInt(r.tip) === 0) total += parseFloat(r.amount) || 0;
+    });
+    var t = 1;
+    if      (total < 0.2) t = 1;
+    else if (total < 0.5) t = 2;
+    else if (total < 1)   t = 3;
+    else if (total < 2)   t = 4;
+    else if (total < 3)   t = 5;
+    else                  t = 6;
+    $('#f_renk_tonu').val(t);
 }
-/**
- * Eski Olan Burada
- * @returns 
- */
-function Serialize_Product_Tree_old() {
-    var Liste = new Array();
-    var Gidecek = $("#CurrentTree")
-    var ilkSeviye = Gidecek.children()
-    for (let i = 0; i < ilkSeviye.length; i++) {
-        var icerik = $(ilkSeviye[i]).children();
-        var Obje = new Object();
-        Obje.Sira = $(icerik.find("input")[0]).val()
-        Obje.SID_=$(icerik).data("id")
-        var inner = $(icerik.find("ul")[0]).children()
-        var Agac = new Array();
-        for (let j = 0; j < inner.length; j++) {
-            var o2 = new Object();
-            o2.ParentRow = Obje.Sira;
-            o2.Sid = $(inner[j]).data("id")
-            o2.SiraNo = $(inner[j]).find("input")[0].value
-            o2.PARENT_SID= Obje.SID_;
-            o2.Miktar = $(inner[j]).find("input")[1].value
-            Agac.push(o2)
-        }
-        Obje.Tree = Agac;
-        Liste.push(Obje)
-    }
-    return Liste
 
-}
-var renkSistemi = [];
-function Serialize_Product_Tree() {
-    var Liste = new Array();
-    var Gidecek = $("#CurrentTree")
-var renkSistemi_temp=new Array();
-    var ilkSeviye = Gidecek.children()
-    for (let i = 0; i < ilkSeviye.length; i++) {
-        var icerik = $(ilkSeviye[i]).children();
-        var Obje = new Object();
-        Obje.Sira = $(icerik.find("input")[0]).val()
-        Obje.SID_=$(icerik).data("id")
-        var inner = $(icerik.find("ul")[0]).children()
-        var Agac = new Array();
-        for (let j = 0; j < inner.length; j++) {
-            var o2 = new Object();
-            o2.ParentRow = Obje.Sira;
-            o2.Sid = $(inner[j]).data("id")
-            o2.boyatip= $(inner[j]).data("renkcol")
-            renkSistemi_temp.push($(inner[j]).data("renkcol"))
-            o2.SiraNo = $(inner[j]).find("input")[0].value
-            o2.PARENT_SID= Obje.SID_;
-            o2.Miktar = $(inner[j]).find("input")[1].value
-            Agac.push(o2)
-        }
-        
-$.each(renkSistemi_temp, function(i, el){
-    if($.inArray(el, renkSistemi) === -1 && el) renkSistemi.push(el);
-});
-        Obje.Tree = Agac;
-       // Obje.RenkSistemi = renkSistemi;
-        Liste.push(Obje)
-    }
-    return Liste
-
-}
-function Renk_Kaydet() {
-    var cart_date = $("#cart_date").val();
-    var cartlea = $("#cartlea").val();
-    var hazir = $("#flexSwitchCheckDefault").val();
-    var Rtone = $("#Rtone").val();
-    var paint_degree = $("#paint_degree").val();
-    var company_name = $("#company_name").val();
-    var company_id = $("#company_id").val();
-    var partner_id = $("#partner_id").val();
-    var product_id = $("#product_id").val();
-    var stock_id = $("#stock_id").val();
-    var color_code = $("#color_code").val();
-    var color_name = $("#color_name").val();
-    var information = $("#information").val();
-    var flatte= $("#flote").val();
-    var Obje = new Object();
-    Obje.KARTELA_TARIHI = cart_date;
-    Obje.KARTELA = cartlea;
-    Obje.HAZIR = hazir;
-    Obje.RENK_TONU = Rtone;
-    Obje.BOYA_DERECESI = paint_degree;
-    Obje.MUSTERI_ADI = company_name;
-    Obje.MUSTERI_ID = company_id;
-    Obje.PARTNER_ID = partner_id;
-    Obje.URUN_ID = product_id;
-    Obje.STOK_ID = stock_id;
-    Obje.RENK_KODU = color_code;
-    Obje.RENK_ADI = color_name;
-    Obje.ACIKLAMA = information;
-    Obje.FLATTE  = flatte;
-    Obje.RENKSISTEMI  = renkSistemi;
-    Obje.AGAC = Serialize_Product_Tree()
-    console.log(Obje);
-    var dataJSON = JSON.stringify(Obje);
-    var form = document.createElement('form');
-    form.setAttribute('method', 'post');
-    form.setAttribute('action', '/index.cfm?fuseaction=test_page_3');
-
-    // create hidden input containing JSON and add to form
-    var hiddenField = document.createElement("input");
-    hiddenField.setAttribute("type", "hidden");
-    hiddenField.setAttribute("name", "eklenecek");
-    hiddenField.setAttribute("value", dataJSON);
-    form.appendChild(hiddenField);
-
-    // add form to body and submit
-    document.body.appendChild(form);
-    form.submit();
-
-}
-function CoppyCollor(){
-    openModal_partner("/index.cfm?fuseaction=labratuvar.emptypopup_ajaxpage_list_color",'modal-dialog-scrollable modal-xl')
+function CoppyCollor() {
+    openModal_partner('/index.cfm?fuseaction=labratuvar.emptypopup_ajaxpage_list_color', 'modal-dialog-scrollable modal-xl');
 }

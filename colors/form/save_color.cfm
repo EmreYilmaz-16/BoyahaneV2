@@ -150,41 +150,83 @@
         WHERE stock_id = <cfqueryparam value="#savedStockId#" cfsqltype="cf_sql_integer">
     </cfquery>
 
-    <cfset lineNum = 0>
+    <!--- parent_id'ye göre grupla --->
+    <cfset groups = {}>
     <cfloop array="#recipeData#" index="item">
-        <cfset lineNum++>
-        <cfset compStockId = (isStruct(item) AND structKeyExists(item,"stock_id") AND isNumeric(item.stock_id))
-                              ? val(item.stock_id) : 0>
-        <cfset itemAmount  = (isStruct(item) AND structKeyExists(item,"amount")   AND isNumeric(item.amount))
-                              ? val(item.amount) : 1>
-        <cfset itemUnitId  = (isStruct(item) AND structKeyExists(item,"unit_id")  AND isNumeric(item.unit_id) AND val(item.unit_id) gt 0)
-                              ? val(item.unit_id) : javaCast("null","")>
-
-        <cfif compStockId gt 0>
-            <!--- Bileşenin product_id'sini bul --->
-            <cfquery name="getCompProd" datasource="boyahane">
-                SELECT product_id FROM stocks WHERE stock_id = <cfqueryparam value="#compStockId#" cfsqltype="cf_sql_integer">
-            </cfquery>
-            <cfset compProdId = (getCompProd.recordCount AND isNumeric(getCompProd.product_id) AND val(getCompProd.product_id) gt 0)
-                                  ? val(getCompProd.product_id) : javaCast("null","")>
-
-            <cfquery datasource="boyahane">
-                INSERT INTO product_tree
-                    (stock_id, related_id, product_id, amount, unit_id,
-                     line_number, hierarchy, is_tree, record_date)
-                VALUES (
-                    <cfqueryparam value="#savedStockId#"                        cfsqltype="cf_sql_integer">,
-                    <cfqueryparam value="#compStockId#"                         cfsqltype="cf_sql_integer">,
-                    <cfqueryparam value="#isNull(compProdId)?'':compProdId#"    cfsqltype="cf_sql_integer" null="#isNull(compProdId)#">,
-                    <cfqueryparam value="#itemAmount#"                          cfsqltype="cf_sql_numeric">,
-                    <cfqueryparam value="#isNull(itemUnitId)?'':itemUnitId#"    cfsqltype="cf_sql_integer" null="#isNull(itemUnitId)#">,
-                    <cfqueryparam value="#lineNum#"                             cfsqltype="cf_sql_integer">,
-                    <cfqueryparam value="#lineNum#"                             cfsqltype="cf_sql_varchar">,
-                    true,
-                    CURRENT_TIMESTAMP
-                )
-            </cfquery>
+        <cfset pid = (isStruct(item) AND structKeyExists(item,"parent_id") AND len(trim(item.parent_id))) ? trim(item.parent_id) : "default">
+        <cfif NOT structKeyExists(groups, pid)>
+            <cfset groups[pid] = []>
         </cfif>
+        <cfset arrayAppend(groups[pid], item)>
+    </cfloop>
+
+    <!--- Her grup: önce operasyonu ekle, sonra ürünleri operasyona bağla --->
+    <cfset opLineNum = 0>
+    <cfloop collection="#groups#" item="gKey">
+        <cfset grpItems = groups[gKey]>
+        <cfset opTreeId = javaCast("null","")>
+
+        <!--- 1. Operasyonu bul ve ekle --->
+        <cfloop array="#grpItems#" index="item">
+            <cfif isStruct(item) AND structKeyExists(item,"is_operation") AND val(item.is_operation) eq 1>
+                <cfset opLineNum  = opLineNum + 1>
+                <cfset opTypeId   = structKeyExists(item,"operation_type_id") AND isNumeric(item.operation_type_id) ? val(item.operation_type_id) : javaCast("null","")>
+                <cfset opAmount   = structKeyExists(item,"amount") AND isNumeric(item.amount) ? val(item.amount) : 1>
+                <cfquery name="insOp" datasource="boyahane">
+                    INSERT INTO product_tree
+                        (stock_id, operation_type_id, amount, line_number, hierarchy, is_tree, record_date)
+                    VALUES (
+                        <cfqueryparam value="#savedStockId#"                          cfsqltype="cf_sql_integer">,
+                        <cfqueryparam value="#isNull(opTypeId)?'':opTypeId#"          cfsqltype="cf_sql_integer" null="#isNull(opTypeId)#">,
+                        <cfqueryparam value="#opAmount#"                              cfsqltype="cf_sql_numeric">,
+                        <cfqueryparam value="#opLineNum#"                             cfsqltype="cf_sql_integer">,
+                        <cfqueryparam value="#opLineNum#"                             cfsqltype="cf_sql_varchar">,
+                        true,
+                        CURRENT_TIMESTAMP
+                    )
+                    RETURNING product_tree_id
+                </cfquery>
+                <cfset opTreeId = val(insOp.product_tree_id)>
+                <cfbreak>
+            </cfif>
+        </cfloop>
+
+        <!--- 2. Ürünleri ekle, operasyona bağla --->
+        <cfloop array="#grpItems#" index="item">
+            <cfif isStruct(item) AND NOT (structKeyExists(item,"is_operation") AND val(item.is_operation) eq 1)>
+                <cfset compStockId = structKeyExists(item,"stock_id") AND isNumeric(item.stock_id) ? val(item.stock_id) : 0>
+                <cfset itemAmount  = structKeyExists(item,"amount")   AND isNumeric(item.amount)   ? val(item.amount) : 1>
+                <cfset itemUnitId  = structKeyExists(item,"unit_id")  AND isNumeric(item.unit_id) AND val(item.unit_id) gt 0 ? val(item.unit_id) : javaCast("null","")>
+                <cfset lineOrder   = structKeyExists(item,"line_order") AND isNumeric(item.line_order) ? val(item.line_order) : 0>
+
+                <cfif compStockId gt 0>
+                    <cfquery name="getCompProd" datasource="boyahane">
+                        SELECT product_id FROM stocks WHERE stock_id = <cfqueryparam value="#compStockId#" cfsqltype="cf_sql_integer">
+                    </cfquery>
+                    <cfset compProdId = getCompProd.recordCount AND isNumeric(getCompProd.product_id) AND val(getCompProd.product_id) gt 0
+                                         ? val(getCompProd.product_id) : javaCast("null","")>
+
+                    <cfquery datasource="boyahane">
+                        INSERT INTO product_tree
+                            (stock_id, related_id, product_id, amount, unit_id,
+                             line_number, hierarchy, is_tree,
+                             related_product_tree_id, record_date)
+                        VALUES (
+                            <cfqueryparam value="#savedStockId#"                               cfsqltype="cf_sql_integer">,
+                            <cfqueryparam value="#compStockId#"                                cfsqltype="cf_sql_integer">,
+                            <cfqueryparam value="#isNull(compProdId)?'':compProdId#"           cfsqltype="cf_sql_integer" null="#isNull(compProdId)#">,
+                            <cfqueryparam value="#itemAmount#"                                 cfsqltype="cf_sql_numeric">,
+                            <cfqueryparam value="#isNull(itemUnitId)?'':itemUnitId#"           cfsqltype="cf_sql_integer" null="#isNull(itemUnitId)#">,
+                            <cfqueryparam value="#lineOrder#"                                  cfsqltype="cf_sql_integer">,
+                            <cfqueryparam value="#lineOrder#"                                  cfsqltype="cf_sql_varchar">,
+                            true,
+                            <cfqueryparam value="#isNull(opTreeId)?'':opTreeId#"               cfsqltype="cf_sql_integer" null="#isNull(opTreeId)#">,
+                            CURRENT_TIMESTAMP
+                        )
+                    </cfquery>
+                </cfif>
+            </cfif>
+        </cfloop>
     </cfloop>
 
     <cfset response = { "success": true, "stock_id": savedStockId, "mode": mode }>
