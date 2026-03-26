@@ -438,25 +438,68 @@ function toggleRowType(type) {
         DevExpress.localization.locale('tr');
         initTree();
     }
-    function loadDX(cb) {
+    function hasTreeList() {
+        return typeof DevExpress !== 'undefined' && DevExpress.ui && typeof DevExpress.ui.dxTreeList === 'function';
+    }
+
+    function ensureDX(cb) {
+        if (hasTreeList()) {
+            cb();
+            return;
+        }
+
+        if (!window.__dxTreeLoadState) {
+            window.__dxTreeLoadState = { loading: false, callbacks: [] };
+        }
+        var state = window.__dxTreeLoadState;
+        state.callbacks.push(cb);
+
+        if (state.loading) return;
+        state.loading = true;
+
         var h = document.head;
-        function addCSS(href) { var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = href; h.appendChild(l); }
-        function addJS(src, next) { var s = document.createElement('script'); s.src = src; s.onload = next; h.appendChild(s); }
-        addCSS('https://cdn3.devexpress.com/jslib/23.2.5/css/dx.common.css');
-        addCSS('https://cdn3.devexpress.com/jslib/23.2.5/css/dx.light.css');
-        addJS('https://cdn3.devexpress.com/jslib/23.2.5/js/dx.all.js', function() {
-            addJS('https://cdn3.devexpress.com/jslib/23.2.5/js/localization/dx.messages.tr.js', cb);
+        function addCSSOnce(id, href) {
+            if (document.getElementById(id)) return;
+            var l = document.createElement('link');
+            l.id = id;
+            l.rel = 'stylesheet';
+            l.href = href;
+            h.appendChild(l);
+        }
+        function addJSOnce(id, src, next) {
+            var existing = document.getElementById(id);
+            if (existing) {
+                if (existing.dataset.loaded === 'true') { next(); return; }
+                existing.addEventListener('load', next, { once: true });
+                return;
+            }
+            var s = document.createElement('script');
+            s.id = id;
+            s.src = src;
+            s.onload = function() { s.dataset.loaded = 'true'; next(); };
+            h.appendChild(s);
+        }
+
+        addCSSOnce('dx-common-css', 'https://cdn3.devexpress.com/jslib/23.2.5/css/dx.common.css');
+        addCSSOnce('dx-light-css',  'https://cdn3.devexpress.com/jslib/23.2.5/css/dx.light.css');
+        addJSOnce('dx-all-js', 'https://cdn3.devexpress.com/jslib/23.2.5/js/dx.all.js', function() {
+            addJSOnce('dx-tr-js', 'https://cdn3.devexpress.com/jslib/23.2.5/js/localization/dx.messages.tr.js', function() {
+                state.loading = false;
+                while (state.callbacks.length) {
+                    state.callbacks.shift()();
+                }
+            });
         });
     }
-    function init() {
-        if (typeof DevExpress !== 'undefined') { run(); } else { loadDX(run); }
-    }
+
+    function init() { ensureDX(run); }
     if (document.readyState === 'complete') { init(); } else { window.addEventListener('load', init); }
 })();
 
-function initTree() {
-    $('##treeGrid').dxTreeList({
-        dataSource: treeData,
+function getTreeOptions() {
+    var safeTreeData = Array.isArray(treeData) ? treeData : [];
+    return {
+        dataSource: safeTreeData,
         keyExpr: 'product_tree_id',
         parentIdExpr: 'related_product_tree_id',
         rootValue: 0,
@@ -563,11 +606,31 @@ function initTree() {
                 }
             }
         ]
-    });
+    };
+}
+
+function getTreeInstance() {
+    if (window.jQuery && typeof window.jQuery.fn.dxTreeList === 'function') {
+        return window.jQuery('##treeGrid').dxTreeList('instance');
+    }
+    return DevExpress.ui.dxTreeList.getInstance(document.getElementById('treeGrid'));
+}
+
+function initTree() {
+    var options = getTreeOptions();
+    var oldInstance = getTreeInstance();
+    if (oldInstance) oldInstance.dispose();
+
+    if (window.jQuery && typeof window.jQuery.fn.dxTreeList === 'function') {
+        window.jQuery('##treeGrid').dxTreeList(options);
+        return;
+    }
+    DevExpress.ui.dxTreeList(document.getElementById('treeGrid'), options);
 }
 
 function refreshTree() {
-    $('##treeGrid').dxTreeList('instance').option('dataSource', treeData);
+    var instance = getTreeInstance();
+    if (instance) instance.option('dataSource', treeData);
 }
 
 function buildParentSelect(excludeId) {
