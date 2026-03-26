@@ -434,9 +434,24 @@ function toggleRowType(type) {
 
 /* ─── Init ─── */
 (function() {
-    function run() {
-        DevExpress.localization.locale('tr');
-        initTree();
+    function init() { initTree(); }
+    if (document.readyState === 'complete') { init(); } else { window.addEventListener('load', init); }
+})();
+
+function escapeHtml(v) {
+    return String(v == null ? '' : v)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function uiNotify(message, type) {
+    if (window.DevExpress && DevExpress.ui && typeof DevExpress.ui.notify === 'function') {
+        DevExpress.ui.notify(message, type || 'info', 2500);
+    } else {
+        alert(message);
     }
     function hasTreeList() {
         return typeof DevExpress !== 'undefined' && DevExpress.ui && typeof DevExpress.ui.dxTreeList === 'function';
@@ -494,8 +509,7 @@ function toggleRowType(type) {
     function init() {
         if (typeof DevExpress !== 'undefined' && DevExpress.ui && typeof DevExpress.ui.dxTreeList === 'function') { run(); } else { loadDX(run); }
     }
-    if (document.readyState === 'complete') { init(); } else { window.addEventListener('load', init); }
-})();
+    html.push('</tbody></table></div>');
 
 function getTreeOptions() {
     return {
@@ -711,16 +725,16 @@ function saveRow() {
     if (rowType === 'malzeme') {
         var compStockId = document.getElementById('f_component_stock_id').value;
         if (!compStockId || compStockId == '0') {
-            DevExpress.ui.notify('Bileşen stok seçimi zorunludur.', 'warning', 2500); return;
+            uiNotify('Bileşen stok seçimi zorunludur.', 'warning'); return;
         }
         var amount = parseFloat(document.getElementById('f_amount').value);
         if (isNaN(amount) || amount <= 0) {
-            DevExpress.ui.notify('Miktar sıfırdan büyük olmalıdır.', 'warning', 2500); return;
+            uiNotify('Miktar sıfırdan büyük olmalıdır.', 'warning'); return;
         }
     } else {
         var opTypeId = document.getElementById('f_operation_type_id').value;
         if (!opTypeId || opTypeId == '0') {
-            DevExpress.ui.notify('Operasyon tipi seçimi zorunludur.', 'warning', 2500); return;
+            uiNotify('Operasyon tipi seçimi zorunludur.', 'warning'); return;
         }
     }
 
@@ -753,7 +767,7 @@ function saveRow() {
         btn.innerHTML = '<i class="fas fa-save me-1"></i>Kaydet';
         if (res && res.success) {
             bootstrap.Modal.getInstance(document.getElementById('rowModal')).hide();
-            DevExpress.ui.notify(res.mode === 'added' ? 'Satır eklendi.' : 'Satır güncellendi.', 'success', 2500);
+            uiNotify(res.mode === 'added' ? 'Satır eklendi.' : 'Satır güncellendi.', 'success');
             if (res.row) {
                 if (res.mode === 'added') {
                     treeData.push(res.row);
@@ -767,36 +781,36 @@ function saveRow() {
                 location.reload();
             }
         } else {
-            DevExpress.ui.notify((res && res.message) || 'Kayıt başarısız.', 'error', 3500);
+            uiNotify((res && res.message) || 'Kayıt başarısız.', 'error');
         }
     }, 'json').fail(function() {
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-save me-1"></i>Kaydet';
-        DevExpress.ui.notify('Sunucu hatası.', 'error', 3000);
+        uiNotify('Sunucu hatası.', 'error');
     });
 }
 
 function deleteRow(id) {
     var row = treeData.find(function(x) { return x.product_tree_id === id; });
     var label = row ? (row.component_stock_code || row.operation_type_name || ('ID:' + id)) : ('ID:' + id);
-    DevExpress.ui.dialog.confirm(
+    uiConfirm(
         '"' + label + '" satırını ve tüm alt satırlarını silmek istiyor musunuz?',
-        'Silme Onayı'
-    ).then(function(ok) {
+        'Silme Onayı',
+        function(ok) {
         if (!ok) return;
         $.post('/product/form/delete_product_tree_row.cfm',
             { product_tree_id: id, root_stock_id: rootStockId },
             function(res) {
                 if (res && res.success) {
-                    DevExpress.ui.notify('Satır silindi.', 'success', 2500);
+                    uiNotify('Satır silindi.', 'success');
                     var deleted = res.deleted_ids || [id];
                     treeData = treeData.filter(function(x) { return deleted.indexOf(x.product_tree_id) === -1; });
                     refreshTree();
                     document.getElementById('recordCount').textContent = treeData.length + ' satır';
                 } else {
-                    DevExpress.ui.notify((res && res.message) || 'Silme başarısız.', 'error', 3500);
+                    uiNotify((res && res.message) || 'Silme başarısız.', 'error');
                 }
-            }, 'json').fail(function() { DevExpress.ui.notify('Sunucu hatası.', 'error', 3000); });
+            }, 'json').fail(function() { uiNotify('Sunucu hatası.', 'error'); });
     });
 }
 </script>
