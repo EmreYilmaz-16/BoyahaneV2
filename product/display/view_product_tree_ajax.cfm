@@ -449,13 +449,13 @@ function toggleRowType(type) {
         });
     }
     function init() {
-        if (typeof DevExpress !== 'undefined') { run(); } else { loadDX(run); }
+        if (typeof DevExpress !== 'undefined' && DevExpress.ui && typeof DevExpress.ui.dxTreeList === 'function') { run(); } else { loadDX(run); }
     }
     if (document.readyState === 'complete') { init(); } else { window.addEventListener('load', init); }
 })();
 
-function initTree() {
-    $('##treeGrid').dxTreeList({
+function getTreeOptions() {
+    return {
         dataSource: treeData,
         keyExpr: 'product_tree_id',
         parentIdExpr: 'related_product_tree_id',
@@ -563,11 +563,28 @@ function initTree() {
                 }
             }
         ]
-    });
+    };
+}
+
+function getTreeInstance() {
+    if (window.jQuery && typeof window.jQuery.fn.dxTreeList === 'function') {
+        return window.jQuery('##treeGrid').dxTreeList('instance');
+    }
+    return DevExpress.ui.dxTreeList.getInstance(document.getElementById('treeGrid'));
+}
+
+function initTree() {
+    var options = getTreeOptions();
+    if (window.jQuery && typeof window.jQuery.fn.dxTreeList === 'function') {
+        window.jQuery('##treeGrid').dxTreeList(options);
+        return;
+    }
+    DevExpress.ui.dxTreeList(document.getElementById('treeGrid'), options);
 }
 
 function refreshTree() {
-    $('##treeGrid').dxTreeList('instance').option('dataSource', treeData);
+    var instance = getTreeInstance();
+    if (instance) instance.option('dataSource', treeData);
 }
 
 function buildParentSelect(excludeId) {
