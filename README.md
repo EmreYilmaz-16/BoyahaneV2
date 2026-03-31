@@ -36,7 +36,7 @@ docker-compose up -d --build
 | **Lucee Web** | http://localhost:3000 | Ana uygulama |
 | **Lucee Admin** | http://localhost:3001/lucee/admin/server.cfm | Lucee yönetim paneli |
 | **PostgreSQL** | localhost:5433 | Veritabanı sunucusu |
-| **Adminer** | http://localhost:9090 | Veritabanı yönetim arayüzü |
+| **Adminer** | http://localhost:18081 | Veritabanı yönetim arayüzü |
 
 ## 🔐 Varsayılan Şifreler
 
@@ -128,7 +128,9 @@ Copy-Item .env.example .env
 
 ## 📊 Veritabanı Şeması
 
-İlk çalıştırmada `docker/init-db/01-init.sql` dosyası otomatik olarak çalışır ve test veritabanını oluşturur.
+İlk çalıştırmada `docker/init-db/` altındaki tüm `.sql` dosyaları alfabetik sırayla otomatik çalışır ve tablolar oluşturulur.
+
+> Not: Bu adım yalnızca PostgreSQL veri volume'ü boşken çalışır. Şema değişikliği sonrası `docker-compose down -v` ile volume'ü sıfırlayıp yeniden başlatın.
 
 Yeni tablolar eklemek için:
 1. `docker/init-db/` klasörüne yeni `.sql` dosyası ekleyin (örn: `02-create-tables.sql`)
