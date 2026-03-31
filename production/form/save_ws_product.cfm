@@ -67,4 +67,4 @@
     </cfcatch>
 </cftry>
 
-<cfoutput>#serializeJSON(response)#</cfoutput>
+<cfoutput>#serializeJSON(response)#</cfoutput><cfabort>

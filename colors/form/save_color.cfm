@@ -54,11 +54,6 @@
         <cfcatch><cfset recipeData = []></cfcatch>
     </cftry>
 
-    <cfif NOT isArray(recipeData) OR NOT arrayLen(recipeData)>
-        <cfset response.message = "Reçete boş olamaz.">
-        <cfoutput>#serializeJSON(response)#</cfoutput><cfabort>
-    </cfif>
-
     <cfif stockId gt 0>
         <!--- ─── UPDATE stocks ─── --->
         <cfquery datasource="boyahane">
@@ -101,14 +96,14 @@
         <cfquery name="insStock" datasource="boyahane">
             INSERT INTO stocks
                 (stock_code, stock_code_2, property, barcod, manufact_code,
-                 company_id, product_id, is_main_stock, stock_status, record_date)
+                  product_id, is_main_stock, stock_status, record_date)
             VALUES (
                 <cfqueryparam value="#autoCode#"     cfsqltype="cf_sql_varchar">,
                 <cfqueryparam value="#colorName#"    cfsqltype="cf_sql_varchar" null="#NOT len(colorName)#">,
                 <cfqueryparam value="#colorCode#"    cfsqltype="cf_sql_varchar" null="#NOT len(colorCode)#">,
                 <cfqueryparam value="#kartelaNo#"    cfsqltype="cf_sql_varchar" null="#NOT len(kartelaNo)#">,
                 <cfqueryparam value="#info#"         cfsqltype="cf_sql_varchar" null="#NOT len(info)#">,
-                <cfqueryparam value="#companyId#"    cfsqltype="cf_sql_integer">,
+                
                 <cfqueryparam value="#isNull(productId)?'':productId#" cfsqltype="cf_sql_integer" null="#isNull(productId)#">,
                 false,
                 true,

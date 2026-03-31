@@ -502,4 +502,127 @@
         <cfreturn serializeJSON(arr)>
     </cffunction>
 
+    <!--- ==================== EXCEL IMPORT ==================== --->
+
+    <!--- Toplu Firma İçe Aktarma --->
+    <cffunction name="importCompanies" access="remote" returnformat="plain" output="false">
+        <cfargument name="companiesJSON" type="string" required="true">
+
+        <cfset var result    = {}>
+        <cfset var companies = []>
+        <cfset var inserted  = 0>
+        <cfset var errList   = []>
+        <cfset var catMap    = {}>
+        <cfset var qAllCats  = "">
+
+        <cfheader name="Content-Type" value="application/json; charset=utf-8">
+
+        <cftry>
+            <cfif len(trim(arguments.companiesJSON)) eq 0>
+                <cfset result = {"success": false, "message": "Veri boş olamaz"}>
+                <cfreturn serializeJSON(result)>
+            </cfif>
+
+            <cfset companies = deserializeJSON(arguments.companiesJSON)>
+
+            <cfif not isArray(companies) or arrayLen(companies) eq 0>
+                <cfset result = {"success": false, "message": "Geçersiz veri formatı"}>
+                <cfreturn serializeJSON(result)>
+            </cfif>
+
+            <cfif arrayLen(companies) gt 5000>
+                <cfset result = {"success": false, "message": "En fazla 5000 kayıt aktarabilirsiniz"}>
+                <cfreturn serializeJSON(result)>
+            </cfif>
+
+            <!--- Kategori ID'lerini önbelleğe al --->
+            <cfquery name="qAllCats" datasource="boyahane">
+                SELECT companycat_id FROM company_cat
+            </cfquery>
+            <cfloop query="qAllCats">
+                <cfset catMap[companycat_id] = true>
+            </cfloop>
+
+            <cfloop array="#companies#" index="row">
+                <cfset rowNum  = structKeyExists(row, "row_num") ? row.row_num : 0>
+                <cfset nick    = structKeyExists(row, "nickname") ? trim(row.nickname) : "">
+                <cfset full    = structKeyExists(row, "fullname") ? trim(row.fullname) : "">
+
+                <cfif len(nick) eq 0 and len(full) eq 0>
+                    <cfset arrayAppend(errList, "Satır #rowNum#: Kısa ad veya firma adı zorunludur")>
+                    <cfcontinue>
+                </cfif>
+
+                <cfset cCatId    = structKeyExists(row, "companycat_id") ? val(row.companycat_id) : 0>
+                <cfset cMemCode  = structKeyExists(row, "member_code")     ? trim(row.member_code)     : "">
+                <cfset cTaxOff   = structKeyExists(row, "taxoffice")        ? trim(row.taxoffice)        : "">
+                <cfset cTaxno    = structKeyExists(row, "taxno")             ? trim(row.taxno)             : "">
+                <cfset cEmail    = structKeyExists(row, "company_email")    ? trim(row.company_email)    : "">
+                <cfset cTel1     = structKeyExists(row, "company_tel1")     ? trim(row.company_tel1)     : "">
+                <cfset cMobil    = structKeyExists(row, "mobiltel")          ? trim(row.mobiltel)          : "">
+                <cfset cAddress  = structKeyExists(row, "company_address")  ? trim(row.company_address)  : "">
+                <cfset cOzelKod  = structKeyExists(row, "ozel_kod")          ? trim(row.ozel_kod)          : "">
+                <cfset cIsBuyer  = structKeyExists(row, "is_buyer")    ? (row.is_buyer    eq true or row.is_buyer    eq 1) : true>
+                <cfset cIsSeller = structKeyExists(row, "is_seller")   ? (row.is_seller   eq true or row.is_seller   eq 1) : true>
+                <cfset cIsPot    = structKeyExists(row, "ispotantial")  ? (row.ispotantial eq true or row.ispotantial eq 1) : false>
+                <cfset cIsPerson = structKeyExists(row, "is_person")   ? (row.is_person   eq true or row.is_person   eq 1) : false>
+
+                <!--- Geçersiz kategori ID'si varsa sıfırla --->
+                <cfif cCatId gt 0 and not structKeyExists(catMap, cCatId)>
+                    <cfset cCatId = 0>
+                </cfif>
+
+                <cftry>
+                    <cfquery datasource="boyahane">
+                        INSERT INTO company (
+                            company_status, nickname, fullname, companycat_id,
+                            member_code, taxoffice, taxno, company_email, company_tel1,
+                            mobiltel, company_address, ozel_kod,
+                            is_buyer, is_seller, ispotantial, is_person,
+                            record_date, record_emp
+                        ) VALUES (
+                            true,
+                            <cfqueryparam value="#nick#"      cfsqltype="cf_sql_varchar" null="#len(nick) eq 0#">,
+                            <cfqueryparam value="#full#"      cfsqltype="cf_sql_varchar" null="#len(full) eq 0#">,
+                            <cfqueryparam value="#cCatId#"    cfsqltype="cf_sql_integer" null="#cCatId eq 0#">,
+                            <cfqueryparam value="#cMemCode#"  cfsqltype="cf_sql_varchar" null="#len(cMemCode) eq 0#">,
+                            <cfqueryparam value="#cTaxOff#"   cfsqltype="cf_sql_varchar" null="#len(cTaxOff) eq 0#">,
+                            <cfqueryparam value="#cTaxno#"    cfsqltype="cf_sql_varchar" null="#len(cTaxno) eq 0#">,
+                            <cfqueryparam value="#cEmail#"    cfsqltype="cf_sql_varchar" null="#len(cEmail) eq 0#">,
+                            <cfqueryparam value="#cTel1#"     cfsqltype="cf_sql_varchar" null="#len(cTel1) eq 0#">,
+                            <cfqueryparam value="#cMobil#"    cfsqltype="cf_sql_varchar" null="#len(cMobil) eq 0#">,
+                            <cfqueryparam value="#cAddress#"  cfsqltype="cf_sql_varchar" null="#len(cAddress) eq 0#">,
+                            <cfqueryparam value="#cOzelKod#"  cfsqltype="cf_sql_varchar" null="#len(cOzelKod) eq 0#">,
+                            <cfqueryparam value="#cIsBuyer#"  cfsqltype="cf_sql_bit">,
+                            <cfqueryparam value="#cIsSeller#" cfsqltype="cf_sql_bit">,
+                            <cfqueryparam value="#cIsPot#"    cfsqltype="cf_sql_bit">,
+                            <cfqueryparam value="#cIsPerson#" cfsqltype="cf_sql_bit">,
+                            CURRENT_TIMESTAMP,
+                            1
+                        )
+                    </cfquery>
+                    <cfset inserted = inserted + 1>
+                    <cfcatch type="any">
+                        <cfset dispName = len(nick) ? nick : full>
+                        <cfset arrayAppend(errList, "Satır #rowNum# (#dispName#): #cfcatch.message#")>
+                    </cfcatch>
+                </cftry>
+            </cfloop>
+
+            <cfset result = {
+                "success":     true,
+                "inserted":    inserted,
+                "error_count": arrayLen(errList),
+                "errors":      errList,
+                "message":     inserted & " firma eklendi" & (arrayLen(errList) gt 0 ? ", " & arrayLen(errList) & " hata" : "")
+            }>
+
+            <cfcatch type="any">
+                <cfset result = {"success": false, "message": "İçe aktarma hatası: #cfcatch.message#"}>
+            </cfcatch>
+        </cftry>
+
+        <cfreturn serializeJSON(result)>
+    </cffunction>
+
 </cfcomponent>

@@ -493,6 +493,12 @@ item.metre=0;
     <cfinclude  template="aga_ret.cfm">
     <cfreturn RETURN_ARRAY>
 </cffunction>
+<cffunction name="getProdTreeWithName_yenia" access="remote" returntype="any" returnFormat="json">
+    <cfargument  name="keyword" default="">
+    <cfargument  name="stock_id" default="">
+    <cfinclude  template="aga_ret2.cfm">
+    <cfreturn RETURN_ARRAY>
+</cffunction>
 <cffunction  name="AgacKayitEt"  access="remote" returntype="any" returnFormat="json">
      
      

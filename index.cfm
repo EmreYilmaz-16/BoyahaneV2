@@ -96,8 +96,7 @@
     <!--- Navigation Bar - Fixed Top --->
     <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
         <div class="container-fluid">
-            <button class="btn btn-sm d-lg-none me-2" id="sidebarToggle" type="button"
-                    style="background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.2);border-radius:7px;">
+            <button class="btn btn-sm me-2" id="sidebarToggle" type="button">
                 <i class="fas fa-bars"></i>
             </button>
             <a class="navbar-brand" href="index.cfm">
@@ -268,10 +267,22 @@
     <!--- Custom JavaScript --->
     <script>
         $(document).ready(function() {
-            // Mobil menü toggle
+            // Sidebar durumunu localStorage'dan geri yükle (sadece desktop)
+            if ($(window).width() > 768 && localStorage.getItem('sidebarCollapsed') === '1') {
+                $('body').addClass('sidebar-collapsed');
+            }
+
+            // Sidebar toggle - her ekran boyutunda çalışır
             $('#sidebarToggle').click(function() {
-                $('.sidebar').toggleClass('show');
-                $('#sidebarBackdrop').toggleClass('show');
+                if ($(window).width() <= 768) {
+                    // Mobil: show/hide overlay
+                    $('.sidebar').toggleClass('show');
+                    $('#sidebarBackdrop').toggleClass('show');
+                } else {
+                    // Desktop: collapse/expand
+                    $('body').toggleClass('sidebar-collapsed');
+                    localStorage.setItem('sidebarCollapsed', $('body').hasClass('sidebar-collapsed') ? '1' : '0');
+                }
             });
             
             // Sidebar backdrop veya dışına tıklandığında kapat (mobil)

@@ -222,13 +222,12 @@
     <cfset request.jQueryLoaded = true>
 </cfif>
 
-
 <div class="page-header">
     <div class="page-header-left">
         <div class="page-header-icon"><i class="fas fa-sitemap"></i></div>
         <div class="page-header-title">
             <h1>Ürün Ağacı</h1>
-            <cfoutput><p><strong>#htmlEditFormat(getRootStock.stock_code)#</strong> — #htmlEditFormat(getRootStock.product_name)#</p></cfoutput>
+            <cfoutput><p><strong>#htmlEditFormat(getRootStock.stock_code)#</strong> — #htmlEditFormat(getRootStock.product_name)#<cfif len(trim(getRootStock.product_cat))> &nbsp;<span style="opacity:.6">| #htmlEditFormat(getRootStock.product_cat)#</span></cfif></p></cfoutput>
         </div>
     </div>
     <div class="d-flex gap-2">
@@ -245,16 +244,101 @@
     <div class="grid-card">
         <div class="grid-card-header">
             <div class="grid-card-header-title"><i class="fas fa-sitemap"></i>Bileşen Ağacı</div>
-            <span class="record-count" id="recordCount">Yükleniyor...</span>
+            <div class="d-flex align-items-center gap-2">
+                <button class="btn btn-sm btn-outline-secondary bom-ctrl-btn" onclick="toggleExpandAll(true)" title="Tümünü Aç">
+                    <i class="fas fa-angle-double-down"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-secondary bom-ctrl-btn" onclick="toggleExpandAll(false)" title="Tümünü Kapat">
+                    <i class="fas fa-angle-double-up"></i>
+                </button>
+                <span class="record-count" id="recordCount">Yükleniyor...</span>
+            </div>
         </div>
-        <div class="card-body p-2">
+        <cfoutput>
+        <div class="tree-info-strip">
+            <span class="bom-badge"><i class="fas fa-code-branch me-1"></i>BOM</span>
+            <span class="bom-sep">|</span>
+            <strong class="text-dark">#htmlEditFormat(getRootStock.stock_code)#</strong>
+            <span class="text-muted ms-1 small">#htmlEditFormat(getRootStock.product_name)#</span>
+            <cfif len(trim(getRootStock.product_cat))>
+            <span class="bom-sep ms-2">|</span>
+            <span class="text-muted small">#htmlEditFormat(getRootStock.product_cat)#</span>
+            </cfif>
+        </div>
+        </cfoutput>
+        <div class="card-body p-0">
             <div id="treeGrid"></div>
         </div>
     </div>
 </div>
 
-<!--- Modal z-index: DevExtreme overlay'lerinin önüne çıkması için --->
+<!--- Stiller --->
 <style>
+/* ── Genişlet / Daralt düğmeleri ── */
+.bom-ctrl-btn {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    font-size: 0.75rem;
+}
+
+/* ── BOM Bilgi Şeridi ── */
+.tree-info-strip {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border-bottom: 1px solid #bfdbfe;
+    padding: 9px 16px;
+    font-size: 0.83rem;
+}
+.bom-badge {
+    background: var(--primary);
+    color: #fff;
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 20px;
+    letter-spacing: 0.5px;
+}
+.bom-sep { color: #93c5fd; }
+
+/* ── Modal: Bölüm kartları ── */
+.modal-section {
+    background: #f8fafc;
+    border: 1px solid #e8edf3;
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+}
+.modal-section.section-malzeme { border-left: 3px solid #3b82f6; }
+.modal-section.section-operasyon { border-left: 3px solid #f59e0b; }
+.modal-section.section-common { border-left: 3px solid #10b981; }
+.modal-section.section-flags { border-left: 3px solid #8b5cf6; }
+.modal-section-title {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #64748b;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.modal-section-title i { color: var(--accent); font-size: 0.68rem; }
+
+/* ── Satır tipi seçici ── */
+.row-type-selector .btn-outline-primary  { border-width: 2px; font-weight: 600; }
+.row-type-selector .btn-outline-warning  { border-width: 2px; font-weight: 600; }
+.row-type-selector .btn-check:checked + .btn-outline-primary  { box-shadow: 0 2px 10px rgba(59,130,246,.35); }
+.row-type-selector .btn-check:checked + .btn-outline-warning  { box-shadow: 0 2px 10px rgba(245,158,11,.35); }
+
+/* ── Modal z-index ── */
 #rowModal { z-index: 9500 !important; }
 .modal-backdrop { z-index: 9400 !important; }
 </style>
@@ -276,21 +360,22 @@
                     </cfoutput>
 
                     <!--- Satır tipi seçimi --->
-                    <div class="mb-3">
+                    <div class="row-type-selector mb-3">
                         <div class="btn-group w-100" role="group">
                             <input type="radio" class="btn-check" name="f_row_type" id="rt_malzeme" value="malzeme" checked>
                             <label class="btn btn-outline-primary" for="rt_malzeme">
-                                <i class="fas fa-box me-1"></i>Malzeme / Yarı Mamul
+                                <i class="fas fa-box me-2"></i>Malzeme / Yarı Mamul
                             </label>
                             <input type="radio" class="btn-check" name="f_row_type" id="rt_operasyon" value="operasyon">
                             <label class="btn btn-outline-warning" for="rt_operasyon">
-                                <i class="fas fa-cogs me-1"></i>Operasyon / İşlem
+                                <i class="fas fa-cogs me-2"></i>Operasyon / İşlem
                             </label>
                         </div>
                     </div>
 
                     <!--- ─── Malzeme alanları ─── --->
-                    <div id="section_malzeme">
+                    <div id="section_malzeme" class="modal-section section-malzeme">
+                        <div class="modal-section-title"><i class="fas fa-box"></i>Malzeme Bilgileri</div>
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="form-label">Üst Bileşen (Ebeveyn)</label>
@@ -339,7 +424,8 @@
                     </div>
 
                     <!--- ─── Operasyon alanları ─── --->
-                    <div id="section_operasyon" style="display:none;">
+                    <div id="section_operasyon" class="modal-section section-operasyon" style="display:none;">
+                        <div class="modal-section-title"><i class="fas fa-cogs"></i>Operasyon Bilgileri</div>
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="form-label">Operasyon Tipi <span class="text-danger">*</span></label>
@@ -360,55 +446,65 @@
                     </div>
 
                     <!--- ─── Ortak alanlar ─── --->
-                    <div class="row g-3 mt-1">
-                        <div class="col-md-4">
-                            <label class="form-label">İstasyon</label>
-                            <select class="form-select" id="f_station_id">
-                                <option value="0">-</option>
-                                <cfoutput>
-                                <cfloop array="#stationsArr#" index="st">
-                                    <option value="#st.station_id#">#htmlEditFormat(st.station_name)#</option>
-                                </cfloop>
-                                </cfoutput>
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">Sıra No</label>
-                            <input type="number" min="0" class="form-control" id="f_line_number" value="0">
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">Süreç Aşaması</label>
-                            <input type="number" min="0" class="form-control" id="f_process_stage" value="0">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Detay / Açıklama</label>
-                            <input type="text" class="form-control" id="f_detail" maxlength="150" placeholder="Açıklama...">
+                    <div class="modal-section section-common">
+                        <div class="modal-section-title"><i class="fas fa-sliders-h"></i>Ortak Bilgiler</div>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">İstasyon</label>
+                                <select class="form-select" id="f_station_id">
+                                    <option value="0">-</option>
+                                    <cfoutput>
+                                    <cfloop array="#stationsArr#" index="st">
+                                        <option value="#st.station_id#">#htmlEditFormat(st.station_name)#</option>
+                                    </cfloop>
+                                    </cfoutput>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Sıra No</label>
+                                <input type="number" min="0" class="form-control" id="f_line_number" value="0">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Süreç Aşaması</label>
+                                <input type="number" min="0" class="form-control" id="f_process_stage" value="0">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Detay / Açıklama</label>
+                                <input type="text" class="form-control" id="f_detail" maxlength="150" placeholder="Açıklama...">
+                            </div>
                         </div>
                     </div>
-                    <div class="row g-3 mt-1">
-                        <div class="col-md-3 d-flex align-items-center">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="f_is_phantom">
-                                <label class="form-check-label" for="f_is_phantom">Sanal (Phantom)</label>
+
+                    <!--- ─── Bayraklar ─── --->
+                    <div class="modal-section section-flags">
+                        <div class="modal-section-title"><i class="fas fa-tags"></i>Özellikler</div>
+                        <div class="row g-3">
+                            <div class="col-md-4 d-flex align-items-center">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="f_is_phantom">
+                                    <label class="form-check-label" for="f_is_phantom">Sanal (Phantom)</label>
+                                </div>
                             </div>
-                        </div>
-                        <div class="col-md-3 d-flex align-items-center">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="f_is_configure">
-                                <label class="form-check-label" for="f_is_configure">Konfigüre</label>
+                            <div class="col-md-4 d-flex align-items-center">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="f_is_configure">
+                                    <label class="form-check-label" for="f_is_configure">Konfigüre</label>
+                                </div>
                             </div>
-                        </div>
-                        <div class="col-md-3 d-flex align-items-center">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="f_is_sevk">
-                                <label class="form-check-label" for="f_is_sevk">Sevk</label>
+                            <div class="col-md-4 d-flex align-items-center">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="f_is_sevk">
+                                    <label class="form-check-label" for="f_is_sevk">Sevk</label>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </form>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+            <div class="modal-footer" style="background:#f8fafc;">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>İptal
+                </button>
                 <button type="button" class="btn btn-primary" id="btnSaveRow" onclick="saveRow()">
                     <i class="fas fa-save me-1"></i>Kaydet
                 </button>
@@ -433,86 +529,13 @@ function toggleRowType(type) {
 }
 
 /* ─── Init ─── */
-(function() {
-    function init() { initTree(); }
-    if (document.readyState === 'complete') { init(); } else { window.addEventListener('load', init); }
-})();
+window.addEventListener('load', function() {
+    if (typeof DevExpress !== 'undefined') DevExpress.localization.locale('tr');
+    initTree();
+});
 
-function escapeHtml(v) {
-    return String(v == null ? '' : v)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-}
-
-function uiNotify(message, type) {
-    if (window.DevExpress && DevExpress.ui && typeof DevExpress.ui.notify === 'function') {
-        DevExpress.ui.notify(message, type || 'info', 2500);
-    } else {
-        alert(message);
-    }
-    function hasTreeList() {
-        return typeof DevExpress !== 'undefined' && DevExpress.ui && typeof DevExpress.ui.dxTreeList === 'function';
-    }
-
-    function ensureDX(cb) {
-        if (hasTreeList()) {
-            cb();
-            return;
-        }
-
-        if (!window.__dxTreeLoadState) {
-            window.__dxTreeLoadState = { loading: false, callbacks: [] };
-        }
-        var state = window.__dxTreeLoadState;
-        state.callbacks.push(cb);
-
-        if (state.loading) return;
-        state.loading = true;
-
-        var h = document.head;
-        function addCSSOnce(id, href) {
-            if (document.getElementById(id)) return;
-            var l = document.createElement('link');
-            l.id = id;
-            l.rel = 'stylesheet';
-            l.href = href;
-            h.appendChild(l);
-        }
-        function addJSOnce(id, src, next) {
-            var existing = document.getElementById(id);
-            if (existing) {
-                if (existing.dataset.loaded === 'true') { next(); return; }
-                existing.addEventListener('load', next, { once: true });
-                return;
-            }
-            var s = document.createElement('script');
-            s.id = id;
-            s.src = src;
-            s.onload = function() { s.dataset.loaded = 'true'; next(); };
-            h.appendChild(s);
-        }
-
-        addCSSOnce('dx-common-css', 'https://cdn3.devexpress.com/jslib/23.2.5/css/dx.common.css');
-        addCSSOnce('dx-light-css',  'https://cdn3.devexpress.com/jslib/23.2.5/css/dx.light.css');
-        addJSOnce('dx-all-js', 'https://cdn3.devexpress.com/jslib/23.2.5/js/dx.all.js', function() {
-            addJSOnce('dx-tr-js', 'https://cdn3.devexpress.com/jslib/23.2.5/js/localization/dx.messages.tr.js', function() {
-                state.loading = false;
-                while (state.callbacks.length) {
-                    state.callbacks.shift()();
-                }
-            });
-        });
-    }
-    function init() {
-        if (typeof DevExpress !== 'undefined' && DevExpress.ui && typeof DevExpress.ui.dxTreeList === 'function') { run(); } else { loadDX(run); }
-    }
-    html.push('</tbody></table></div>');
-
-function getTreeOptions() {
-    return {
+function initTree() {
+    $('##treeGrid').dxTreeList({
         dataSource: treeData,
         keyExpr: 'product_tree_id',
         parentIdExpr: 'related_product_tree_id',
@@ -620,28 +643,16 @@ function getTreeOptions() {
                 }
             }
         ]
-    };
-}
-
-function getTreeInstance() {
-    if (window.jQuery && typeof window.jQuery.fn.dxTreeList === 'function') {
-        return window.jQuery('##treeGrid').dxTreeList('instance');
-    }
-    return DevExpress.ui.dxTreeList.getInstance(document.getElementById('treeGrid'));
-}
-
-function initTree() {
-    var options = getTreeOptions();
-    if (window.jQuery && typeof window.jQuery.fn.dxTreeList === 'function') {
-        window.jQuery('##treeGrid').dxTreeList(options);
-        return;
-    }
-    DevExpress.ui.dxTreeList(document.getElementById('treeGrid'), options);
+    });
 }
 
 function refreshTree() {
-    var instance = getTreeInstance();
-    if (instance) instance.option('dataSource', treeData);
+    $('##treeGrid').dxTreeList('instance').option('dataSource', treeData);
+}
+
+function toggleExpandAll(expand) {
+    var inst = $('##treeGrid').dxTreeList('instance');
+    if (expand) { inst.expandAll(); } else { inst.collapseAll(); }
 }
 
 function buildParentSelect(excludeId) {
@@ -725,16 +736,16 @@ function saveRow() {
     if (rowType === 'malzeme') {
         var compStockId = document.getElementById('f_component_stock_id').value;
         if (!compStockId || compStockId == '0') {
-            uiNotify('Bileşen stok seçimi zorunludur.', 'warning'); return;
+            DevExpress.ui.notify('Bileşen stok seçimi zorunludur.', 'warning', 2500); return;
         }
         var amount = parseFloat(document.getElementById('f_amount').value);
         if (isNaN(amount) || amount <= 0) {
-            uiNotify('Miktar sıfırdan büyük olmalıdır.', 'warning'); return;
+            DevExpress.ui.notify('Miktar sıfırdan büyük olmalıdır.', 'warning', 2500); return;
         }
     } else {
         var opTypeId = document.getElementById('f_operation_type_id').value;
         if (!opTypeId || opTypeId == '0') {
-            uiNotify('Operasyon tipi seçimi zorunludur.', 'warning'); return;
+            DevExpress.ui.notify('Operasyon tipi seçimi zorunludur.', 'warning', 2500); return;
         }
     }
 
@@ -767,7 +778,7 @@ function saveRow() {
         btn.innerHTML = '<i class="fas fa-save me-1"></i>Kaydet';
         if (res && res.success) {
             bootstrap.Modal.getInstance(document.getElementById('rowModal')).hide();
-            uiNotify(res.mode === 'added' ? 'Satır eklendi.' : 'Satır güncellendi.', 'success');
+            DevExpress.ui.notify(res.mode === 'added' ? 'Satır eklendi.' : 'Satır güncellendi.', 'success', 2500);
             if (res.row) {
                 if (res.mode === 'added') {
                     treeData.push(res.row);
@@ -781,36 +792,36 @@ function saveRow() {
                 location.reload();
             }
         } else {
-            uiNotify((res && res.message) || 'Kayıt başarısız.', 'error');
+            DevExpress.ui.notify((res && res.message) || 'Kayıt başarısız.', 'error', 3500);
         }
     }, 'json').fail(function() {
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-save me-1"></i>Kaydet';
-        uiNotify('Sunucu hatası.', 'error');
+        DevExpress.ui.notify('Sunucu hatası.', 'error', 3000);
     });
 }
 
 function deleteRow(id) {
     var row = treeData.find(function(x) { return x.product_tree_id === id; });
     var label = row ? (row.component_stock_code || row.operation_type_name || ('ID:' + id)) : ('ID:' + id);
-    uiConfirm(
+    DevExpress.ui.dialog.confirm(
         '"' + label + '" satırını ve tüm alt satırlarını silmek istiyor musunuz?',
-        'Silme Onayı',
-        function(ok) {
+        'Silme Onayı'
+    ).then(function(ok) {
         if (!ok) return;
         $.post('/product/form/delete_product_tree_row.cfm',
             { product_tree_id: id, root_stock_id: rootStockId },
             function(res) {
                 if (res && res.success) {
-                    uiNotify('Satır silindi.', 'success');
+                    DevExpress.ui.notify('Satır silindi.', 'success', 2500);
                     var deleted = res.deleted_ids || [id];
                     treeData = treeData.filter(function(x) { return deleted.indexOf(x.product_tree_id) === -1; });
                     refreshTree();
                     document.getElementById('recordCount').textContent = treeData.length + ' satır';
                 } else {
-                    uiNotify((res && res.message) || 'Silme başarısız.', 'error');
+                    DevExpress.ui.notify((res && res.message) || 'Silme başarısız.', 'error', 3500);
                 }
-            }, 'json').fail(function() { uiNotify('Sunucu hatası.', 'error'); });
+            }, 'json').fail(function() { DevExpress.ui.notify('Sunucu hatası.', 'error', 3000); });
     });
 }
 </script>

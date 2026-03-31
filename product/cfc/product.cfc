@@ -985,4 +985,323 @@
         <cfreturn serializeJSON(result)>
     </cffunction>
 
+    <!--- ==================== EXCEL IMPORT ==================== --->
+
+    <!--- Toplu Ürün İçe Aktarma --->
+    <cffunction name="importProducts" access="remote" returnformat="plain" output="false">
+        <cfargument name="productsJSON" type="string" required="true">
+
+        <cfset var result     = {}>
+        <cfset var products   = []>
+        <cfset var inserted   = 0>
+        <cfset var errList    = []>
+        <cfset var catMap     = {}>
+        <cfset var qAllCats   = "">
+
+        <cfheader name="Content-Type" value="application/json; charset=utf-8">
+
+        <cftry>
+            <cfif len(trim(arguments.productsJSON)) eq 0>
+                <cfset result = {"success": false, "message": "Veri boş olamaz"}>
+                <cfreturn serializeJSON(result)>
+            </cfif>
+
+            <cfset products = deserializeJSON(arguments.productsJSON)>
+
+            <cfif not isArray(products) or arrayLen(products) eq 0>
+                <cfset result = {"success": false, "message": "Geçersiz veri formatı"}>
+                <cfreturn serializeJSON(result)>
+            </cfif>
+
+            <cfif arrayLen(products) gt 5000>
+                <cfset result = {"success": false, "message": "Tek seferde en fazla 5000 ürün aktarabilirsiniz"}>
+                <cfreturn serializeJSON(result)>
+            </cfif>
+
+            <!--- Kategori ID'lerini önbelleğe al (per-row sorgu yerine) --->
+            <cfquery name="qAllCats" datasource="boyahane">
+                SELECT product_catid FROM product_cat
+            </cfquery>
+            <cfloop query="qAllCats">
+                <cfset catMap[product_catid] = true>
+            </cfloop>
+
+            <cfloop array="#products#" index="row">
+                <cfset rowNum = structKeyExists(row, "row_num") ? row.row_num : 0>
+
+                <!--- Zorunlu alan doğrulama --->
+                <cfif not structKeyExists(row, "product_name") or len(trim(row.product_name)) eq 0>
+                    <cfset arrayAppend(errList, "Satır #rowNum#: Ürün adı boş olamaz")>
+                    <cfcontinue>
+                </cfif>
+
+                <cfif not structKeyExists(row, "product_catid") or val(row.product_catid) eq 0>
+                    <cfset arrayAppend(errList, "Satır #rowNum# (#trim(row.product_name)#): Geçerli kategori ID girilmedi")>
+                    <cfcontinue>
+                </cfif>
+
+                <cfif not structKeyExists(catMap, val(row.product_catid))>
+                    <cfset arrayAppend(errList, "Satır #rowNum# (#trim(row.product_name)#): Kategori ID #val(row.product_catid)# bulunamadı")>
+                    <cfcontinue>
+                </cfif>
+
+                <!--- Değerleri hazırla --->
+                <cfset pCode      = structKeyExists(row, "product_code")    ? trim(row.product_code)    : "">
+                <cfset pName      = trim(row.product_name)>
+                <cfset pCatId     = val(row.product_catid)>
+                <cfset pBarcod    = structKeyExists(row, "barcod")           ? trim(row.barcod)           : "">
+                <cfset pBrandId   = structKeyExists(row, "brand_id")         ? val(row.brand_id)          : 0>
+                <cfset pDetail    = structKeyExists(row, "product_detail")   ? trim(row.product_detail)   : "">
+                <cfset pTax       = structKeyExists(row, "tax")              ? val(row.tax)               : 18>
+                <cfset pManufact  = structKeyExists(row, "manufact_code")    ? trim(row.manufact_code)    : "">
+                <cfset pShortCode = structKeyExists(row, "short_code")       ? trim(row.short_code)       : "">
+                <cfset pShelfLife = structKeyExists(row, "shelf_life")       ? trim(row.shelf_life)       : "">
+
+                <!--- Boolean dönüşümleri --->
+                <cfset pStatus = true>
+                <cfif structKeyExists(row, "product_status")>
+                    <cfset pStatus = (row.product_status eq true or row.product_status eq 1)>
+                </cfif>
+                <cfset pIsSales = true>
+                <cfif structKeyExists(row, "is_sales")>
+                    <cfset pIsSales = (row.is_sales eq true or row.is_sales eq 1)>
+                </cfif>
+                <cfset pIsPurchase = true>
+                <cfif structKeyExists(row, "is_purchase")>
+                    <cfset pIsPurchase = (row.is_purchase eq true or row.is_purchase eq 1)>
+                </cfif>
+
+                <cfif pTax lt 0 or pTax gt 100>
+                    <cfset pTax = 18>
+                </cfif>
+
+                <cftry>
+                    <!--- Ürünü ekle --->
+                    <cfquery datasource="boyahane" name="qInsert">
+                        INSERT INTO product (
+                            product_code, product_name, product_catid, barcod,
+                            product_detail, product_status, tax,
+                            is_sales, is_purchase, brand_id, shelf_life,
+                            manufact_code, short_code, record_date, record_member
+                        ) VALUES (
+                            <cfqueryparam value="#pCode#"      cfsqltype="cf_sql_varchar" null="#len(pCode) eq 0#">,
+                            <cfqueryparam value="#pName#"      cfsqltype="cf_sql_varchar">,
+                            <cfqueryparam value="#pCatId#"     cfsqltype="cf_sql_integer">,
+                            <cfqueryparam value="#pBarcod#"    cfsqltype="cf_sql_varchar" null="#len(pBarcod) eq 0#">,
+                            <cfqueryparam value="#pDetail#"    cfsqltype="cf_sql_varchar" null="#len(pDetail) eq 0#">,
+                            <cfqueryparam value="#pStatus#"    cfsqltype="cf_sql_bit">,
+                            <cfqueryparam value="#pTax#"       cfsqltype="cf_sql_double">,
+                            <cfqueryparam value="#pIsSales#"   cfsqltype="cf_sql_bit">,
+                            <cfqueryparam value="#pIsPurchase#" cfsqltype="cf_sql_bit">,
+                            <cfqueryparam value="#pBrandId#"   cfsqltype="cf_sql_integer" null="#pBrandId eq 0#">,
+                            <cfqueryparam value="#pShelfLife#" cfsqltype="cf_sql_varchar" null="#len(pShelfLife) eq 0#">,
+                            <cfqueryparam value="#pManufact#"  cfsqltype="cf_sql_varchar" null="#len(pManufact) eq 0#">,
+                            <cfqueryparam value="#pShortCode#" cfsqltype="cf_sql_varchar" null="#len(pShortCode) eq 0#">,
+                            CURRENT_TIMESTAMP,
+                            1
+                        )
+                        RETURNING product_id
+                    </cfquery>
+
+                    <!--- Stok kaydı oluştur --->
+                    <cfset newProdId = qInsert.product_id>
+                    <cfset stkCode   = len(pCode) gt 0 ? pCode : "STK-" & newProdId>
+
+                    <cfquery datasource="boyahane">
+                        INSERT INTO stocks (
+                            stock_code, product_id, barcod, manufact_code,
+                            stock_status, is_main_stock, record_emp, record_date
+                        ) VALUES (
+                            <cfqueryparam value="#stkCode#"   cfsqltype="cf_sql_varchar">,
+                            <cfqueryparam value="#newProdId#" cfsqltype="cf_sql_integer">,
+                            <cfqueryparam value="#pBarcod#"   cfsqltype="cf_sql_varchar" null="#len(pBarcod) eq 0#">,
+                            <cfqueryparam value="#pManufact#" cfsqltype="cf_sql_varchar" null="#len(pManufact) eq 0#">,
+                            true, true, 1, CURRENT_TIMESTAMP
+                        )
+                    </cfquery>
+
+                    <cfset inserted = inserted + 1>
+
+                    <cfcatch type="any">
+                        <cfset arrayAppend(errList, "Satır #rowNum# (#pName#): #cfcatch.message#")>
+                    </cfcatch>
+                </cftry>
+            </cfloop>
+
+            <cfset result = {
+                "success":     true,
+                "inserted":    inserted,
+                "error_count": arrayLen(errList),
+                "errors":      errList,
+                "message":     inserted & " ürün başarıyla eklendi" & (arrayLen(errList) gt 0 ? ", " & arrayLen(errList) & " hata oluştu" : "")
+            }>
+
+            <cfcatch type="any">
+                <cfset result = {
+                    "success": false,
+                    "message": "İçe aktarma sırasında hata oluştu: #cfcatch.message#"
+                }>
+            </cfcatch>
+        </cftry>
+
+        <cfreturn serializeJSON(result)>
+    </cffunction>
+
+    <!--- Toplu Marka İçe Aktarma --->
+    <cffunction name="importBrands" access="remote" returnformat="plain" output="false">
+        <cfargument name="brandsJSON" type="string" required="true">
+
+        <cfset var result   = {}>
+        <cfset var brands   = []>
+        <cfset var inserted = 0>
+        <cfset var errList  = []>
+
+        <cfheader name="Content-Type" value="application/json; charset=utf-8">
+
+        <cftry>
+            <cfif len(trim(arguments.brandsJSON)) eq 0>
+                <cfset result = {"success": false, "message": "Veri boş olamaz"}>
+                <cfreturn serializeJSON(result)>
+            </cfif>
+
+            <cfset brands = deserializeJSON(arguments.brandsJSON)>
+
+            <cfif not isArray(brands) or arrayLen(brands) eq 0>
+                <cfset result = {"success": false, "message": "Geçersiz veri formatı"}>
+                <cfreturn serializeJSON(result)>
+            </cfif>
+
+            <cfif arrayLen(brands) gt 5000>
+                <cfset result = {"success": false, "message": "En fazla 5000 kayıt aktarabilirsiniz"}>
+                <cfreturn serializeJSON(result)>
+            </cfif>
+
+            <cfloop array="#brands#" index="row">
+                <cfset rowNum = structKeyExists(row, "row_num") ? row.row_num : 0>
+
+                <cfif not structKeyExists(row, "brand_name") or len(trim(row.brand_name)) eq 0>
+                    <cfset arrayAppend(errList, "Satır #rowNum#: Marka adı boş olamaz")>
+                    <cfcontinue>
+                </cfif>
+
+                <cfset bName      = trim(row.brand_name)>
+                <cfset bCode      = structKeyExists(row, "brand_code")  ? trim(row.brand_code)  : "">
+                <cfset bDetail    = structKeyExists(row, "detail")       ? trim(row.detail)       : "">
+                <cfset bIsActive  = structKeyExists(row, "is_active")   ? (row.is_active eq true or row.is_active eq 1)   : true>
+                <cfset bIsInternet = structKeyExists(row, "is_internet") ? (row.is_internet eq true or row.is_internet eq 1) : false>
+
+                <cftry>
+                    <cfquery datasource="boyahane">
+                        INSERT INTO product_brands (
+                            brand_name, brand_code, detail, is_active, is_internet,
+                            record_date, record_emp
+                        ) VALUES (
+                            <cfqueryparam value="#bName#"       cfsqltype="cf_sql_varchar">,
+                            <cfqueryparam value="#bCode#"       cfsqltype="cf_sql_varchar" null="#len(bCode) eq 0#">,
+                            <cfqueryparam value="#bDetail#"     cfsqltype="cf_sql_varchar" null="#len(bDetail) eq 0#">,
+                            <cfqueryparam value="#bIsActive#"   cfsqltype="cf_sql_bit">,
+                            <cfqueryparam value="#bIsInternet#" cfsqltype="cf_sql_bit">,
+                            CURRENT_TIMESTAMP,
+                            1
+                        )
+                    </cfquery>
+                    <cfset inserted = inserted + 1>
+                    <cfcatch type="any">
+                        <cfset arrayAppend(errList, "Satır #rowNum# (#bName#): #cfcatch.message#")>
+                    </cfcatch>
+                </cftry>
+            </cfloop>
+
+            <cfset result = {
+                "success":     true,
+                "inserted":    inserted,
+                "error_count": arrayLen(errList),
+                "errors":      errList,
+                "message":     inserted & " marka eklendi" & (arrayLen(errList) gt 0 ? ", " & arrayLen(errList) & " hata" : "")
+            }>
+
+            <cfcatch type="any">
+                <cfset result = {"success": false, "message": "İçe aktarma hatası: #cfcatch.message#"}>
+            </cfcatch>
+        </cftry>
+
+        <cfreturn serializeJSON(result)>
+    </cffunction>
+
+    <!--- Toplu Kategori İçe Aktarma --->
+    <cffunction name="importProductCats" access="remote" returnformat="plain" output="false">
+        <cfargument name="catsJSON" type="string" required="true">
+
+        <cfset var result   = {}>
+        <cfset var cats     = []>
+        <cfset var inserted = 0>
+        <cfset var errList  = []>
+
+        <cfheader name="Content-Type" value="application/json; charset=utf-8">
+
+        <cftry>
+            <cfif len(trim(arguments.catsJSON)) eq 0>
+                <cfset result = {"success": false, "message": "Veri boş olamaz"}>
+                <cfreturn serializeJSON(result)>
+            </cfif>
+
+            <cfset cats = deserializeJSON(arguments.catsJSON)>
+
+            <cfif not isArray(cats) or arrayLen(cats) eq 0>
+                <cfset result = {"success": false, "message": "Geçersiz veri formatı"}>
+                <cfreturn serializeJSON(result)>
+            </cfif>
+
+            <cfif arrayLen(cats) gt 5000>
+                <cfset result = {"success": false, "message": "En fazla 5000 kayıt aktarabilirsiniz"}>
+                <cfreturn serializeJSON(result)>
+            </cfif>
+
+            <cfloop array="#cats#" index="row">
+                <cfset rowNum = structKeyExists(row, "row_num") ? row.row_num : 0>
+
+                <cfif not structKeyExists(row, "product_cat") or len(trim(row.product_cat)) eq 0>
+                    <cfset arrayAppend(errList, "Satır #rowNum#: Kategori adı boş olamaz")>
+                    <cfcontinue>
+                </cfif>
+
+                <cfset cName      = trim(row.product_cat)>
+                <cfset cHierarchy = structKeyExists(row, "hierarchy") ? trim(row.hierarchy) : "">
+                <cfset cDetail    = structKeyExists(row, "detail")     ? trim(row.detail)     : "">
+
+                <cftry>
+                    <cfquery datasource="boyahane">
+                        INSERT INTO product_cat (
+                            product_cat, hierarchy, detail, record_date, record_emp
+                        ) VALUES (
+                            <cfqueryparam value="#cName#"      cfsqltype="cf_sql_varchar">,
+                            <cfqueryparam value="#cHierarchy#" cfsqltype="cf_sql_varchar" null="#len(cHierarchy) eq 0#">,
+                            <cfqueryparam value="#cDetail#"    cfsqltype="cf_sql_varchar" null="#len(cDetail) eq 0#">,
+                            CURRENT_TIMESTAMP,
+                            1
+                        )
+                    </cfquery>
+                    <cfset inserted = inserted + 1>
+                    <cfcatch type="any">
+                        <cfset arrayAppend(errList, "Satır #rowNum# (#cName#): #cfcatch.message#")>
+                    </cfcatch>
+                </cftry>
+            </cfloop>
+
+            <cfset result = {
+                "success":     true,
+                "inserted":    inserted,
+                "error_count": arrayLen(errList),
+                "errors":      errList,
+                "message":     inserted & " kategori eklendi" & (arrayLen(errList) gt 0 ? ", " & arrayLen(errList) & " hata" : "")
+            }>
+
+            <cfcatch type="any">
+                <cfset result = {"success": false, "message": "İçe aktarma hatası: #cfcatch.message#"}>
+            </cfcatch>
+        </cftry>
+
+        <cfreturn serializeJSON(result)>
+    </cffunction>
+
 </cfcomponent>

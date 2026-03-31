@@ -6,21 +6,24 @@
 
 INSERT INTO pbs_objects (full_fuseaction, file_path, object_name, object_title, object_type, parent_id, sort_order, is_active, is_menu)
 VALUES
--- Operasyon Tipleri
-('production.list_operation_types', '/production/display/list_operation_types.cfm', 'list_operation_types', 'Operasyon Tipleri',         'page', NULL, 10, true, true),
-('production.add_operation_type',   '/production/form/add_operation_type.cfm',       'add_operation_type',   'Yeni Operasyon Tipi',        'page', NULL, 11, true, false),
-('production.save_operation_type',  '/production/form/save_operation_type.cfm',       'save_operation_type',  'Operasyon Tipi Kaydet',      'page', NULL, 12, true, false),
-('production.delete_operation_type','/production/form/delete_operation_type.cfm',     'delete_operation_type','Operasyon Tipi Sil',         'page', NULL, 13, true, false),
 
--- İş İstasyonları
-('production.list_workstations',    '/production/display/list_workstations.cfm',      'list_workstations',    'İş İstasyonları',            'page', NULL, 20, true, true),
-('production.add_workstation',      '/production/form/add_workstation.cfm',            'add_workstation',      'Yeni İş İstasyonu',          'page', NULL, 21, true, false),
-('production.save_workstation',     '/production/form/save_workstation.cfm',           'save_workstation',     'İstasyon Kaydet',            'page', NULL, 22, true, false),
-('production.delete_workstation',   '/production/form/delete_workstation.cfm',         'delete_workstation',   'İstasyon Sil',               'page', NULL, 23, true, false),
+-- Üretim Emirleri (menüde görünür)
+('production.list_production_orders',  '/production/display/list_production_orders.cfm',  'list_production_orders',  'Üretim Emirleri',        'page', NULL, 40, true, true),
+('production.add_production_order',    '/production/form/add_production_order.cfm',        'add_production_order',    'Yeni Üretim Emri',       'page', NULL, 41, true, false),
+('production.view_production_order',   '/production/display/view_production_order.cfm',    'view_production_order',   'Üretim Emri Detayı',     'page', NULL, 42, true, false),
 
--- İstasyon-Ürün İlişkisi (AJAX uç noktaları, menüde görünmez)
-('production.save_ws_product',      '/production/form/save_ws_product.cfm',            'save_ws_product',      'İstasyon Ürün Kaydet',       'page', NULL, 30, true, false),
-('production.delete_ws_product',    '/production/form/delete_ws_product.cfm',          'delete_ws_product',    'İstasyon Ürün Sil',          'page', NULL, 31, true, false)
+-- Üretim Emirleri — backend (menüde görünmez)
+('production.save_production_order',   '/production/form/save_production_order.cfm',       'save_production_order',   'Üretim Emri Kaydet',     'page', NULL, 43, true, false),
+('production.delete_production_order', '/production/form/delete_production_order.cfm',     'delete_production_order', 'Üretim Emri Sil',        'page', NULL, 44, true, false),
+('production.update_production_status','/production/form/update_production_status.cfm',    'update_production_status','Üretim Emri Durum Güncelle','page',NULL,45, true, false),
+('production.finalize_production_order','/production/form/finalize_production_order.cfm',  'finalize_production_order','Üretim Emri Sonuçlandır','page', NULL, 46, true, false),
+('production.save_production_stock',   '/production/form/save_production_stock.cfm',       'save_production_stock',   'Hammadde Tüketim Güncelle','page',NULL,47, true, false),
+
+-- MES — Üretim Takip Ekranı (menüde görünür)
+('production.mes',                     '/production/display/mes.cfm',                      'mes',                     'MES Üretim Takip',         'page', NULL, 48, true, true),
+
+-- MES — backend (menüde görünmez)
+('production.save_production_pause',   '/production/form/save_production_pause.cfm',       'save_production_pause',   'Duruş Kaydet',             'page', NULL, 49, true, false)
 ;
 
 -- =====================================================

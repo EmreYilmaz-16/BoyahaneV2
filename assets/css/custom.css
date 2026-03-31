@@ -394,6 +394,38 @@ body {
     transform: rotate(90deg);
 }
 
+/* ===== SIDEBAR COLLAPSE (Desktop) ===== */
+body.sidebar-collapsed .sidebar {
+    left: calc(-1 * var(--sidebar-w));
+}
+
+body.sidebar-collapsed .content-wrapper {
+    left: 0;
+}
+
+body.sidebar-collapsed .footer {
+    left: 0;
+}
+
+/* Toggle button - her zaman görünür */
+#sidebarToggle {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 7px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.2s;
+}
+
+#sidebarToggle:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
     .sidebar {

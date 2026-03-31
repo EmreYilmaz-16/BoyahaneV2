@@ -397,6 +397,9 @@
                             <button class="btn btn-xs btn-outline-danger p-0" style="width:22px;height:22px;font-size:10px" title="Sil" onclick="deleteStock(#stock_id#,'#jsStringFormat(stock_code)#')">
                                 <i class="fas fa-trash"></i>
                             </button>
+                             <button class="btn btn-xs btn-outline-success p-0" style="width:22px;height:22px;font-size:10px" title="Görünüm" onclick="viewTree(#stock_id#)">
+                                <i class="fas fa-tree"></i>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -552,6 +555,9 @@ function saveStock() {
             }
         }
     });
+}
+function viewTree(stockId) {
+    window.open('/index.cfm?fuseaction=product.view_product_tree&stock_id=' + stockId, '_blank', 'width=600,height=400,scrollbars=yes');
 }
 
 function deleteStock(stockId, stockCode) {
