@@ -17,15 +17,38 @@
     <cfparam name="form.ship_method"    default="0">
     <cfparam name="form.order_currency" default="0">
     <cfparam name="form.order_status"   default="0">
+    <cfparam name="form.member_type"    default="0">
+    <cfparam name="form.ref_company_id" default="0">
     <cfparam name="form.rows"           default="[]">
 
     <cfset orderId      = val(form.order_id)>
     <cfset companyId    = val(form.company_id)>
+    <cfset memberTypeVal = val(form.member_type)>
+    <cfset refCompanyIdVal = val(form.ref_company_id)>
     <cfset orderStage   = val(form.order_stage)>
     <cfset paymethodVal = val(form.paymethod)>
     <cfset shipMethodVal= val(form.ship_method)>
     <cfset currencyVal  = val(form.order_currency)>
     <cfset editMode     = orderId gt 0>
+
+    <!--- Parti ekranından kayıt gelirken company_id boş gelebilirse irsaliyeden tamamla --->
+    <cfif companyId lte 0 AND len(trim(form.ref_no))>
+        <cfquery name="getShipCompany" datasource="boyahane">
+            SELECT company_id
+            FROM ship
+            WHERE ship_number = <cfqueryparam value="#trim(form.ref_no)#" cfsqltype="cf_sql_varchar">
+            ORDER BY ship_id DESC
+            LIMIT 1
+        </cfquery>
+        <cfif getShipCompany.recordCount AND isNumeric(getShipCompany.company_id)>
+            <cfset companyId = val(getShipCompany.company_id)>
+        </cfif>
+    </cfif>
+
+    <cfif companyId gt 0>
+        <cfif memberTypeVal lte 0><cfset memberTypeVal = 3></cfif>
+        <cfif refCompanyIdVal lte 0><cfset refCompanyIdVal = companyId></cfif>
+    </cfif>
 
     <cfif companyId lte 0>
         <cfoutput>#serializeJSON({"success": false, "message": "Firma seçilmeden kayıt yapılamaz."})#</cfoutput>
@@ -86,6 +109,8 @@
                 order_date      = <cfqueryparam value="#orderDateVal#" cfsqltype="cf_sql_timestamp">,
                 deliverdate     = <cfqueryparam value="#hasDeliverDate ? deliverDateVal : ''#" cfsqltype="cf_sql_timestamp" null="#NOT hasDeliverDate#">,
                 company_id      = <cfqueryparam value="#companyId#" cfsqltype="cf_sql_integer">,
+                member_type     = <cfqueryparam value="#memberTypeVal#" cfsqltype="cf_sql_integer" null="#memberTypeVal eq 0#">,
+                ref_company_id  = <cfqueryparam value="#refCompanyIdVal#" cfsqltype="cf_sql_integer" null="#refCompanyIdVal eq 0#">,
                 paymethod       = <cfqueryparam value="#paymethodVal#" cfsqltype="cf_sql_integer" null="#paymethodVal eq 0#">,
                 ship_method     = <cfqueryparam value="#shipMethodVal#" cfsqltype="cf_sql_integer" null="#shipMethodVal eq 0#">,
                 order_currency  = <cfqueryparam value="#currencyVal#" cfsqltype="cf_sql_integer" null="#currencyVal eq 0#">,
@@ -103,7 +128,7 @@
         <cfquery datasource="boyahane" result="insertResult">
             INSERT INTO orders (
                 purchase_sales, order_stage, order_number, order_head, order_detail, ref_no,
-                order_date, deliverdate, company_id, paymethod, ship_method, order_currency,
+                order_date, deliverdate, company_id, member_type, ref_company_id, paymethod, ship_method, order_currency,
                 order_status, grosstotal, discounttotal, taxtotal, nettotal, record_date
             ) VALUES (
                 <cfqueryparam value="#form.purchase_sales eq 'true' OR form.purchase_sales eq true#" cfsqltype="cf_sql_boolean">,
@@ -115,6 +140,8 @@
                 <cfqueryparam value="#orderDateVal#" cfsqltype="cf_sql_timestamp">,
                 <cfqueryparam value="#hasDeliverDate ? deliverDateVal : ''#" cfsqltype="cf_sql_timestamp" null="#NOT hasDeliverDate#">,
                 <cfqueryparam value="#companyId#" cfsqltype="cf_sql_integer">,
+                <cfqueryparam value="#memberTypeVal#" cfsqltype="cf_sql_integer" null="#memberTypeVal eq 0#">,
+                <cfqueryparam value="#refCompanyIdVal#" cfsqltype="cf_sql_integer" null="#refCompanyIdVal eq 0#">,
                 <cfqueryparam value="#paymethodVal#" cfsqltype="cf_sql_integer" null="#paymethodVal eq 0#">,
                 <cfqueryparam value="#shipMethodVal#" cfsqltype="cf_sql_integer" null="#shipMethodVal eq 0#">,
                 <cfqueryparam value="#currencyVal#" cfsqltype="cf_sql_integer" null="#currencyVal eq 0#">,
