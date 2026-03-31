@@ -364,7 +364,7 @@ window.addEventListener('load', function() {
                 { dataField:'grosstotal', caption:'Brüt',  width:100, alignment:'right', dataType:'number', format:{type:'fixedPoint',precision:2} },
                 { dataField:'nettotal',   caption:'Net',   width:100, alignment:'right', dataType:'number', format:{type:'fixedPoint',precision:2} },
                 {
-                    caption:'İşlemler', width:120, alignment:'center', allowSorting:false, allowFiltering:false,
+                    caption:'İşlemler', width:160, alignment:'center', allowSorting:false, allowFiltering:false,
                     cellTemplate: function(c,o) {
                         var g = $('<div>').addClass('d-flex gap-1 justify-content-center');
                         $('<button>').addClass('btn btn-sm btn-outline-info').attr('title','Kalemleri Gör')
@@ -376,6 +376,9 @@ window.addEventListener('load', function() {
                                 e2.stopPropagation();
                                 window.location.href = 'index.cfm?fuseaction=order.add_order&order_id=' + (o.data.ORDER_ID||o.data.order_id);
                             }).appendTo(g);
+                        $('<button>').addClass('btn btn-sm btn-outline-success').attr('title','Üretime Gönder')
+                            .html('<i class="fas fa-industry"></i>')
+                            .on('click', function(e2){ e2.stopPropagation(); partiSendToProduction(o.data.ORDER_ID||o.data.order_id); }).appendTo(g);
                         g.appendTo(c);
                     }
                 }
@@ -530,6 +533,27 @@ function openColorPickerFromParti(partiRow) {
         STOCK_ID:     partiRow.FIRST_STOCK_ID    || partiRow.first_stock_id
     };
     openColorPicker(rowData, rowData.PRODUCT_ID);
+}
+
+/* ─── Üretime Gönder ──────────────────────────────────────── */
+function partiSendToProduction(orderId) {
+    if (!confirm('Bu partinin tüm satırları için üretim emri oluşturulacak. Devam etmek istiyor musunuz?')) return;
+    $.ajax({
+        url: '/production/form/send_order_to_production.cfm',
+        type: 'POST',
+        data: { order_id: orderId },
+        dataType: 'json',
+        success: function(res) {
+            if (res.success) {
+                DevExpress.ui.notify({ message: res.message, width: 400 }, 'success', 4000);
+            } else {
+                DevExpress.ui.notify({ message: res.message || 'Hata oluştu.', width: 400 }, 'error', 4000);
+            }
+        },
+        error: function() {
+            DevExpress.ui.notify({ message: 'Sunucu hatası oluştu.', width: 400 }, 'error', 4000);
+        }
+    });
 }
 
 /* ─── Renk Seçim Popup ─────────────────────────────────────── */

@@ -221,21 +221,24 @@
 .planner-topbar {
     display: flex;
     align-items: center;
-    gap: .75rem;
-    padding: .75rem 1.25rem;
-    background: ##fff;
-    border-bottom: 1px solid ##e2e8f0;
+    gap: 14px;
+    padding: 18px 24px;
+    background: linear-gradient(135deg, ##0d2137 0%, ##1a3a5c 100%);
+    border-bottom: 2px solid ##e67e22;
+    border-radius: 10px;
+    box-shadow: 0 4px 16px rgba(0,0,0,.18);
     flex-shrink: 0;
 }
 .planner-topbar .topbar-icon {
-    width: 40px; height: 40px;
+    width: 44px; height: 44px;
     border-radius: 10px;
-    background: linear-gradient(135deg, ##1e40af, ##3b82f6);
+    background: ##e67e22;
+    box-shadow: 0 3px 10px rgba(230,126,34,.45);
     display: flex; align-items: center; justify-content: center;
-    color: ##fff; font-size: 1rem; flex-shrink: 0;
+    color: ##fff; font-size: 1.1rem; flex-shrink: 0;
 }
-.planner-topbar h1 { margin: 0; font-size: 1.25rem; font-weight: 700; color: ##1e293b; }
-.planner-topbar p  { margin: 0; font-size: .75rem; color: ##64748b; }
+.planner-topbar h1 { margin: 0; font-size: 1.15rem; font-weight: 700; color: ##fff; }
+.planner-topbar p  { margin: 0; font-size: .75rem; color: rgba(255,255,255,.55); }
 .planner-topbar .ms-auto { margin-left: auto; display: flex; gap: .5rem; align-items: center; }
 
 /* ---- Group filter ------------------------------------------------- */
@@ -243,15 +246,15 @@
     display: flex;
     align-items: center;
     gap: .4rem;
-    background: ##f1f5f9;
-    border: 1.5px solid ##cbd5e1;
+    background: rgba(255,255,255,.12);
+    border: 1.5px solid rgba(255,255,255,.25);
     border-radius: 8px;
     padding: .28rem .6rem;
 }
 .group-filter-wrap label {
     font-size: .75rem;
     font-weight: 600;
-    color: ##64748b;
+    color: rgba(255,255,255,.75);
     white-space: nowrap;
     margin: 0;
 }
@@ -259,10 +262,15 @@
     border: none;
     background: transparent;
     font-size: .82rem;
-    color: ##1e293b;
+    color: ##fff;
     outline: none;
     cursor: pointer;
     padding: 0 .25rem;
+    color-scheme: dark;
+}
+.group-filter-wrap select option {
+    background: ##1a3a5c;
+    color: ##fff;
 }
 .group-filter-wrap select:focus { outline: none; }
 
@@ -288,7 +296,7 @@
 }
 .orders-panel-header {
     padding: .6rem .75rem;
-    background: ##1e293b;
+    background: ##0d2137;
     color: ##fff;
     font-size: .8rem;
     font-weight: 600;
@@ -299,7 +307,7 @@
 }
 .orders-panel-header .badge-count {
     margin-left: auto;
-    background: ##3b82f6;
+    background: ##e67e22;
     color: ##fff;
     border-radius: 12px;
     padding: 2px 8px;
@@ -319,7 +327,7 @@
     outline: none;
     box-sizing: border-box;
 }
-.orders-search input:focus { border-color: ##3b82f6; }
+.orders-search input:focus { border-color: ##e67e22; }
 
 .orders-list {
     flex: 1;
@@ -333,26 +341,27 @@
 /* ---- Order card --------------------------------------------------- */
 .order-card {
     background: ##fff;
-    border: 1.5px solid ##e2e8f0;
-    border-left: 4px solid ##3b82f6;
+    border: 1.5px solid ##e8edf3;
+    border-left: 4px solid ##e67e22;
     border-radius: 8px;
     padding: .5rem .65rem;
     cursor: grab;
     user-select: none;
     transition: box-shadow .15s, border-color .15s, opacity .15s;
     font-size: .78rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,.05);
 }
-.order-card:hover { box-shadow: 0 3px 10px rgba(0,0,0,.12); border-color: ##93c5fd; }
+.order-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,.1); border-color: ##f0a060; }
 .order-card.urgent { border-left-color: ##ef4444; }
 .order-card.dragging { opacity: .45; box-shadow: none; cursor: grabbing; }
 
-.order-card .oc-no   { font-weight: 700; color: ##1e293b; font-size: .82rem; }
+.order-card .oc-no   { font-weight: 700; color: ##1a3a5c; font-size: .82rem; }
 .order-card .oc-info { color: ##64748b; margin-top: 2px; line-height: 1.4; }
 .order-card .oc-qty  {
     display: inline-block;
     margin-top: 4px;
-    background: ##eff6ff;
-    color: ##1d4ed8;
+    background: ##fdf0e8;
+    color: ##c0621a;
     border-radius: 6px;
     padding: 1px 7px;
     font-weight: 600;
@@ -379,16 +388,17 @@
 }
 .scheduler-panel-header {
     padding: .55rem 1rem;
-    background: ##f1f5f9;
-    border-bottom: 1px solid ##e2e8f0;
-    font-size: .8rem;
+    background: ##fafbfc;
+    border-bottom: 1px solid ##eef1f6;
+    font-size: .88rem;
     font-weight: 600;
-    color: ##475569;
+    color: ##1a3a5c;
     display: flex;
     align-items: center;
     gap: .5rem;
     flex-shrink: 0;
 }
+.scheduler-panel-header i { color: ##e67e22; margin-right: 2px; }
 .scheduler-panel-header .view-btns { margin-left: auto; display: flex; gap: .4rem; }
 .scheduler-panel-header .view-btns button {
     padding: .28rem .7rem;
@@ -397,12 +407,12 @@
     background: ##fff;
     font-size: .75rem;
     cursor: pointer;
-    color: ##475569;
+    color: ##6b7280;
     transition: all .15s;
 }
 .scheduler-panel-header .view-btns button.active,
 .scheduler-panel-header .view-btns button:hover {
-    background: ##1e40af; color: ##fff; border-color: ##1e40af;
+    background: ##1a3a5c; color: ##fff; border-color: ##1a3a5c;
 }
 
 ##schedulerContainer {
@@ -414,13 +424,13 @@
 .drop-zone-overlay {
     position: absolute;
     inset: 0;
-    background: rgba(59, 130, 246, .08);
-    border: 3px dashed ##3b82f6;
+    background: rgba(230, 126, 34, .07);
+    border: 3px dashed ##e67e22;
     border-radius: 10px;
     display: none;
     align-items: center;
     justify-content: center;
-    color: ##1d4ed8;
+    color: ##c0621a;
     font-weight: 600;
     font-size: 1rem;
     pointer-events: none;
@@ -429,15 +439,20 @@
 .drop-zone-overlay.visible { display: flex; }
 
 /* ---- Plan modal --------------------------------------------------- */
-##planModal .modal-header { background: ##1e293b; color: ##fff; }
+##planModal .modal-header { background: linear-gradient(135deg, ##0d2137, ##1a3a5c); color: ##fff; border-bottom: 2px solid ##e67e22; }
 ##planModal .modal-header .btn-close { filter: invert(1); }
-.form-label-sm { font-size: .8rem; font-weight: 600; color: ##374151; margin-bottom: .2rem; }
+
+/* DevExtreme scheduler bileşenleri yüksek z-index kullanabilir;
+   Bootstrap modal ve backdrop'ı onların üstüne çık */
+##planModal       { z-index: 100000 !important; }
+.modal-backdrop   { z-index:  99999 !important; }
+.form-label-sm { font-size: .8rem; font-weight: 600; color: ##1a3a5c; margin-bottom: .2rem; }
 .form-control-sm-custom {
     width: 100%; padding: .45rem .65rem;
     border: 1.5px solid ##cbd5e1; border-radius: 8px;
     font-size: .85rem; outline: none;
 }
-.form-control-sm-custom:focus { border-color: ##3b82f6; }
+.form-control-sm-custom:focus { border-color: ##e67e22; }
 </style>
 
 <!--- ================================================================
@@ -459,10 +474,10 @@
                     <option value="0">— Tümü —</option>
                 </select>
             </div>
-            <span id="unplannedBadge" class="badge bg-warning text-dark">
+            <span id="unplannedBadge" style="background:rgba(255,255,255,.15);color:##fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:4px 12px;font-size:.75rem;font-weight:600;">
                 <i class="fas fa-clock me-1"></i><span id="unplannedCount">0</span> Planlanmamış
             </span>
-            <button class="btn btn-sm btn-outline-secondary" onclick="refreshPage()" title="Yenile">
+            <button style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:##fff;border-radius:7px;padding:5px 10px;cursor:pointer;font-size:.82rem;" onclick="refreshPage()" title="Yenile">
                 <i class="fas fa-sync-alt"></i>
             </button>
         </div>
@@ -638,7 +653,13 @@ var ALL_APPOINTMENTS = [];
     buildScheduler();
 
     /* Bootstrap modal instance */
-    planModalBs = new bootstrap.Modal(document.getElementById('planModal'));
+    /* Modal'ı document.body'e taşı — scheduler'ın oluşturduğu
+       stacking context'ten (transform/will-change) kaçınmak için */
+    var modalEl = document.getElementById('planModal');
+    if (modalEl.parentElement !== document.body) {
+        document.body.appendChild(modalEl);
+    }
+    planModalBs = new bootstrap.Modal(modalEl);
 
     /* Modal makine seçimi doldur (tüm makineler) */
     populateModalStations(ALL_STATIONS);
@@ -847,7 +868,7 @@ function removeAllAppointment(id) {
 }
 
 var STATUS_META = {
-    1: { label: 'Planlandı',    bg: '##1976d2', fg: '##fff' },
+    1: { label: 'Planlandı',    bg: '##1a3a5c', fg: '##fff' },
     2: { label: 'Çalışıyor',   bg: '##2e7d32', fg: '##fff' },
     5: { label: 'Tamamlandı',  bg: '##757575', fg: '##fff' },
     9: { label: 'İptal',       bg: '##b71c1c', fg: '##fff' }
@@ -1329,7 +1350,7 @@ function refreshPage() {
 /* ---- Toast -------------------------------------------------------- */
 function showToast(msg, type) {
     type = type || 'info';
-    var colors = { success:'##10b981', danger:'##ef4444', warning:'##f59e0b', info:'##3b82f6' };
+    var colors = { success:'##27ae60', danger:'##e74c3c', warning:'##f39c12', info:'##1a3a5c' };
     var t = document.createElement('div');
     t.style.cssText = [
         'position:fixed;bottom:1.5rem;right:1.5rem;z-index:99999',

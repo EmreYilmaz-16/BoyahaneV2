@@ -368,7 +368,7 @@ window.addEventListener('load', function() {
             },
             {
                 caption: 'İşlemler',
-                width: 180,
+                width: 220,
                 alignment: 'center',
                 allowFiltering: false,
                 allowSorting: false,
@@ -387,6 +387,12 @@ window.addEventListener('load', function() {
                         $('<button>').addClass('btn btn-sm btn-danger').attr('title','İptal')
                             .html('<i class="fas fa-ban"></i>')
                             .on('click', function(){ cancelOrder(options.data.order_id); })
+                            .appendTo($wrap);
+                    }
+                    if (!options.data.is_cancelled) {
+                        $('<button>').addClass('btn btn-sm btn-success btn-send-prod').attr('title','Üretime Gönder')
+                            .html('<i class="fas fa-industry"></i>')
+                            .on('click', function(){ sendToProduction(options.data.order_id); })
                             .appendTo($wrap);
                     }
                     $wrap.appendTo(container);
@@ -417,6 +423,26 @@ function cancelOrder(orderId) {
     if (confirm('Bu siparişi iptal etmek istediğinizden emin misiniz?')) {
         window.location.href = 'index.cfm?fuseaction=order.cancel_order&order_id=' + orderId;
     }
+}
+
+function sendToProduction(orderId) {
+    if (!confirm('Bu siparişin tüm satırları için üretim emri oluşturulacak. Devam etmek istiyor musunuz?')) return;
+    $.ajax({
+        url: '/production/form/send_order_to_production.cfm',
+        type: 'POST',
+        data: { order_id: orderId },
+        dataType: 'json',
+        success: function(res) {
+            if (res.success) {
+                DevExpress.ui.notify({ message: res.message, width: 400 }, 'success', 4000);
+            } else {
+                DevExpress.ui.notify({ message: res.message || 'Hata oluştu.', width: 400 }, 'error', 4000);
+            }
+        },
+        error: function() {
+            DevExpress.ui.notify({ message: 'Sunucu hatası oluştu.', width: 400 }, 'error', 4000);
+        }
+    });
 }
 </script>
 </cfoutput>

@@ -83,7 +83,7 @@
 <cfset jsStatus      = selOrderId gt 0 AND qSel.recordCount ? val(qSel.status) : 0>
 <cfset jsStartReal   = "">
 <cfif selOrderId gt 0 AND qSel.recordCount AND isDate(qSel.start_date_real)>
-    <cfset jsStartReal = dateFormat(qSel.start_date_real,"yyyy-mm-dd") & "T" & timeFormat(qSel.start_date_real,"HH:mm:ss")>
+    <cfset jsStartReal = dateFormat(qSel.start_date_real,"yyyy-mm-dd") & "T" & timeFormat(qSel.start_date_real,"HH:mm:ss") & "Z">
 </cfif>
 
 <cfoutput>
@@ -103,41 +103,49 @@
 
 /* Page header */
 .mes-page-header {
+    background: linear-gradient(135deg, ##0d2137 0%, ##1a3a5c 100%);
+    color: ##fff;
+    padding: 18px 24px;
+    border-bottom: 2px solid ##e67e22;
+    border-radius: 10px;
+    box-shadow: 0 4px 16px rgba(0,0,0,.18);
     display: flex;
     align-items: center;
-    gap: .75rem;
-    padding-bottom: .5rem;
-    border-bottom: 2px solid ##e5e7eb;
+    gap: 14px;
 }
 .mes-page-header .mes-icon {
     width: 44px; height: 44px;
     border-radius: 10px;
-    background: linear-gradient(135deg, ##1e40af, ##3b82f6);
+    background: ##e67e22;
+    box-shadow: 0 3px 10px rgba(230,126,34,.45);
     display: flex; align-items: center; justify-content: center;
-    color: ##fff; font-size: 1.2rem;
+    color: ##fff; font-size: 1.15rem;
+    flex-shrink: 0;
 }
-.mes-page-header h1 { margin: 0; font-size: 1.4rem; font-weight: 700; color: ##1e293b; }
-.mes-page-header p  { margin: 0; font-size: .8rem; color: ##64748b; }
+.mes-page-header h1 { margin: 0; font-size: 1.15rem; font-weight: 700; color: ##fff; }
+.mes-page-header p  { margin: 0; font-size: .75rem; color: rgba(255,255,255,.55); }
 
 /* Order selector card */
 .mes-card {
     background: ##fff;
-    border: 1px solid ##e2e8f0;
+    border: 1px solid ##e8edf3;
     border-radius: 12px;
     overflow: hidden;
-    box-shadow: 0 1px 4px rgba(0,0,0,.06);
+    box-shadow: 0 2px 14px rgba(0,0,0,.07);
 }
 .mes-card-header {
-    padding: .65rem 1rem;
-    background: ##f8fafc;
-    border-bottom: 1px solid ##e2e8f0;
-    font-size: .8rem;
+    padding: 14px 20px;
+    background: ##fafbfc;
+    border-bottom: 1px solid ##eef1f6;
+    font-size: .88rem;
     font-weight: 600;
-    color: ##475569;
+    color: ##1a3a5c;
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: .5rem;
 }
+.mes-card-header i { color: ##e67e22; }
 .mes-card-body { padding: 1rem; }
 
 /* Select dropdown */
@@ -153,7 +161,7 @@
     outline: none;
     transition: border-color .2s;
 }
-.mes-select:focus { border-color: ##3b82f6; }
+.mes-select:focus { border-color: ##e67e22; }
 option.status-2 { font-weight: 600; color: ##16a34a; }
 
 /* Info grid */
@@ -187,7 +195,7 @@ option.status-2 { font-weight: 600; color: ##16a34a; }
     font-size: .75rem;
     font-weight: 600;
 }
-.mes-badge-planned  { background: ##dbeafe; color: ##1d4ed8; }
+.mes-badge-planned  { background: ##d6e4f0; color: ##1a3a5c; }
 .mes-badge-running  { background: ##dcfce7; color: ##15803d; animation: pulse-green 1.8s infinite; }
 .mes-badge-done     { background: ##f0fdf4; color: ##15803d; }
 .mes-badge-cancelled{ background: ##fee2e2; color: ##dc2626; }
@@ -201,7 +209,7 @@ option.status-2 { font-weight: 600; color: ##16a34a; }
 .mes-timer-card {
     text-align: center;
     padding: 1.5rem 1rem;
-    background: linear-gradient(135deg, ##0f172a 0%, ##1e3a5f 100%);
+    background: linear-gradient(135deg, ##0d2137 0%, ##1a3a5c 100%);
     border-radius: 12px;
     color: ##fff;
 }
@@ -268,8 +276,8 @@ option.status-2 { font-weight: 600; color: ##16a34a; }
 .mes-btn-stop:hover:not(:disabled)   { box-shadow: 0 6px 16px rgba(220,38,38,.4); }
 .mes-btn-pause    { background: linear-gradient(135deg, ##d97706, ##f59e0b); color: ##fff; box-shadow: 0 4px 12px rgba(217,119,6,.3); }
 .mes-btn-pause:hover:not(:disabled)  { box-shadow: 0 6px 16px rgba(217,119,6,.4); }
-.mes-btn-complete { background: linear-gradient(135deg, ##1d4ed8, ##3b82f6); color: ##fff; box-shadow: 0 4px 12px rgba(29,78,216,.3); }
-.mes-btn-complete:hover:not(:disabled){ box-shadow: 0 6px 16px rgba(29,78,216,.4); }
+.mes-btn-complete { background: linear-gradient(135deg, ##0d2137, ##1a3a5c); color: ##fff; box-shadow: 0 4px 12px rgba(26,58,92,.35); }
+.mes-btn-complete:hover:not(:disabled){ box-shadow: 0 6px 16px rgba(26,58,92,.5); }
 
 /* Pause live timer */
 .pause-live-card {
@@ -416,7 +424,7 @@ option.status-2 { font-weight: 600; color: ##16a34a; }
 }
 .mes-btn-sm-cancel   { background: ##f1f5f9; color: ##475569; }
 .mes-btn-sm-save     { background: linear-gradient(135deg, ##d97706, ##f59e0b); color: ##fff; }
-.mes-btn-sm-complete { background: linear-gradient(135deg, ##1d4ed8, ##3b82f6); color: ##fff; }
+.mes-btn-sm-complete { background: linear-gradient(135deg, ##0d2137, ##1a3a5c); color: ##fff; }
 
 /* Toast notification */
 .mes-toast {
@@ -440,10 +448,10 @@ option.status-2 { font-weight: 600; color: ##16a34a; }
 .mes-toast.show { opacity: 1; transform: translateY(0); }
 .mes-toast.success { background: ##16a34a; }
 .mes-toast.error   { background: ##dc2626; }
-.mes-toast.info    { background: ##1d4ed8; }
+.mes-toast.info    { background: ##1a3a5c; }
 
 /* Confirm modal (başlat/durdur) */
-.mes-confirm-modal .mes-modal-header { background: linear-gradient(135deg, ##1e40af, ##3b82f6); }
+.mes-confirm-modal .mes-modal-header { background: linear-gradient(135deg, ##0d2137, ##1a3a5c); }
 .mes-confirm-stop .mes-modal-header  { background: linear-gradient(135deg, ##b91c1c, ##ef4444); }
 </style>
 
@@ -464,7 +472,7 @@ option.status-2 { font-weight: 600; color: ##16a34a; }
     <!--- Order Selector --->
     <div class="mes-card">
         <div class="mes-card-header">
-            <i class="fas fa-list-ul"></i> Üretim Emri Seç
+            <span><i class="fas fa-list-ul"></i> Üretim Emri Seç</span>
         </div>
         <div class="mes-card-body">
             <select class="mes-select" id="orderSelect" onchange="selectOrder(this.value)">
@@ -489,8 +497,8 @@ option.status-2 { font-weight: 600; color: ##16a34a; }
     <!--- Order Info Card --->
     <div class="mes-card">
         <div class="mes-card-header">
-            <i class="fas fa-clipboard-list"></i> Emir Bilgileri
-            <span style="margin-left:auto;">
+            <span><i class="fas fa-clipboard-list"></i> Emir Bilgileri</span>
+            <span>
                 <cfswitch expression="#val(qSel.status)#">
                     <cfcase value="1"><span class="mes-badge mes-badge-planned"><i class="fas fa-clock"></i> Planlandı</span></cfcase>
                     <cfcase value="2"><span class="mes-badge mes-badge-running"><i class="fas fa-circle" style="font-size:.5rem;"></i> Çalışıyor</span></cfcase>
@@ -597,10 +605,10 @@ option.status-2 { font-weight: 600; color: ##16a34a; }
     </div>
 
     <!--- Pause History --->
-    <div class="mes-card">
+    <div class="mes-card" id="pauseHistorySection">
         <div class="mes-card-header">
-            <i class="fas fa-history"></i> Duruş Geçmişi
-            <span style="margin-left:auto; font-size:.8rem; font-weight:400; color:##94a3b8;">
+            <span><i class="fas fa-history"></i> Duruş Geçmişi</span>
+            <span style="font-size:.78rem; font-weight:500; color:##8a98a8; background:##f0f4f8; padding:2px 10px; border-radius:20px;">
                 #qPauses.recordCount# kayıt
             </span>
         </div>
@@ -730,12 +738,12 @@ option.status-2 { font-weight: 600; color: ##16a34a; }
 <!--- ---------------------- TAMAMLA CONFIRM ----------------------- --->
 <div class="mes-modal-overlay mes-confirm-modal" id="completeModal">
     <div class="mes-modal">
-        <div class="mes-modal-header" style="background:linear-gradient(135deg,##1d4ed8,##3b82f6);">
+        <div class="mes-modal-header" style="background:linear-gradient(135deg,##0d2137,##1a3a5c);">
             <h5><i class="fas fa-check-double"></i> Üretimi Tamamla</h5>
             <button class="mes-modal-close" onclick="closeModal('completeModal')">&times;</button>
         </div>
         <div class="mes-modal-body" style="align-items:center; padding:1.5rem;">
-            <i class="fas fa-check-circle" style="font-size:3rem; color:##1d4ed8;"></i>
+            <i class="fas fa-check-circle" style="font-size:3rem; color:##1a3a5c;"></i>
             <p style="text-align:center; color:##1e293b; font-weight:600; margin:.5rem 0 0;">
                 Üretim tamamlandı olarak işaretlensin mi?
             </p>
@@ -948,8 +956,8 @@ option.status-2 { font-weight: 600; color: ##16a34a; }
 
                     showToast('Duruş kaydedildi. Üretim devam ediyor.', 'success');
 
-                    /* Append row to pause history table */
-                    appendPauseRow(startIso, durationMin, pauseDetail, pauseTypeId);
+                    /* Refresh pause history via AJAX */
+                    loadPauseHistory();
 
                     /* Restore production UI */
                     document.getElementById('pauseLiveCard').style.display  = 'none';
@@ -970,32 +978,55 @@ option.status-2 { font-weight: 600; color: ##16a34a; }
         });
     };
 
-    /* Append a new row to pause history table in DOM */
-    function appendPauseRow(startIso, durationMin, detail, typeId) {
-        var tbody = document.querySelector('.mes-table tbody');
-        if (!tbody) return;
-        var startDisp = startIso.replace('T', ' ').substring(0, 16);
-        var row = document.createElement('tr');
-        row.innerHTML =
-            '<td>' + startDisp + '</td>' +
-            '<td>—</td>' +
-            '<td><strong>' + durationMin + '</strong></td>' +
-            '<td style="font-size:.78rem;color:##64748b;">—</td>' +
-            '<td>' + (detail || '—') + '</td>' +
-            '<td><span class="mes-badge mes-badge-planned" style="font-size:.7rem;">Hayır</span></td>';
-        tbody.insertBefore(row, tbody.firstChild);
-        /* Update record count */
-        var cnt = document.querySelector('.mes-card-header .record-badge');
-        /* update pause history header count */
-        var hdrs = document.querySelectorAll('.mes-card-header');
-        hdrs.forEach(function(h) {
-            if (h.textContent.includes('Duruş Geçmişi')) {
-                var sp = h.querySelector('span');
-                if (sp) {
-                    var c = parseInt(sp.textContent) || 0;
-                    sp.textContent = (c + 1) + ' kayıt';
-                }
+    /* Load pause history via AJAX and rebuild the section */
+    function loadPauseHistory() {
+        if (!orderId) return;
+        $.getJSON('mes_pauses_ajax.cfm?p_order_id=' + orderId, function(data) {
+            if (!data || !data.success) return;
+
+            var sec = document.getElementById('pauseHistorySection');
+            if (!sec) return;
+
+            /* Update total pause badge */
+            var span = document.getElementById('totalPauseMinDisplay');
+            var badge = document.getElementById('totalPauseBadge');
+            if (span) span.textContent = data.totalPauseMin;
+            if (badge) badge.style.display = data.totalPauseMin > 0 ? 'inline-block' : 'none';
+
+            var html = '<div class="mes-card-header">' +
+                '<span><i class="fas fa-history"></i> Duruş Geçmişi</span>' +
+                '<span style="font-size:.78rem;font-weight:500;color:##8a98a8;background:##f0f4f8;padding:2px 10px;border-radius:20px;">' +
+                data.recordCount + ' kayıt</span></div>';
+
+            if (data.recordCount > 0) {
+                html += '<div style="overflow-x:auto;"><table class="mes-table"><thead><tr>' +
+                    '<th>Tarih</th><th>Tip</th><th>Süre (dk)</th><th>Çarpma Süresi</th><th>Açıklama</th><th>Ç.Süre?</th>' +
+                    '</tr></thead><tbody>';
+                data.rows.forEach(function(r) {
+                    var timeRange = (r.duration_start_date && r.duration_finish_date)
+                        ? r.duration_start_date + ' – ' + r.duration_finish_date : '—';
+                    html += '<tr>' +
+                        '<td>' + (r.action_date || '—') + '</td>' +
+                        '<td>' + (r.pause_type  || '—') + '</td>' +
+                        '<td><strong>' + r.prod_duration + '</strong></td>' +
+                        '<td style="font-size:.78rem;color: ##64748b;">' + timeRange + '</td>' +
+                        '<td>' + (r.prod_detail || '—') + '</td>' +
+                        '<td>' + (r.is_working_time
+                            ? '<span class="mes-badge mes-badge-running" style="font-size:.7rem;">Evet</span>'
+                            : '<span class="mes-badge mes-badge-planned" style="font-size:.7rem;">Hayır</span>') + '</td>' +
+                        '</tr>';
+                });
+                var h = Math.floor(data.totalPauseMin / 60);
+                var m = data.totalPauseMin % 60;
+                html += '</tbody></table></div>' +
+                    '<div class="pause-summary">' +
+                    '<span><i class="fas fa-clock"></i> Toplam Duruş: <strong>' + data.totalPauseMin + ' dk</strong></span>' +
+                    '<span>(<strong>' + h + '</strong> sa <strong>' + m + '</strong> dk)</span></div>';
+            } else {
+                html += '<div class="mes-empty"><i class="fas fa-check-circle" style="color:##22c55e;"></i> Duruş kaydı bulunmuyor.</div>';
             }
+
+            sec.innerHTML = html;
         });
     }
 

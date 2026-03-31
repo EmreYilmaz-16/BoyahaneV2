@@ -5,10 +5,18 @@
         po.p_order_id,
         po.p_order_no,
         po.stock_id,
-        COALESCE(s.stock_code,'')             AS stock_code,
-        COALESCE(ci.color_code,'')            AS color_code,
-        COALESCE(ci.color_name,'')            AS color_name,
-        COALESCE(c.nickname, c.fullname,'')   AS company_name,
+        po.order_id,
+        COALESCE(s.stock_code,'')                                           AS stock_code,
+        COALESCE(s.property,'')                                             AS stock_property,
+        COALESCE(ci.color_code, s.stock_code, '')                          AS color_code,
+        COALESCE(ci.color_name, s.property, '')                            AS color_name,
+        COALESCE(
+            oc.nickname,  oc.fullname,
+            orc.nickname, orc.fullname,
+            ci_c.nickname, ci_c.fullname,
+            ''
+        )                                                                   AS company_name,
+        COALESCE(o.order_number, '')                                         AS order_number,
         po.station_id,
         COALESCE(ws.station_name,'')          AS station_name,
         COALESCE(po.quantity, 0)              AS quantity,
@@ -20,10 +28,16 @@
         COALESCE(po.detail,'')                AS detail,
         COALESCE(po.record_date, CURRENT_TIMESTAMP) AS record_date
     FROM production_orders po
-    LEFT JOIN stocks      s  ON po.stock_id    = s.stock_id
-    LEFT JOIN color_info  ci ON po.stock_id    = ci.stock_id
-    LEFT JOIN company     c  ON ci.company_id  = c.company_id
-    LEFT JOIN workstations ws ON po.station_id = ws.station_id
+    LEFT JOIN stocks      s    ON po.stock_id    = s.stock_id
+    LEFT JOIN color_info  ci   ON po.stock_id    = ci.stock_id
+    LEFT JOIN company     ci_c ON ci.company_id  = ci_c.company_id
+    LEFT JOIN orders      o    ON po.order_id    = o.order_id
+    LEFT JOIN company     oc   ON o.company_id   = oc.company_id
+    LEFT JOIN production_orders_row por ON por.p_order_id = po.p_order_id
+    LEFT JOIN order_row   orw  ON por.order_row_id = orw.order_row_id
+    LEFT JOIN orders      or2  ON orw.order_id   = or2.order_id
+    LEFT JOIN company     orc  ON or2.company_id = orc.company_id
+    LEFT JOIN workstations ws  ON po.station_id  = ws.station_id
     ORDER BY po.p_order_id DESC
 </cfquery>
 
@@ -45,6 +59,7 @@
         "color_code"  : color_code   ?: "",
         "color_name"  : color_name   ?: "",
         "company_name": company_name ?: "",
+        "order_number": order_number  ?: "",
         "station_id"  : val(station_id),
         "station_name": station_name ?: "",
         "quantity"    : isNumeric(quantity) ? val(quantity) : 0,
@@ -130,7 +145,13 @@ function buildGrid() {
             { dataField:'p_order_no',   caption:'Emir No',    width:130 },
             { dataField:'color_code',   caption:'Renk Kodu',  width:110 },
             { dataField:'color_name',   caption:'Renk Adı',   width:160 },
-            { dataField:'company_name', caption:'Müşteri',    minWidth:140 },
+            { dataField:'company_name', caption:'Müşteri',    minWidth:140,
+                cellTemplate: function(container, options) {
+                    var html = options.value || '';
+                    if (options.data.order_number) html += (html ? ' <span style="color:##94a3b8;font-size:.75rem">' : '<span style="font-size:.8rem">') + '(' + options.data.order_number + ')</span>';
+                    container.html(html || '<span style="color:##94a3b8">—</span>');
+                }
+            },
             { dataField:'station_name', caption:'Makina',     width:140 },
             { dataField:'quantity',     caption:'Miktar (kg)',width:100,  alignment:'right', dataType:'number', format: { type:'fixedPoint', precision:2 } },
             { dataField:'lot_no',       caption:'Lot No',     width:110 },

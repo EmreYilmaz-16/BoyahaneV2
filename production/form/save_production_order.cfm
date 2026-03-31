@@ -1,6 +1,9 @@
 <cfprocessingdirective pageEncoding="utf-8">
-<cfsetting showdebugoutput="false">
-<cfcontent type="application/json; charset=utf-8">
+<cfparam name="variables.isIncluded" default="false">
+<cfif NOT variables.isIncluded>
+    <cfsetting showdebugoutput="false">
+    <cfcontent type="application/json; charset=utf-8">
+</cfif>
 
 <!---
     Üretim emri kaydet (INSERT / UPDATE)
@@ -20,15 +23,21 @@
     <cfparam name="form.finish_date" default="">
     <cfparam name="form.status"      default="1">
     <cfparam name="form.detail"      default="">
+    <cfparam name="form.order_id"     default="0">
+    <cfparam name="form.order_row_id" default="0">
 
-    <cfset pOrderId  = isNumeric(form.p_order_id)  AND val(form.p_order_id)  gt 0 ? val(form.p_order_id)  : 0>
-    <cfset stockId   = isNumeric(form.stock_id)    AND val(form.stock_id)    gt 0 ? val(form.stock_id)    : 0>
-    <cfset stationId = isNumeric(form.station_id)  AND val(form.station_id)  gt 0 ? val(form.station_id)  : javaCast("null","")>
-    <cfset qty       = isNumeric(form.quantity)     AND val(form.quantity) gt 0   ? val(form.quantity)    : 0>
-    <cfset orderNo   = trim(form.p_order_no)>
-    <cfset lotNo     = trim(form.lot_no)>
-    <cfset statusVal = isNumeric(form.status) ? val(form.status) : 1>
-    <cfset detailVal = trim(form.detail)>
+    <cfset pOrderId    = isNumeric(form.p_order_id)  AND val(form.p_order_id)  gt 0 ? val(form.p_order_id)  : 0>
+    <cfset stockId     = isNumeric(form.stock_id)    AND val(form.stock_id)    gt 0 ? val(form.stock_id)    : 0>
+    <cfset stationId   = isNumeric(form.station_id)  AND val(form.station_id)  gt 0 ? val(form.station_id)  : javaCast("null","")>
+    <cfset qty         = isNumeric(form.quantity)     AND val(form.quantity) gt 0   ? val(form.quantity)    : 0>
+    <cfset orderNo     = trim(form.p_order_no)>
+    <cfset lotNo       = trim(form.lot_no)>
+    <cfset statusVal   = isNumeric(form.status) ? val(form.status) : 1>
+    <cfset detailVal   = trim(form.detail)>
+    <cfset hasOrderId    = isNumeric(form.order_id)     AND val(form.order_id)     gt 0>
+    <cfset hasOrderRowId = isNumeric(form.order_row_id) AND val(form.order_row_id) gt 0>
+    <cfset orderId       = hasOrderId    ? val(form.order_id)     : 0>
+    <cfset orderRowId    = hasOrderRowId ? val(form.order_row_id) : 0>
 
     <!--- Tarih parse --->
     <cfset startDate  = (len(trim(form.start_date))  AND isDate(form.start_date))
@@ -58,6 +67,8 @@
             UPDATE production_orders SET
                 stock_id    = <cfqueryparam value="#stockId#"                           cfsqltype="cf_sql_integer">,
                 station_id  = <cfqueryparam value="#isNull(stationId)?'':stationId#"   cfsqltype="cf_sql_integer" null="#isNull(stationId)#">,
+                order_id    = <cfqueryparam value="#orderId#"    cfsqltype="cf_sql_integer" null="#NOT hasOrderId#">,
+                order_row_id = <cfqueryparam value="#orderRowId#" cfsqltype="cf_sql_integer" null="#NOT hasOrderRowId#">,
                 quantity    = <cfqueryparam value="#qty#"                               cfsqltype="cf_sql_numeric">,
                 p_order_no  = <cfqueryparam value="#orderNo#"                          cfsqltype="cf_sql_varchar"  null="#NOT len(orderNo)#">,
                 lot_no      = <cfqueryparam value="#lotNo#"                            cfsqltype="cf_sql_varchar"  null="#NOT len(lotNo)#">,
@@ -74,11 +85,13 @@
         <!--- INSERT --->
         <cfquery name="ins" datasource="boyahane">
             INSERT INTO production_orders
-                (stock_id, station_id, quantity, p_order_no, lot_no,
+                (stock_id, station_id, order_id, order_row_id, quantity, p_order_no, lot_no,
                  start_date, finish_date, status, detail, record_date)
             VALUES (
                 <cfqueryparam value="#stockId#"                           cfsqltype="cf_sql_integer">,
                 <cfqueryparam value="#isNull(stationId)?'':stationId#"   cfsqltype="cf_sql_integer" null="#isNull(stationId)#">,
+                <cfqueryparam value="#orderId#"                          cfsqltype="cf_sql_integer" null="#NOT hasOrderId#">,
+                <cfqueryparam value="#orderRowId#"                       cfsqltype="cf_sql_integer" null="#NOT hasOrderRowId#">,
                 <cfqueryparam value="#qty#"                               cfsqltype="cf_sql_numeric">,
                 <cfqueryparam value="#orderNo#"                           cfsqltype="cf_sql_varchar"  null="#NOT len(orderNo)#">,
                 <cfqueryparam value="#lotNo#"                             cfsqltype="cf_sql_varchar"  null="#NOT len(lotNo)#">,
@@ -92,6 +105,18 @@
         </cfquery>
         <cfset savedId = val(ins.p_order_id)>
         <cfset mode    = "added">
+
+        <!--- production_orders_row: sipariş + sipariş satırı ile ilişkilendir --->
+        <cfif hasOrderId>
+            <cfquery datasource="boyahane">
+                INSERT INTO production_orders_row (p_order_id, order_id, order_row_id)
+                VALUES (
+                    <cfqueryparam value="#savedId#"     cfsqltype="cf_sql_integer">,
+                    <cfqueryparam value="#orderId#"     cfsqltype="cf_sql_integer">,
+                    <cfqueryparam value="#orderRowId#"  cfsqltype="cf_sql_integer" null="#NOT hasOrderRowId#">
+                )
+            </cfquery>
+        </cfif>
 
         <!---
             Reçeteden production_orders_stocks oluştur.
@@ -141,4 +166,6 @@
     </cfcatch>
 </cftry>
 
-<cfoutput>#serializeJSON(response)#</cfoutput><cfabort>
+<cfif NOT variables.isIncluded>
+    <cfoutput>#serializeJSON(response)#</cfoutput><cfabort>
+</cfif>
