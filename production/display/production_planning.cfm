@@ -1038,7 +1038,8 @@ function directSavePlan(order, stationId, startDate, endDate) {
             station_id : stationId,
             start_date : fmtDTForServer(sd),
             finish_date: fmtDTForServer(ed),
-            status     : 1
+            status     : 1,
+            shift_following: 1
         },
         dataType: 'json',
         success : function(resp) {
@@ -1069,6 +1070,21 @@ function directSavePlan(order, stationId, startDate, endDate) {
                 removeFromUnplanned(order.p_order_id);
                 upsertAllAppointment(newAppt);
 
+                if (Array.isArray(resp.shifted_orders) && resp.shifted_orders.length) {
+                    resp.shifted_orders.forEach(function(shifted) {
+                        var sid = parseInt(shifted.p_order_id, 10);
+                        if (!sid || !shifted.start_date || !shifted.finish_date) return;
+                        var shiftedStart = new Date(shifted.start_date.replace('T', ' '));
+                        var shiftedEnd   = new Date(shifted.finish_date.replace('T', ' '));
+                        var existingAll  = ALL_APPOINTMENTS.find(function(a){ return a.p_order_id === sid; });
+                        if (existingAll) {
+                            existingAll.startDate = shiftedStart;
+                            existingAll.endDate   = shiftedEnd;
+                            upsertAllAppointment(existingAll);
+                        }
+                    });
+                }
+
                 /* Scheduler'a ekle (aktif grupta görünüyorsa) */
                 var inActiveGroup = getActiveStations().some(function(s){ return s.id === stationId; });
                 if (inActiveGroup) {
@@ -1076,12 +1092,30 @@ function directSavePlan(order, stationId, startDate, endDate) {
                     var existing = ds.find(function(a){ return a.p_order_id === order.p_order_id; });
                     if (existing) schedulerInst.updateAppointment(existing, newAppt);
                     else          schedulerInst.addAppointment(newAppt);
+
+                    if (Array.isArray(resp.shifted_orders) && resp.shifted_orders.length) {
+                        resp.shifted_orders.forEach(function(shifted) {
+                            var sid = parseInt(shifted.p_order_id, 10);
+                            if (!sid || !shifted.start_date || !shifted.finish_date) return;
+                            var existingShifted = ds.find(function(a){ return a.p_order_id === sid; });
+                            if (existingShifted) {
+                                var updatedShifted = Object.assign({}, existingShifted, {
+                                    startDate: new Date(shifted.start_date.replace('T', ' ')),
+                                    endDate  : new Date(shifted.finish_date.replace('T', ' '))
+                                });
+                                schedulerInst.updateAppointment(existingShifted, updatedShifted);
+                            }
+                        });
+                    }
                 }
                 var stObj = getActiveStations().find(function(s){ return s.id === stationId; })
                          || ALL_STATIONS.find(function(s){ return s.id === stationId; });
                 var snapNote = resp.snapped ? ' (başlangıç kaydırıldı: ' + serverStart.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'}) + ')' : '';
+                var shiftNote = (resp.shifted_count && parseInt(resp.shifted_count, 10) > 0)
+                    ? (' | Sonraki ' + resp.shifted_count + ' emir ötelenmiştir')
+                    : '';
                 showToast('Planlandı: ' + (order.p_order_no || 'Emir ##' + order.p_order_id)
-                    + (stObj ? ' → ' + stObj.text : '') + snapNote, 'success');
+                    + (stObj ? ' → ' + stObj.text : '') + snapNote + shiftNote, 'success');
             } else {
                 showToast((resp && resp.message) || 'Kayıt hatası!', 'danger');
             }
