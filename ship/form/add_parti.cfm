@@ -399,6 +399,8 @@ function saveParti() {
         order_date:     todayStr,
         deliverdate:    document.getElementById('deliverdate').value || '',
         company_id:     #getShip.company_id#,
+        member_type:    3,
+        ref_company_id: #getShip.company_id#,
         paymethod:      0,
         ship_method:    0,
         order_currency: 0,
