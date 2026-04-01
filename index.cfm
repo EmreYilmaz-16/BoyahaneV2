@@ -90,6 +90,29 @@
         WHERE is_active = true AND show_menu = true
         ORDER BY module_id, order_no, object_name
     </cfquery>
+
+    <!--- Kullanıcı favorileri --->    
+    <cfquery name="getUserFavorites" datasource="boyahane">
+        SELECT favorite_id, fuseaction, page_title, page_icon
+        FROM user_favorites
+        WHERE user_id = <cfqueryparam value="#session.user.id#" cfsqltype="cf_sql_integer">
+        ORDER BY added_date DESC
+    </cfquery>
+
+    <!--- Mevcut sayfa favoride mi? --->
+    <cfset currentPageFavorited = false>
+    <cfset currentPageTitle = "">
+    <cfset currentPageIcon  = "fas fa-file">
+    <cfif isDefined("attributes.fuseaction") AND attributes.fuseaction NEQ "" AND getObject.recordCount>
+        <cfset currentPageTitle = getObject.object_name>
+        <cfset currentPageIcon  = "fas fa-file">
+        <cfloop query="getUserFavorites">
+            <cfif fuseaction EQ attributes.fuseaction>
+                <cfset currentPageFavorited = true>
+                <cfbreak>
+            </cfif>
+        </cfloop>
+    </cfif>
     </cfif>
     
     <cfif showLayout>
@@ -131,6 +154,59 @@
                             <i class="fas fa-chart-bar"></i> Raporlar
                         </a>
                     </li>
+                    <!--- Favoriler Dropdown --->
+                    <li class="nav-item dropdown me-1">
+                        <a class="nav-link fav-nav-link" href="#" id="favDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" title="Kısayollarım">
+                            <i class="fas fa-bookmark"></i>
+                            <cfoutput><cfif getUserFavorites.recordCount gt 0><span class="fav-badge">#getUserFavorites.recordCount#</span></cfif></cfoutput>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end fav-dropdown-menu" aria-labelledby="favDropdown">
+                            <li class="fav-dropdown-header">
+                                <i class="fas fa-bookmark me-2"></i>Kısayollarım
+                            </li>
+                            <li><hr class="dropdown-divider my-1"></li>
+                            <cfoutput>
+                            <cfset favColors = ["##3b82f6","##10b981","##f59e0b","##8b5cf6","##ef4444","##06b6d4","##f97316","##ec4899"]>
+                            <cfif getUserFavorites.recordCount>
+                                <cfloop query="getUserFavorites">
+                                <cfset itemColor = favColors[((currentRow - 1) mod arrayLen(favColors)) + 1]>
+                                <li class="fav-list-item d-flex align-items-center pe-2">
+                                    <a class="dropdown-item fav-item flex-grow-1" href="index.cfm?fuseaction=#fuseaction#">
+                                        <span class="fav-icon-dot" style="background:#itemColor#"><i class="#page_icon#"></i></span>
+                                        <span>#htmlEditFormat(page_title)#</span>
+                                    </a>
+                                    <button class="fav-remove-btn" onclick="removeFavorite(this,'#jsStringFormat(fuseaction)#')" title="Kısayoldan kaldır" type="button">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </li>
+                                </cfloop>
+                            <cfelse>
+                                <li><span class="dropdown-item-text fav-empty"><i class="fas fa-star-half-alt me-1"></i>Henüz kısayol yok.</span></li>
+                            </cfif>
+                            </cfoutput>
+                            <li><hr class="dropdown-divider my-1"></li>
+                            <li><span class="fav-hint text-light"><i class="fas fa-star me-1"></i>Sayfa başlığındaki yıldıza basarak kısayol ekleyin</span></li>
+                        </ul>
+                    </li>
+
+                    <!--- Yıldız: Mevcut sayfayı favorile --->
+                    <cfoutput>
+                    <cfif isDefined("attributes.fuseaction") AND attributes.fuseaction NEQ "" AND getObject.recordCount>
+                    <li class="nav-item me-1">
+                        <button class="nav-link btn btn-link px-2 star-btn" id="btnStarPage"
+                            onclick="toggleFavorite()"
+                            data-fuseaction="#htmlEditFormat(attributes.fuseaction)#"
+                            data-title="#htmlEditFormat(currentPageTitle)#"
+                            data-icon="#htmlEditFormat(currentPageIcon)#"
+                            title="#currentPageFavorited ? 'Favorilerden kaldır' : 'Favorilere ekle'#">
+                            <i class="#currentPageFavorited ? 'fas' : 'far'# fa-star star-icon"
+                               style="color:#currentPageFavorited ? '##f59e0b' : 'rgba(255,255,255,0.55)'#"></i>
+                        </button>
+                    </li>
+                    </cfif>
+                    </cfoutput>
+
+                    <!--- Kullanıcı Dropdown --->
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <span class="user-avatar"><cfoutput>#Left(session.user.fullname, 1)#</cfoutput></span>
@@ -364,6 +440,74 @@
                 });
             }
             
+            // ---- Favoriler / Kısayollar ----
+            window.removeFavorite = function(btn, fuseaction) {
+                var li = btn.closest('li');
+                btn.disabled = true;
+                $.post('/assets/api/toggle_favorite.cfm', { fuseaction: fuseaction }, function(res) {
+                    if (!res || !res.success) { btn.disabled = false; return; }
+                    li.remove();
+                    // Rozeti güncelle
+                    var badge = document.querySelector('.fav-badge');
+                    if (badge) {
+                        var n = (parseInt(badge.textContent) || 0) - 1;
+                        if (n <= 0) badge.remove();
+                        else badge.textContent = n;
+                    }
+                    // Liste boşaldıysa mesaj göster
+                    var menu = document.querySelector('.fav-dropdown-menu');
+                    if (!menu.querySelector('.fav-list-item')) {
+                        var first = menu.querySelector('.dropdown-divider');
+                        var emptyLi = document.createElement('li');
+                        emptyLi.innerHTML = '<span class="dropdown-item-text fav-empty"><i class="fas fa-star-half-alt me-1"></i>Henüz kısayol yok.</span>';
+                        first.after(emptyLi);
+                    }
+                    // Mevcut sayfa silindiyse yıldızı güncelle
+                    var starBtn = document.getElementById('btnStarPage');
+                    if (starBtn && starBtn.dataset.fuseaction === fuseaction) {
+                        var starEl = starBtn.querySelector('.star-icon');
+                        starEl.classList.replace('fas', 'far');
+                        starEl.style.color = 'rgba(255,255,255,0.55)';
+                        starBtn.title = 'Favorilere ekle';
+                    }
+                }, 'json');
+            };
+
+            window.toggleFavorite = function() {
+                var btn       = document.getElementById('btnStarPage');
+                if (!btn) return;
+                var fuseaction = btn.dataset.fuseaction;
+                var title      = btn.dataset.title;
+                var icon       = btn.dataset.icon;
+                var starEl     = btn.querySelector('.star-icon');
+
+                btn.disabled = true;
+
+                $.post('/assets/api/toggle_favorite.cfm', {
+                    fuseaction : fuseaction,
+                    page_title : title,
+                    page_icon  : icon
+                }, function(res) {
+                    btn.disabled = false;
+                    if (!res || !res.success) return;
+
+                    if (res.is_favorite) {
+                        starEl.classList.remove('far');
+                        starEl.classList.add('fas');
+                        starEl.style.color = '#f59e0b';
+                        btn.title = 'Favorilerden kaldır';
+                    } else {
+                        starEl.classList.remove('fas');
+                        starEl.classList.add('far');
+                        starEl.style.color = 'rgba(255,255,255,0.55)';
+                        btn.title = 'Favorilere ekle';
+                    }
+
+                    // Sayfa yenilenmeden badge + liste güncelle
+                    setTimeout(function() { location.reload(); }, 300);
+                }, 'json');
+            };
+
             // Smooth scroll for anchor links (for content-wrapper)
             $('a[href^="#"]').on('click', function(event) {
                 var target = $(this.getAttribute('href'));

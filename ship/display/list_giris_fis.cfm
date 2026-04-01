@@ -50,6 +50,7 @@
     ORDER BY s.ship_id DESC
 </cfquery>
 
+
 <cfset fisArr = []>
 <cfloop query="getGirisFisler">
     <cfset arrayAppend(fisArr, {
