@@ -57,7 +57,51 @@ Description			:
 	------------------------------------------------------------------------>
 	<cffunction name="OnApplicationStart" access="public" returntype="boolean" output="false" hint="Uygulama başladığı anda çalıştırılacak kodlar. Tek defa çalıştırır.">
 		<!--- Application başlatma işlemleri buraya eklenebilir --->
+		<cfset application.userFavoritesTableReady = false>
 		<cfreturn true />
+	</cffunction>
+
+	<cffunction name="ensureUserFavoritesTable" access="private" returntype="void" output="false" hint="Favoriler tablosu yoksa oluşturur.">
+		<cflock scope="application" type="exclusive" timeout="10">
+			<cfif structKeyExists(application, "userFavoritesTableReady") AND application.userFavoritesTableReady>
+				<cfreturn>
+			</cfif>
+
+			<cftry>
+				<cfquery datasource="#this.datasource#">
+					CREATE TABLE IF NOT EXISTS user_favorites (
+						favorite_id   SERIAL          PRIMARY KEY,
+						user_id       INTEGER         NOT NULL,
+						fuseaction    VARCHAR(255)    NOT NULL,
+						page_title    VARCHAR(255)    NOT NULL DEFAULT '',
+						page_icon     VARCHAR(100)    NOT NULL DEFAULT 'fas fa-star',
+						display_order INTEGER         NOT NULL DEFAULT 0,
+						added_date    TIMESTAMP       NOT NULL DEFAULT NOW(),
+
+						CONSTRAINT fk_user_favorites_user
+							FOREIGN KEY (user_id) REFERENCES kullanicilar(id) ON DELETE CASCADE,
+
+						CONSTRAINT uq_user_fuseaction
+							UNIQUE (user_id, fuseaction)
+					)
+				</cfquery>
+
+				<cfquery datasource="#this.datasource#">
+					CREATE INDEX IF NOT EXISTS idx_user_favorites_user
+					ON user_favorites (user_id)
+				</cfquery>
+
+				<cfquery datasource="#this.datasource#">
+					COMMENT ON TABLE user_favorites IS 'Kullanıcılara ait sayfa kısayolları/favoriler'
+				</cfquery>
+
+				<cfset application.userFavoritesTableReady = true>
+				<cfcatch type="any">
+					<cfset application.userFavoritesTableReady = false>
+					<cflog file="application" type="warning" text="user_favorites tablosu hazırlanamadı: #cfcatch.message# - #cfcatch.detail#">
+				</cfcatch>
+			</cftry>
+		</cflock>
 	</cffunction>
     
 	<!---
@@ -95,6 +139,9 @@ Description			:
 	<cffunction name="onRequest" returnType="void">
 		<cfargument name="targetPage" type="string" required="true" /><!--- Burası index.cfm gelir. Ulaşılmak istenen dosya index.cfm içerisindeki wrkTemplate'tir. --->
 		<cfsetting showdebugoutput="no">
+		<cfif NOT structKeyExists(application, "userFavoritesTableReady") OR NOT application.userFavoritesTableReady>
+			<cfset ensureUserFavoritesTable()>
+		</cfif>
 			<cfscript>
                 attributes=structNew();
                 StructAppend(attributes, url, "no");
