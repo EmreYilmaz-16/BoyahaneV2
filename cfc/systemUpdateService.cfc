@@ -53,6 +53,15 @@
         <cfreturn result>
     </cffunction>
 
+    <cffunction name="buildGitArgs" access="private" returntype="string" output="false">
+        <cfargument name="repoPath" type="string" required="true">
+        <cfargument name="gitCommand" type="string" required="true">
+        <cfset var safeRepoPath = trim(arguments.repoPath)>
+        <cfset var safeCommand = trim(arguments.gitCommand)>
+
+        <cfreturn "-c safe.directory=#safeRepoPath# -C #safeRepoPath# #safeCommand#">
+    </cffunction>
+
     <cffunction name="checkUpdates" access="remote" returntype="struct" returnformat="json" output="false">
         <cfset var result = {success=true, update_available=false}>
         <cfset var settings = getSettings()>
@@ -69,7 +78,7 @@
 
         <cftry>
             <cfexecute name="git"
-                arguments="-C #settings.data.repo_local_path# rev-parse HEAD"
+                arguments="#buildGitArgs(settings.data.repo_local_path, 'rev-parse HEAD')#"
                 variable="localHash"
                 timeout="20" />
 
@@ -126,7 +135,7 @@
 
         <cftry>
             <cfexecute name="git"
-                arguments="-C #settings.data.repo_local_path# status --porcelain"
+                arguments="#buildGitArgs(settings.data.repo_local_path, 'status --porcelain')#"
                 variable="repoStatus"
                 timeout="30" />
 
@@ -138,7 +147,7 @@
             </cfif>
 
             <cfexecute name="git"
-                arguments="-C #settings.data.repo_local_path# pull origin #settings.data.repo_branch#"
+                arguments="#buildGitArgs(settings.data.repo_local_path, 'pull origin #settings.data.repo_branch#')#"
                 variable="pullOut"
                 timeout="120" />
 
