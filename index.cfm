@@ -220,7 +220,7 @@
                             </li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="#profil"><i class="fas fa-user me-2"></i>Profil</a></li>
-                            <li><a class="dropdown-item" href="#ayarlar"><i class="fas fa-cog me-2"></i>Ayarlar</a></li>
+                            <li><a class="dropdown-item" href="index.cfm?fuseaction=setup.update_center"><i class="fas fa-cog me-2"></i>Ayarlar</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item text-danger" href="logout.cfm"><i class="fas fa-sign-out-alt me-2"></i>Çıkış Yap</a></li>
                         </ul>
