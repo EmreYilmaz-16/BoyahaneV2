@@ -122,7 +122,7 @@ async function loadSettings(){
     if(!r.success){ showAlert('danger', r.message); return; }
     const d = r.data;
     Object.keys(d).forEach(k => {
-        const el = document.getElementById(k);
+        const el = document.getElementById(k.toLowerCase());
         if(!el) return;
         if(el.type === 'checkbox') el.checked = !!d[k];
         else el.value = d[k] ?? '';
