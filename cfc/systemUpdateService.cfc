@@ -62,6 +62,104 @@
         <cfreturn "-c safe.directory=#safeRepoPath# -C #safeRepoPath# #safeCommand#">
     </cffunction>
 
+    <cffunction name="resolveRepoPath" access="private" returntype="string" output="false">
+        <cfargument name="repoPath" type="string" required="true">
+        <cfset var resolvedPath = trim(arguments.repoPath)>
+
+        <cfif not len(resolvedPath)>
+            <cfset resolvedPath = getDirectoryFromPath(getCurrentTemplatePath())>
+            <cfset resolvedPath = expandPath(resolvedPath & "../")>
+        </cfif>
+
+        <cfreturn resolvedPath>
+    </cffunction>
+
+    <cffunction name="hasBlockingRepoChanges" access="private" returntype="boolean" output="false">
+        <cfargument name="repoStatus" type="string" required="true">
+        <cfset var lines = listToArray(replace(arguments.repoStatus, chr(13), "", "all"), chr(10))>
+        <cfset var i = 1>
+        <cfset var lineValue = "">
+
+        <cfloop from="1" to="#arrayLen(lines)#" index="i">
+            <cfset lineValue = trim(lines[i])>
+            <cfif len(lineValue) and not findNoCase("docker/update-db/", lineValue)>
+                <cfreturn true>
+            </cfif>
+        </cfloop>
+
+        <cfreturn false>
+    </cffunction>
+
+    <cffunction name="runQueuedUpdateScripts" access="private" returntype="struct" output="false">
+        <cfargument name="repoPath" type="string" required="true">
+        <cfset var result = {success=true, scripts_executed=[], scripts_failed=[], scripts_deleted=[]}>
+        <cfset var queuePath = "">
+        <cfset var sqlFiles = "">
+        <cfset var i = 1>
+        <cfset var sqlContent = "">
+        <cfset var currentFile = "">
+        <cfset var currentFileName = "">
+        <cfset var deleteError = "">
+
+        <cfset queuePath = resolveRepoPath(arguments.repoPath) & "/docker/update-db">
+
+        <cfif not directoryExists(queuePath)>
+            <cfset result.success = true>
+            <cfset result.message = "Update script klasörü bulunamadı, script adımı atlandı: #queuePath#">
+            <cfreturn result>
+        </cfif>
+
+        <cfset sqlFiles = directoryList(queuePath, false, "path", "*.sql", "name asc")>
+
+        <cfif not arrayLen(sqlFiles)>
+            <cfset result.success = true>
+            <cfset result.message = "Çalıştırılacak update scripti bulunamadı.">
+            <cfreturn result>
+        </cfif>
+
+        <cfloop from="1" to="#arrayLen(sqlFiles)#" index="i">
+            <cfset currentFile = sqlFiles[i]>
+            <cfset currentFileName = getFileFromPath(currentFile)>
+            <cfset sqlContent = fileRead(currentFile, "utf-8")>
+            <cfset sqlContent = replace(sqlContent, chr(65279), "", "one")>
+
+            <cfif len(trim(sqlContent))>
+                <cftry>
+                    <cfset queryExecute(sqlContent, {}, {datasource:"boyahane"})>
+                    <cfset arrayAppend(result.scripts_executed, currentFileName)>
+
+                    <cftry>
+                        <cffile action="delete" file="#currentFile#">
+                        <cfset arrayAppend(result.scripts_deleted, currentFileName)>
+                        <cfcatch>
+                            <cfset deleteError = "Çalıştı ama silinemedi: #cfcatch.message#">
+                            <cfset arrayAppend(result.scripts_failed, {
+                                file=currentFileName,
+                                message=deleteError
+                            })>
+                        </cfcatch>
+                    </cftry>
+
+                    <cfcatch>
+                        <cfset arrayAppend(result.scripts_failed, {
+                            file=currentFileName,
+                            message=cfcatch.message
+                        })>
+                    </cfcatch>
+                </cftry>
+            </cfif>
+        </cfloop>
+
+        <cfif arrayLen(result.scripts_failed)>
+            <cfset result.success = false>
+            <cfset result.message = "Bazı update SQL scriptleri çalıştırılamadı veya silinemedi.">
+        <cfelse>
+            <cfset result.message = "Update SQL scriptleri başarıyla çalıştırıldı ve temizlendi.">
+        </cfif>
+
+        <cfreturn result>
+    </cffunction>
+
     <cffunction name="checkUpdates" access="remote" returntype="struct" returnformat="json" output="false">
         <cfset var result = {success=true, update_available=false}>
         <cfset var settings = getSettings()>
@@ -139,7 +237,7 @@
                 variable="repoStatus"
                 timeout="30" />
 
-            <cfif len(trim(repoStatus))>
+            <cfif hasBlockingRepoChanges(repoStatus)>
                 <cfset result.success = false>
                 <cfset result.message = "Pull işlemi iptal edildi: Yerel değişiklikler var. Lütfen commit veya stash yapıp tekrar deneyin.">
                 <cfset result.repo_status = trim(repoStatus)>
@@ -150,6 +248,15 @@
                 arguments="#buildGitArgs(settings.data.repo_local_path, 'pull origin #settings.data.repo_branch#')#"
                 variable="pullOut"
                 timeout="120" />
+
+            <cfset result.update_scripts = runQueuedUpdateScripts(settings.data.repo_local_path)>
+
+            <cfif not result.update_scripts.success>
+                <cfset result.success = false>
+                <cfset result.message = "Pull tamamlandı ancak update SQL scriptleri başarısız oldu: #result.update_scripts.message#">
+                <cfset result.git_output = pullOut>
+                <cfreturn result>
+            </cfif>
 
             <cfexecute name="sh"
                 arguments="-lc 'command -v docker-compose >/dev/null 2>&1 && echo yes || echo no'"
@@ -162,10 +269,10 @@
                 timeout="10" />
 
             <cfif trim(dockerComposeExists) neq "yes" and trim(dockerExists) neq "yes">
-                <cfset result.success = false>
-                <cfset result.message = "Pull tamamlandı ancak Docker çalıştırılamadı: Sunucuda docker veya docker-compose komutu bulunamadı.">
                 <cfset result.git_output = pullOut>
                 <cfset result.executed_docker_cmd = dockerCmd>
+                <cfset result.success = true>
+                <cfset result.message = "Pull ve update SQL scriptleri tamamlandı. Docker bulunamadığı için docker build adımı atlandı.">
                 <cfreturn result>
             </cfif>
 
