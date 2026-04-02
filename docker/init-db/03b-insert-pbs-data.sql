@@ -170,6 +170,7 @@ INSERT INTO pbs_objects (object_id, object_name, module_id, show_menu, window_ty
 INSERT INTO pbs_objects (object_id, object_name, module_id, show_menu, window_type, full_fuseaction, file_path, order_no, is_active) VALUES (125, 'Üretim Planla', 27, false, 'standart', 'production.save_plan', '/production/form/save_plan.cfm', 56, true);
 INSERT INTO pbs_objects (object_id, object_name, module_id, show_menu, window_type, full_fuseaction, file_path, order_no, is_active) VALUES (126, 'Emirden Plan Kaldır', 27, false, 'standart', 'production.unplan_order', '/production/form/unplan_order.cfm', 57, true);
 INSERT INTO pbs_objects (object_id, object_name, module_id, show_menu, window_type, full_fuseaction, file_path, order_no, is_active) VALUES (127, 'Siparişten Üretim Emri Oluştur', 27, false, 'standart', 'production.send_order_to_production', '/production/form/send_order_to_production.cfm', 50, true);
+INSERT INTO pbs_objects (object_id, object_name, module_id, show_menu, window_type, full_fuseaction, file_path, order_no, is_active) VALUES (128, 'Update Merkezi', 21, true, 'standart', 'setup.update_center', '/setup/display/update_center.cfm', 999, true);
 
 -- Sequence güncelle
 SELECT setval('pbs_objects_object_id_seq', (SELECT MAX(object_id) FROM pbs_objects));

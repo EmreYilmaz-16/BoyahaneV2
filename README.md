@@ -182,3 +182,11 @@ Production için:
 - [Lucee Documentation](https://docs.lucee.org/)
 - [PostgreSQL Documentation](https://www.postgresql.org/docs/)
 - [Docker Compose Documentation](https://docs.docker.com/compose/)
+
+## 🔄 Update Merkezi (Yeni)
+
+`setup.update_center` sayfasından:
+- Git repo/branch kontrolü yapabilir, yeni commit-release varsa bildirim görebilirsiniz.
+- İsterseniz otomatik `git pull` + Docker rebuild (`docker-compose up -d --build`) tetikleyebilirsiniz.
+- Sürüm notlarını aynı ekrandan yayınlayabilir/izleyebilirsiniz.
+- Uzak bir PostgreSQL ile tablo seviyesinde şema compare çalıştırabilirsiniz (drop yapmadan, sadece eksik tablo tespiti).
