@@ -135,7 +135,7 @@ function getFormData(){
 
 async function loadSettings(){
     const r = await callService('getSettings');
-    if(!r.success){ showAlert('danger', r.message); return; }
+    if(!r.SUCCESS){ showAlert('danger', r.MESSAGE); return; }
     const d = getResponseData(r) || {};
     Object.keys(d).forEach(k => {
         const el = document.getElementById(k.toLowerCase());
@@ -147,17 +147,17 @@ async function loadSettings(){
 
 async function saveSettings(){
     const r = await callService('saveSettings', getFormData());
-    showAlert(r.success ? 'success' : 'danger', r.message || 'Kaydedilemedi');
+    showAlert(r.SUCCESS ? 'success' : 'danger', r.MESSAGE || 'Kaydedilemedi');
 }
 
 async function checkUpdates(){
     document.getElementById('updateLog').textContent = 'Kontrol ediliyor...';
     const r = await callService('checkUpdates');
-    if(r.success){
-        showAlert(r.update_available ? 'warning' : 'success', r.message);
+    if(r.SUCCESS){
+        showAlert(r.UPDATE_AVAILABLE ? 'warning' : 'success', r.MESSAGE);
         document.getElementById('updateLog').textContent = JSON.stringify(r, null, 2);
     } else {
-        showAlert('danger', r.message || 'Hata');
+        showAlert('danger', r.MESSAGE || 'Hata');
         document.getElementById('updateLog').textContent = JSON.stringify(r, null, 2);
     }
     await loadReleaseNotes();
@@ -166,7 +166,7 @@ async function checkUpdates(){
 async function applyUpdates(){
     document.getElementById('updateLog').textContent = 'Pull + rebuild çalışıyor...';
     const r = await callService('applyUpdates');
-    showAlert(r.success ? 'success' : 'danger', r.message);
+    showAlert(r.SUCCESS ? 'success' : 'danger', r.MESSAGE || 'İşlem başarısız');
     document.getElementById('updateLog').textContent = JSON.stringify(r, null, 2);
 }
 
@@ -177,7 +177,7 @@ async function discardLocalChanges(){
     }
     document.getElementById('updateLog').textContent = 'Yerel değişiklikler discard ediliyor...';
     const r = await callService('discardLocalChanges');
-    showAlert(r.success ? 'success' : 'danger', r.message || 'İşlem başarısız');
+    showAlert(r.SUCCESS ? 'success' : 'danger', r.MESSAGE || 'İşlem başarısız');
     document.getElementById('updateLog').textContent = JSON.stringify(r, null, 2);
 }
 
@@ -185,8 +185,8 @@ async function compareSchema(){
     const r = await callService('compareSchema');
     const list = document.getElementById('schemaDiffList');
     list.innerHTML = '';
-    if(!r.success){
-        showAlert('danger', r.message);
+    if(!r.SUCCESS){
+        showAlert('danger', r.MESSAGE);
         return;
     }
     if(!r.missing_tables || !r.missing_tables.length){
@@ -196,7 +196,7 @@ async function compareSchema(){
             list.innerHTML += `<li class="list-group-item d-flex justify-content-between"><span>${t}</span><span class="badge text-bg-warning">Uzakta var, lokalde yok</span></li>`;
         });
     }
-    showAlert('info', r.message);
+    showAlert('info', r.MESSAGE);
 }
 
 async function addReleaseNote(){
@@ -208,7 +208,7 @@ async function addReleaseNote(){
         note_body: document.getElementById('note_body').value
     };
     const r = await callService('addReleaseNote', payload);
-    showAlert(r.success ? 'success' : 'danger', r.message);
+    showAlert(r.SUCCESS ? 'success' : 'danger', r.MESSAGE || 'İşlem başarısız');
     await loadReleaseNotes();
 }
 
