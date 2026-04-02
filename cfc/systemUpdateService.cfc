@@ -110,9 +110,16 @@
         <cfset var settings = getSettings()>
         <cfset var pullOut = "">
         <cfset var dockerOut = "">
+        <cfset var dockerComposeExists = "">
+        <cfset var dockerCmd = trim(settings.data.docker_compose_cmd)>
+        <cfset var shellSafeCmd = "">
 
         <cfif not settings.success>
             <cfreturn settings>
+        </cfif>
+
+        <cfif not len(dockerCmd)>
+            <cfset dockerCmd = "docker compose up -d --build">
         </cfif>
 
         <cftry>
@@ -122,13 +129,25 @@
                 timeout="120" />
 
             <cfexecute name="sh"
-                arguments="-lc '#settings.data.docker_compose_cmd#'"
+                arguments="-lc 'command -v docker-compose >/dev/null 2>&1 && echo yes || echo no'"
+                variable="dockerComposeExists"
+                timeout="10" />
+
+            <cfif trim(dockerComposeExists) neq "yes">
+                <cfset dockerCmd = replaceNoCase(dockerCmd, "docker-compose", "docker compose", "all")>
+            </cfif>
+
+            <cfset shellSafeCmd = replace(dockerCmd, "'", "'\''", "all")>
+
+            <cfexecute name="sh"
+                arguments="-lc '#shellSafeCmd#'"
                 variable="dockerOut"
                 timeout="240" />
 
             <cfset result.message = "Güncellemeler çekildi ve docker build tamamlandı.">
             <cfset result.git_output = pullOut>
             <cfset result.docker_output = dockerOut>
+            <cfset result.executed_docker_cmd = dockerCmd>
 
             <cfcatch>
                 <cfset result.success = false>
