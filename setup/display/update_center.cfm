@@ -43,6 +43,7 @@
                         <button class="btn btn-primary" onclick="saveSettings()"><i class="fas fa-save me-1"></i>Kaydet</button>
                         <button class="btn btn-warning" onclick="checkUpdates()"><i class="fas fa-magnifying-glass me-1"></i>Güncelleme Kontrol Et</button>
                         <button class="btn btn-success" onclick="applyUpdates()"><i class="fas fa-download me-1"></i>Pull + Rebuild</button>
+                        <button class="btn btn-outline-danger" onclick="discardLocalChanges()"><i class="fas fa-trash-can me-1"></i>Yerel Değişiklikleri Discard Et</button>
                     </div>
                     <pre class="mt-3 p-2 bg-dark text-light rounded" style="max-height:220px;overflow:auto;" id="updateLog">Durum logu...</pre>
                 </div>
@@ -150,6 +151,17 @@ async function applyUpdates(){
     document.getElementById('updateLog').textContent = 'Pull + rebuild çalışıyor...';
     const r = await callService('applyUpdates');
     showAlert(r.success ? 'success' : 'danger', r.message);
+    document.getElementById('updateLog').textContent = JSON.stringify(r, null, 2);
+}
+
+async function discardLocalChanges(){
+    const approved = confirm('Bu işlem yerel değişiklikleri geri alınamaz şekilde silecektir. Devam etmek istiyor musunuz?');
+    if(!approved){
+        return;
+    }
+    document.getElementById('updateLog').textContent = 'Yerel değişiklikler discard ediliyor...';
+    const r = await callService('discardLocalChanges');
+    showAlert(r.success ? 'success' : 'danger', r.message || 'İşlem başarısız');
     document.getElementById('updateLog').textContent = JSON.stringify(r, null, 2);
 }
 
