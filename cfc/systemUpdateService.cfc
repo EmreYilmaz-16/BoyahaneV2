@@ -114,6 +114,7 @@
         <cfset var dockerExists = "">
         <cfset var dockerCmd = trim(settings.data.docker_compose_cmd)>
         <cfset var shellSafeCmd = "">
+        <cfset var repoStatus = "">
 
         <cfif not settings.success>
             <cfreturn settings>
@@ -124,6 +125,18 @@
         </cfif>
 
         <cftry>
+            <cfexecute name="git"
+                arguments="-C #settings.data.repo_local_path# status --porcelain"
+                variable="repoStatus"
+                timeout="30" />
+
+            <cfif len(trim(repoStatus))>
+                <cfset result.success = false>
+                <cfset result.message = "Pull işlemi iptal edildi: Yerel değişiklikler var. Lütfen commit veya stash yapıp tekrar deneyin.">
+                <cfset result.repo_status = trim(repoStatus)>
+                <cfreturn result>
+            </cfif>
+
             <cfexecute name="git"
                 arguments="-C #settings.data.repo_local_path# pull origin #settings.data.repo_branch#"
                 variable="pullOut"
