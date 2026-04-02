@@ -89,6 +89,22 @@
 <script>
 const svc = '/cfc/systemUpdateService.cfc';
 
+
+function getResponseData(payload){
+    return payload?.data ?? payload?.DATA ?? null;
+}
+
+function normalizeNote(note){
+    return {
+        release_tag: note.release_tag ?? note.RELEASE_TAG ?? '',
+        release_name: note.release_name ?? note.RELEASE_NAME ?? '',
+        release_url: note.release_url ?? note.RELEASE_URL ?? '',
+        published_at: note.published_at ?? note.PUBLISHED_AT ?? '',
+        note_body: note.note_body ?? note.NOTE_BODY ?? '',
+        source_type: note.source_type ?? note.SOURCE_TYPE ?? ''
+    };
+}
+
 function showAlert(type, text){
     document.getElementById('updateAlert').innerHTML = `<div class="alert alert-${type} py-2">${text}</div>`;
 }
@@ -120,7 +136,7 @@ function getFormData(){
 async function loadSettings(){
     const r = await callService('getSettings');
     if(!r.success){ showAlert('danger', r.message); return; }
-    const d = r.data;
+    const d = getResponseData(r) || {};
     Object.keys(d).forEach(k => {
         const el = document.getElementById(k.toLowerCase());
         if(!el) return;
@@ -200,7 +216,8 @@ async function loadReleaseNotes(){
     const r = await callService('getReleaseNotes');
     const box = document.getElementById('releaseNotesList');
     if(!r.success){ box.innerHTML = '<div class="text-danger">Sürüm notları yüklenemedi.</div>'; return; }
-    box.innerHTML = (r.data || []).map(n => `
+    const notes = (getResponseData(r) || []).map(normalizeNote);
+    box.innerHTML = notes.map(n => `
         <div class="border rounded p-2 mb-2">
             <div class="d-flex justify-content-between">
                 <strong>${n.release_tag}</strong>
