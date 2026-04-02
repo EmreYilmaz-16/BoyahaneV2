@@ -28,7 +28,7 @@
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Docker Build Komutu</label>
-                            <input id="docker_compose_cmd" class="form-control" value="docker-compose up -d --build">
+                            <input id="docker_compose_cmd" class="form-control" value="docker compose up -d --build">
                         </div>
                         <div class="col-md-6 form-check ms-2 mt-3">
                             <input type="checkbox" id="check_releases" class="form-check-input">

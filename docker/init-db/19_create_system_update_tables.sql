@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS system_update_settings (
     repo_local_path VARCHAR(500) NOT NULL DEFAULT '/workspace/BoyahaneV2',
     check_releases BOOLEAN NOT NULL DEFAULT TRUE,
     auto_pull_on_release BOOLEAN NOT NULL DEFAULT FALSE,
-    docker_compose_cmd VARCHAR(200) NOT NULL DEFAULT 'docker-compose up -d --build',
+    docker_compose_cmd VARCHAR(200) NOT NULL DEFAULT 'docker compose up -d --build',
     remote_db_host VARCHAR(255),
     remote_db_port INTEGER DEFAULT 5432,
     remote_db_name VARCHAR(255),
@@ -47,7 +47,7 @@ SELECT
     '/workspace/BoyahaneV2',
     TRUE,
     FALSE,
-    'docker-compose up -d --build'
+    'docker compose up -d --build'
 WHERE NOT EXISTS (SELECT 1 FROM system_update_settings);
 
 -- Menüye Update Merkezi sayfası

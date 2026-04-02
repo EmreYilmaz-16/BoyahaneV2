@@ -10,23 +10,23 @@
 
 1. **Docker Container'ları Başlat:**
 ```powershell
-docker-compose up -d
+docker compose up -d
 ```
 
 2. **Logları İzle:**
 ```powershell
-docker-compose logs -f
+docker compose logs -f
 ```
 
 3. **Container'ları Durdur:**
 ```powershell
-docker-compose down
+docker compose down
 ```
 
 4. **Tüm Verileri Sil ve Yeniden Başlat:**
 ```powershell
-docker-compose down -v
-docker-compose up -d --build
+docker compose down -v
+docker compose up -d --build
 ```
 
 ## 📦 Servisler
@@ -61,7 +61,7 @@ docker-compose up -d --build
 
 ### Container Durumu Kontrol
 ```powershell
-docker-compose ps
+docker compose ps
 ```
 
 ### Container İçine Giriş
@@ -88,24 +88,24 @@ docker exec boyahane_postgres pg_dump -U boyahane_user boyahane > backup.sql
 ### Logları Görüntüle
 ```powershell
 # Tüm servisler
-docker-compose logs -f
+docker compose logs -f
 
 # Sadece Lucee
-docker-compose logs -f lucee
+docker compose logs -f lucee
 
 # Sadece PostgreSQL
-docker-compose logs -f postgres
+docker compose logs -f postgres
 ```
 
 ### Container'ları Yeniden Başlat
 ```powershell
-docker-compose restart
+docker compose restart
 ```
 
 ### Sadece Belirli Servisi Yeniden Başlat
 ```powershell
-docker-compose restart lucee
-docker-compose restart postgres
+docker compose restart lucee
+docker compose restart postgres
 ```
 
 ## 🔧 Yapılandırma
@@ -130,11 +130,11 @@ Copy-Item .env.example .env
 
 İlk çalıştırmada `docker/init-db/` altındaki tüm `.sql` dosyaları alfabetik sırayla otomatik çalışır ve tablolar oluşturulur.
 
-> Not: Bu adım yalnızca PostgreSQL veri volume'ü boşken çalışır. Şema değişikliği sonrası `docker-compose down -v` ile volume'ü sıfırlayıp yeniden başlatın.
+> Not: Bu adım yalnızca PostgreSQL veri volume'ü boşken çalışır. Şema değişikliği sonrası `docker compose down -v` ile volume'ü sıfırlayıp yeniden başlatın.
 
 Yeni tablolar eklemek için:
 1. `docker/init-db/` klasörüne yeni `.sql` dosyası ekleyin (örn: `02-create-tables.sql`)
-2. Container'ları yeniden oluşturun: `docker-compose down -v && docker-compose up -d`
+2. Container'ları yeniden oluşturun: `docker compose down -v && docker compose up -d`
 
 ## 🐛 Sorun Giderme
 
@@ -147,8 +147,8 @@ ports:
 
 ### Lucee Başlamıyor
 ```powershell
-docker-compose logs lucee
-docker-compose restart lucee
+docker compose logs lucee
+docker compose restart lucee
 ```
 
 ### PostgreSQL Bağlantı Hatası
@@ -187,6 +187,6 @@ Production için:
 
 `setup.update_center` sayfasından:
 - Git repo/branch kontrolü yapabilir, yeni commit-release varsa bildirim görebilirsiniz.
-- İsterseniz otomatik `git pull` + Docker rebuild (`docker-compose up -d --build`) tetikleyebilirsiniz.
+- İsterseniz otomatik `git pull` + Docker rebuild (`docker compose up -d --build`) tetikleyebilirsiniz.
 - Sürüm notlarını aynı ekrandan yayınlayabilir/izleyebilirsiniz.
 - Uzak bir PostgreSQL ile tablo seviyesinde şema compare çalıştırabilirsiniz (drop yapmadan, sadece eksik tablo tespiti).
