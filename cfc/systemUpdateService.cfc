@@ -302,6 +302,53 @@
         <cfreturn result>
     </cffunction>
 
+    <cffunction name="discardLocalChanges" access="remote" returntype="struct" returnformat="json" output="false">
+        <cfset var result = {success=true}>
+        <cfset var settings = getSettings()>
+        <cfset var resetOut = "">
+        <cfset var cleanOut = "">
+        <cfset var repoStatus = "">
+
+        <cfif not settings.success>
+            <cfreturn settings>
+        </cfif>
+
+        <cftry>
+            <cfexecute name="git"
+                arguments="#buildGitArgs(settings.data.repo_local_path, 'status --porcelain')#"
+                variable="repoStatus"
+                timeout="30" />
+
+            <cfif not len(trim(repoStatus))>
+                <cfset result.message = "Discard edilecek yerel değişiklik bulunamadı.">
+                <cfset result.repo_status = "clean">
+                <cfreturn result>
+            </cfif>
+
+            <cfexecute name="git"
+                arguments="#buildGitArgs(settings.data.repo_local_path, 'reset --hard HEAD')#"
+                variable="resetOut"
+                timeout="30" />
+
+            <cfexecute name="git"
+                arguments="#buildGitArgs(settings.data.repo_local_path, 'clean -fd')#"
+                variable="cleanOut"
+                timeout="30" />
+
+            <cfset result.message = "Yerel değişiklikler discard edildi (reset --hard + clean -fd).">
+            <cfset result.git_reset_output = trim(resetOut)>
+            <cfset result.git_clean_output = trim(cleanOut)>
+
+            <cfcatch>
+                <cfset result.success = false>
+                <cfset result.message = "Yerel değişiklikler discard edilirken hata oluştu: #cfcatch.message#">
+                <cfset result.detail = cfcatch.detail>
+            </cfcatch>
+        </cftry>
+
+        <cfreturn result>
+    </cffunction>
+
     <cffunction name="compareSchema" access="remote" returntype="struct" returnformat="json" output="false">
         <cfset var result = {success=true, missing_tables=[]}>
         <cfset var settings = getSettings()>
