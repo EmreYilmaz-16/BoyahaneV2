@@ -111,6 +111,7 @@
         <cfset var pullOut = "">
         <cfset var dockerOut = "">
         <cfset var dockerComposeExists = "">
+        <cfset var dockerExists = "">
         <cfset var dockerCmd = trim(settings.data.docker_compose_cmd)>
         <cfset var shellSafeCmd = "">
 
@@ -133,7 +134,20 @@
                 variable="dockerComposeExists"
                 timeout="10" />
 
-            <cfif trim(dockerComposeExists) neq "yes">
+            <cfexecute name="sh"
+                arguments="-lc 'command -v docker >/dev/null 2>&1 && echo yes || echo no'"
+                variable="dockerExists"
+                timeout="10" />
+
+            <cfif trim(dockerComposeExists) neq "yes" and trim(dockerExists) neq "yes">
+                <cfset result.success = false>
+                <cfset result.message = "Pull tamamlandı ancak Docker çalıştırılamadı: Sunucuda docker veya docker-compose komutu bulunamadı.">
+                <cfset result.git_output = pullOut>
+                <cfset result.executed_docker_cmd = dockerCmd>
+                <cfreturn result>
+            </cfif>
+
+            <cfif trim(dockerComposeExists) neq "yes" and trim(dockerExists) eq "yes">
                 <cfset dockerCmd = replaceNoCase(dockerCmd, "docker-compose", "docker compose", "all")>
             </cfif>
 
