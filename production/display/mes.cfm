@@ -81,6 +81,7 @@
 <!--- Seçili emir için JS değişkenleri --->
 <cfset jsOrderId     = selOrderId>
 <cfset jsStatus      = selOrderId gt 0 AND qSel.recordCount ? val(qSel.status) : 0>
+<cfset jsQty         = selOrderId gt 0 AND qSel.recordCount ? val(qSel.quantity ?: 0) : 0>
 <cfset jsStartReal   = "">
 <cfif selOrderId gt 0 AND qSel.recordCount AND isDate(qSel.start_date_real)>
     <cfset jsStartReal = dateFormat(qSel.start_date_real,"yyyy-mm-dd") & "T" & timeFormat(qSel.start_date_real,"HH:mm:ss") & "Z">
@@ -742,15 +743,19 @@ option.status-2 { font-weight: 600; color: ##16a34a; }
             <h5><i class="fas fa-check-double"></i> Üretimi Tamamla</h5>
             <button class="mes-modal-close" onclick="closeModal('completeModal')">&times;</button>
         </div>
-        <div class="mes-modal-body" style="align-items:center; padding:1.5rem;">
-            <i class="fas fa-check-circle" style="font-size:3rem; color:##1a3a5c;"></i>
-            <p style="text-align:center; color:##1e293b; font-weight:600; margin:.5rem 0 0;">
-                Üretim tamamlandı olarak işaretlensin mi?
+        <div class="mes-modal-body" style="padding:1.5rem;">
+            <p style="text-align:center;color:##1e293b;font-weight:600;margin:0 0 1rem;">
+                Gerçekleşen miktarı girin ve üretimi tamamlayın.
             </p>
+            <div style="display:flex;align-items:center;gap:.5rem;">
+                <label style="white-space:nowrap;font-size:.85rem;font-weight:600;">Miktar (kg):</label>
+                <input type="number" id="mes_result_amount" class="form-control" min="0.01" step="0.01"
+                       placeholder="Gerçekleşen miktar" style="max-width:160px;">
+            </div>
         </div>
         <div class="mes-modal-footer">
             <button class="mes-btn-sm mes-btn-sm-cancel" onclick="closeModal('completeModal')">İptal</button>
-            <button class="mes-btn-sm mes-btn-sm-complete" onclick="doStatusChange(5)">
+            <button class="mes-btn-sm mes-btn-sm-complete" onclick="submitMesFinalize()">
                 <i class="fas fa-check"></i> Tamamla
             </button>
         </div>
@@ -793,6 +798,7 @@ option.status-2 { font-weight: 600; color: ##16a34a; }
     ================================================================ */
     var orderId   = #val(jsOrderId)#;
     var status    = #val(jsStatus)#;
+    var prodQty   = #val(jsQty)#;
     var startReal = "#jsStringFormat(jsStartReal)#";
 
     /* Production timer */
@@ -1039,12 +1045,44 @@ option.status-2 { font-weight: 600; color: ##16a34a; }
         document.getElementById('startOrderLabel').textContent = txt;
         openModal('startModal');
     };
-    window.confirmComplete = function() { openModal('completeModal'); };
+    window.confirmComplete = function() {
+        var qty = prodQty || 0;
+        var inp = document.getElementById('mes_result_amount');
+        if (inp && qty > 0) inp.value = qty;
+        openModal('completeModal');
+    };
     window.confirmStop     = function() { openModal('stopModal'); };
 
     window.doStart = function() {
         closeModal('startModal');
         doStatusChange(2);
+    };
+
+    window.submitMesFinalize = function() {
+        var amt = parseFloat(document.getElementById('mes_result_amount').value) || 0;
+        if (amt <= 0) { showToast('Gerçekleşen miktar girilmelidir.', 'error'); return; }
+        closeModal('completeModal');
+        if (!orderId) { showToast('Üretim emri seçilmedi.', 'error'); return; }
+        $.ajax({
+            url:  'index.cfm?fuseaction=production.finalize_production_order',
+            type: 'POST',
+            data: { p_order_id: orderId, result_amount: amt, note: '' },
+            dataType: 'json',
+            success: function(r) {
+                if (r && r.success) {
+                    var msg = 'Üretim tamamlandı.';
+                    if (r.sarf_fis_no)  msg += ' Sarf: ' + r.sarf_fis_no + '.';
+                    if (r.giris_fis_no) msg += ' Giriş: ' + r.giris_fis_no + '.';
+                    showToast(msg, 'success');
+                    setTimeout(function() {
+                        window.location.href = 'index.cfm?fuseaction=production.mes&p_order_id=' + orderId;
+                    }, 1200);
+                } else {
+                    showToast((r && r.message) ? r.message : 'Bir hata oluştu.', 'error');
+                }
+            },
+            error: function() { showToast('Sunucu hatası.', 'error'); }
+        });
     };
 
     window.doStatusChange = function(newStatus) {

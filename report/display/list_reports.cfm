@@ -73,7 +73,7 @@
 var reportsData = #serializeJSON(reportsArr)#;
 
 $(function () {
-    $("#reportsGrid").dxDataGrid({
+    $("##reportsGrid").dxDataGrid({
         dataSource: reportsData,
         keyExpr: "report_id",
         showBorders: true,
@@ -84,7 +84,7 @@ $(function () {
         searchPanel: { visible: true, placeholder: "Ara..." },
         sorting: { mode: "multiple" },
         columns: [
-            { dataField: "report_id",    caption: "#",           width: 60,  allowSearch: false },
+            { dataField: "report_id",    caption: "##",           width: 60,  allowSearch: false },
             { dataField: "report_name",  caption: "Rapor Adı",   minWidth: 180 },
             { dataField: "report_detail",caption: "Açıklama",    minWidth: 220 },
             {

@@ -33,9 +33,17 @@
     <cfif NOT isArray(rowsData)><cfset rowsData = []></cfif>
 
     <!--- Tarih yardımcıları --->
-    <cfset nowTS       = now()>
-    <cfset startDateV  = (len(trim(form.startdate))  gt 0 AND isDate(form.startdate))  ? parseDateTime(form.startdate)  : javacast("null","")>
-    <cfset finishDateV = (len(trim(form.finishdate)) gt 0 AND isDate(form.finishdate)) ? parseDateTime(form.finishdate) : javacast("null","")>
+    <cfset nowTS = now()>
+    <cfif len(trim(form.startdate)) gt 0 AND isDate(form.startdate)>
+        <cfset startDateV = parseDateTime(form.startdate)>
+    <cfelse>
+        <cfset startDateV = "">
+    </cfif>
+    <cfif len(trim(form.finishdate)) gt 0 AND isDate(form.finishdate)>
+        <cfset finishDateV = parseDateTime(form.finishdate)>
+    <cfelse>
+        <cfset finishDateV = "">
+    </cfif>
 
     <cfset isKdvVal    = form.is_kdv eq "1" OR form.is_kdv eq true>
     <cfset isSalesVal  = form.is_sales eq "1" OR form.is_sales eq true>
@@ -57,8 +65,8 @@
                 paymethod        = <cfqueryparam value="#paymethVal#" cfsqltype="cf_sql_integer" null="#paymethVal eq 0#">,
                 margin           = <cfqueryparam value="#val(form.margin)#" cfsqltype="cf_sql_numeric">,
                 discount         = <cfqueryparam value="#val(form.discount)#" cfsqltype="cf_sql_numeric">,
-                startdate        = <cfqueryparam value="#startDateV#" cfsqltype="cf_sql_timestamp" null="#isNull(startDateV)#">,
-                finishdate       = <cfqueryparam value="#finishDateV#" cfsqltype="cf_sql_timestamp" null="#isNull(finishDateV)#">,
+                startdate        = <cfqueryparam value="#startDateV#" cfsqltype="cf_sql_timestamp" null="#NOT len(startDateV)#">,
+                finishdate       = <cfqueryparam value="#finishDateV#" cfsqltype="cf_sql_timestamp" null="#NOT len(finishDateV)#">,
                 update_date      = <cfqueryparam value="#nowTS#" cfsqltype="cf_sql_timestamp">
             WHERE price_catid = <cfqueryparam value="#catId#" cfsqltype="cf_sql_integer">
         </cfquery>
@@ -78,8 +86,8 @@
                 <cfqueryparam value="#paymethVal#" cfsqltype="cf_sql_integer" null="#paymethVal eq 0#">,
                 <cfqueryparam value="#val(form.margin)#" cfsqltype="cf_sql_numeric">,
                 <cfqueryparam value="#val(form.discount)#" cfsqltype="cf_sql_numeric">,
-                <cfqueryparam value="#startDateV#" cfsqltype="cf_sql_timestamp" null="#isNull(startDateV)#">,
-                <cfqueryparam value="#finishDateV#" cfsqltype="cf_sql_timestamp" null="#isNull(finishDateV)#">,
+                <cfqueryparam value="#startDateV#" cfsqltype="cf_sql_timestamp" null="#NOT len(startDateV)#">,
+                <cfqueryparam value="#finishDateV#" cfsqltype="cf_sql_timestamp" null="#NOT len(finishDateV)#">,
                 <cfqueryparam value="#nowTS#" cfsqltype="cf_sql_timestamp">
             )
             RETURNING price_catid
@@ -109,13 +117,21 @@
         <cfset rUnit      = isNumeric(row.unit)           ? val(row.unit)           : 0>
         <cfset rMoney     = isDefined("row.money")        ? trim(row.money)         : "">
         <cfset rIsKdv     = isDefined("row.is_kdv")       ? (row.is_kdv eq true OR row.is_kdv eq "true" OR row.is_kdv eq 1) : isKdvVal>
-        <cfset rStartV    = (isDefined("row.startdate")  AND len(trim(row.startdate))  gt 0 AND isDate(row.startdate))  ? parseDateTime(row.startdate)  : javacast("null","")>
-        <cfset rFinishV   = (isDefined("row.finishdate") AND len(trim(row.finishdate)) gt 0 AND isDate(row.finishdate)) ? parseDateTime(row.finishdate) : javacast("null","")>
+        <cfif isDefined("row.startdate") AND len(trim(row.startdate)) gt 0 AND isDate(row.startdate)>
+            <cfset rStartV = parseDateTime(row.startdate)>
+        <cfelse>
+            <cfset rStartV = "">
+        </cfif>
+        <cfif isDefined("row.finishdate") AND len(trim(row.finishdate)) gt 0 AND isDate(row.finishdate)>
+            <cfset rFinishV = parseDateTime(row.finishdate)>
+        <cfelse>
+            <cfset rFinishV = "">
+        </cfif>
 
         <cfif rProductId gt 0 OR rStockId gt 0>
             <cfquery datasource="boyahane">
                 INSERT INTO price (
-                    price_catid, product_id, stock_id, price, price_kdv, is_kdv, tax,
+                    price_catid, product_id, stock_id, price, price_kdv, is_kdv, 
                     price_discount, unit, money, startdate, finishdate, record_date
                 ) VALUES (
                     <cfqueryparam value="#catId#" cfsqltype="cf_sql_integer">,
@@ -124,12 +140,12 @@
                     <cfqueryparam value="#rPrice#" cfsqltype="cf_sql_numeric">,
                     <cfqueryparam value="#rPriceKdv#" cfsqltype="cf_sql_numeric">,
                     <cfqueryparam value="#rIsKdv#" cfsqltype="cf_sql_boolean">,
-                    <cfqueryparam value="#rTax#" cfsqltype="cf_sql_numeric">,
+                    
                     <cfqueryparam value="#rDiscount#" cfsqltype="cf_sql_numeric">,
                     <cfqueryparam value="#rUnit#" cfsqltype="cf_sql_integer" null="#rUnit eq 0#">,
                     <cfqueryparam value="#rMoney#" cfsqltype="cf_sql_varchar" null="#NOT len(rMoney)#">,
-                    <cfqueryparam value="#rStartV#" cfsqltype="cf_sql_timestamp" null="#isNull(rStartV)#">,
-                    <cfqueryparam value="#rFinishV#" cfsqltype="cf_sql_timestamp" null="#isNull(rFinishV)#">,
+                    <cfqueryparam value="#startDateV#" cfsqltype="cf_sql_timestamp" null="#NOT len(startDateV)#">,
+                    <cfqueryparam value="#finishDateV#" cfsqltype="cf_sql_timestamp" null="#NOT len(finishDateV)#">,
                     <cfqueryparam value="#nowTS#" cfsqltype="cf_sql_timestamp">
                 )
             </cfquery>

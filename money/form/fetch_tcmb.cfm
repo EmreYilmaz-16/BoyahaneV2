@@ -128,3 +128,4 @@
 
     writeOutput(serializeJSON(result));
 </cfscript>
+<cfabort>

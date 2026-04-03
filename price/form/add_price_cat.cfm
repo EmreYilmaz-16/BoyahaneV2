@@ -57,6 +57,7 @@
     <cfquery name="getPriceRows" datasource="boyahane">
         SELECT pr.*,
                p.product_name, p.product_code,
+            p.tax,
                s.stock_code, s.barcod
         FROM price pr
         LEFT JOIN product p ON pr.product_id = p.product_id
@@ -406,7 +407,7 @@ function addPriceRow() {
     var discount = parseFloat(document.getElementById('addDiscount').value) || 0;
     var priceKdv = price * (1 + tax / 100);
 
-    /* Aynı stok varsa güncelle --->
+    /* Aynı stok varsa güncelle --->*/
     var existing = priceRows.findIndex(function(r){ return r.stock_id === stockId && stockId > 0; });
     if (existing >= 0) {
         if (!confirm('Bu ürün zaten listede. Üzerine yazmak ister misiniz?')) return;

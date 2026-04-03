@@ -420,15 +420,17 @@ window.addEventListener('load', function() {
                     colorPickerPartiRow.FIRST_PROPERTY   = colorPickerPartiRow.first_property   = res.property   || '';
                     colorPickerPartiRow.FIRST_STOCK_ID   = colorPickerPartiRow.first_stock_id   = res.stock_id   || 0;
                     colorPickerPartiRow.FIRST_CODE2      = colorPickerPartiRow.first_code2      = res.stock_code_2 || '';
-                    $('##mainPartiGrid').dxDataGrid('instance').repaint();
+                    var _mg = DevExpress.ui.dxDataGrid.getInstance(document.getElementById('mainPartiGrid'));
+                    if (_mg) _mg.repaint();
                 }
                 /* Açık modal grid'ini yenile (varsa) */
-                var g = $('##partiRowModalGrid').dxDataGrid('instance');
+                var g = DevExpress.ui.dxDataGrid.getInstance(document.getElementById('partiRowModalGrid'));
                 if (g) {
                     var ds  = g.option('dataSource');
                     var oid = ds && ds[0] ? (ds[0].ORDER_ID||ds[0].order_id) : null;
                     if (oid) g.option('dataSource', partiRowsData.filter(function(r){ return (r.ORDER_ID||r.order_id)==oid; }));
                 }
+                try { /* grid refreshes above */ } catch(e) { console.warn('grid refresh:', e); }
                 var cpModal = bootstrap.Modal.getInstance(document.getElementById('colorPickerModal'));
                 if (cpModal) cpModal.hide();
             } else {
@@ -458,7 +460,8 @@ function openRowModal(partiData) {
     /* Grid oluştur veya güncelle */
     var $gridEl = $('##partiRowModalGrid');
     if ($gridEl.data('dxDataGrid')) {
-        $gridEl.dxDataGrid('instance').option('dataSource', rows);
+        var _rg = DevExpress.ui.dxDataGrid.getInstance($gridEl[0]);
+        if (_rg) _rg.option('dataSource', rows);
     } else {
         $gridEl.dxDataGrid({
             dataSource: rows,

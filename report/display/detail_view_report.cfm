@@ -26,7 +26,7 @@
 </cfif>
 
 <!--- Admin raporu ise sadece adminler görebilir --->
-<cfif getReport.admin_status AND NOT (structKeyExists(session,"user") AND session.user.is_admin)>
+<cfif getReport.admin_status AND NOT (structKeyExists(session,"user") AND structKeyExists(session.user,"is_admin") AND session.user.is_admin)>
     <cfoutput>
     <div class="alert alert-danger mt-3">
         <i class="fas fa-lock me-2"></i>Bu raporu görüntüleme yetkiniz bulunmamaktadır.
@@ -50,7 +50,7 @@
         <a href="index.cfm?fuseaction=report.list_reports" class="btn btn-light me-2">
             <i class="fas fa-arrow-left me-1"></i> Raporlar
         </a>
-        <cfif structKeyExists(session,"user") AND session.user.is_admin>
+        <cfif structKeyExists(session,"user") AND structKeyExists(session.user,"is_admin") AND session.user.is_admin>
         <a href="index.cfm?fuseaction=report.add_report&report_id=#reportId#" class="btn btn-warning">
             <i class="fas fa-edit me-1"></i> Düzenle
         </a>
@@ -95,7 +95,7 @@
     <div class="alert alert-info mt-3">
         <i class="fas fa-info-circle me-2"></i>
         Bu rapor için henüz bir CFM dosyası yüklenmemiştir veya rapor özel rapor olarak işaretlenmemiştir.
-        <cfif structKeyExists(session,"user") AND session.user.is_admin>
+        <cfif structKeyExists(session,"user") AND structKeyExists(session.user,"is_admin") AND session.user.is_admin>
         <a href="index.cfm?fuseaction=report.add_report&report_id=<cfoutput>#reportId#</cfoutput>" class="alert-link">
             Düzenle &rarr;
         </a>

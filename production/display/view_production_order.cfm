@@ -449,7 +449,11 @@ function submitFinalize() {
     }, function(res) {
         if (res && res.success) {
             finalizePopup.hide();
-            window.location.href = 'index.cfm?fuseaction=production.list_production_orders&success=finalized';
+            var msg = 'Üretim tamamlandı.';
+            if (res.sarf_fis_no)  msg += ' Sarf: ' + res.sarf_fis_no + '.';
+            if (res.giris_fis_no) msg += ' Giriş: ' + res.giris_fis_no + '.';
+            DevExpress.ui.notify(msg, 'success', 4000);
+            setTimeout(function(){ window.location.href = 'index.cfm?fuseaction=production.list_production_orders&success=finalized'; }, 1500);
         } else {
             DevExpress.ui.notify((res && res.message) || 'Sonuçlandırma başarısız.', 'error', 3500);
         }

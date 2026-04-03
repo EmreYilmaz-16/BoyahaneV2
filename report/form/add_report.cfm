@@ -62,12 +62,12 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-semibold">CFM Dosyası Yükle</label>
-                        <input type="file" class="form-control" id="cfmFileInput" name="cfm_file" accept=".cfm">
+                        <input type="file" class="form-control" id="cfmFileInput" name="cfm_file" accept=".txt,.cfm">
                         <div class="form-text">
                             <cfif editMode AND len(trim(fv("cfm_file_name")))>
                                 Mevcut dosya: <strong>#fv("cfm_file_name")#</strong> &mdash; Yeni dosya seçilirse üzerine yazılır.
                             <cfelse>
-                                Sadece <code>.cfm</code> uzantılı dosya kabul edilir.
+                                <code>.cfm</code> veya <code>.txt</code> uzantılı dosya yükleyin (sunucuda .cfm olarak kaydedilir).
                             </cfif>
                         </div>
                     </div>
@@ -112,37 +112,37 @@
 var editMode = #editMode ? "true" : "false"#;
 
 $(function() {
-    $("#txtReportName").dxTextBox({
+    $("##txtReportName").dxTextBox({
         value: "#jsstringformat(fv("report_name"))#",
         placeholder: "Raporun adı...",
         stylingMode: "outlined"
     });
 
-    $("#txtReportDetail").dxTextArea({
+    $("##txtReportDetail").dxTextArea({
         value: "#jsstringformat(fv("report_detail"))#",
         placeholder: "Kısa açıklama...",
         stylingMode: "outlined",
         height: 80
     });
 
-    $("#chkIsSpecial").dxCheckBox({
+    $("##chkIsSpecial").dxCheckBox({
         value: #fb("is_special","false")#,
         text: "Bu rapor özel (dinamik CFM tabanlı) bir rapordur"
     });
 
-    $("#chkReportStatus").dxCheckBox({
+    $("##chkReportStatus").dxCheckBox({
         value: #fb("report_status","true")#,
         text: "Aktif — kullanıcılar bu raporu görebilir"
     });
 
-    $("#chkAdminStatus").dxCheckBox({
+    $("##chkAdminStatus").dxCheckBox({
         value: #fb("admin_status","false")#,
         text: "Yalnızca adminler görebilir"
     });
 });
 
 function saveReport() {
-    var reportName = $("#txtReportName").dxTextBox("instance").option("value");
+    var reportName = $("##txtReportName").dxTextBox("instance").option("value");
     if (!reportName || reportName.trim() === "") {
         DevExpress.ui.notify("Rapor adı zorunludur.", "warning", 2500);
         return;
@@ -150,10 +150,10 @@ function saveReport() {
 
     var formData = new FormData(document.getElementById("reportForm"));
     formData.set("report_name",   reportName.trim());
-    formData.set("report_detail", $("#txtReportDetail").dxTextArea("instance").option("value") || "");
-    formData.set("is_special",    $("#chkIsSpecial").dxCheckBox("instance").option("value") ? "true" : "false");
-    formData.set("report_status", $("#chkReportStatus").dxCheckBox("instance").option("value") ? "true" : "false");
-    formData.set("admin_status",  $("#chkAdminStatus").dxCheckBox("instance").option("value") ? "true" : "false");
+    formData.set("report_detail", $("##txtReportDetail").dxTextArea("instance").option("value") || "");
+    formData.set("is_special",    $("##chkIsSpecial").dxCheckBox("instance").option("value") ? "true" : "false");
+    formData.set("report_status", $("##chkReportStatus").dxCheckBox("instance").option("value") ? "true" : "false");
+    formData.set("admin_status",  $("##chkAdminStatus").dxCheckBox("instance").option("value") ? "true" : "false");
 
     $.ajax({
         url: "index.cfm?fuseaction=report.save_report",

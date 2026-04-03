@@ -18,11 +18,7 @@ CREATE TABLE IF NOT EXISTS reports (
 	update_emp integer,
 	report_status boolean DEFAULT false,
 	admin_status boolean,
-	is_file boolean,
-	main_process_cat_id integer,
-	report_cat_id integer,
-	structure text,
-	is_dashboard integer,
-	modul_no integer,
+
+
 	CONSTRAINT pk_reports_report_id PRIMARY KEY (report_id)
 );

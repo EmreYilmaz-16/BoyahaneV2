@@ -27,63 +27,39 @@
 
     <!--- CFM dosyası yükleme --->
     <cfset uploadedFileName = "">
-    <cfif structKeyExists(form, "cfm_file") AND len(trim(form.cfm_file)) GT 0>
-        <!--- form.cfm_file dolu olduğunda cffile işlemi yapılmaz; gerçek upload FORM alanı üzerinden gelir --->
-    </cfif>
+    <cfset uploadDir = expandPath("/report/special_report/")>
 
-    <cfif isDefined("cffile") AND structKeyExists(cffile,"serverFile")>
-        <!--- cffile zaten çalıştıysa (custom tag yöntemi) --->
-        <cfset uploadedFileName = cffile.serverFile>
-    <cfelseif structKeyExists(FORM,"cfm_file") AND len(trim(FORM.cfm_file)) GT 0>
-        <!--- Lucee multipart: FORM.cfm_file dosya adını tutar --->
-        <cfset tempFilePath = GetTempDirectory() & FORM.cfm_file>
-        <cfset uploadDir = expandPath("/report/special_report/")>
+    <cftry>
+        <cffile action="upload"
+                fileField="cfm_file"
+                destination="#uploadDir#"
+                nameConflict="overwrite">
 
-        <!--- Uzantı kontrolü --->
-        <cfif lcase(listLast(FORM.cfm_file,".")) NEQ "cfm">
-            <cfset response.message = "Yalnızca .cfm uzantılı dosya yüklenebilir.">
+        <!--- Sadece .cfm ve .txt kabul et --->
+        <cfset uploadedExt = lcase(listLast(cffile.clientFile, "."))>
+        <cfif NOT listFind("cfm,txt", uploadedExt)>
+            <cffile action="delete" file="#cffile.serverDirectory#/#cffile.serverFile#">
+            <cfset response.message = "Yalnızca .cfm veya .txt uzantılı dosya yüklenebilir.">
             <cfoutput>#serializeJSON(response)#</cfoutput>
             <cfabort>
         </cfif>
 
-        <!--- Güvenli dosya adı: yalnızca harf/rakam/tire/alt çizgi --->
-        <cfset safeName = reReplace(listFirst(FORM.cfm_file,"."),"[^a-zA-Z0-9_\-]","_","all") & ".cfm">
+        <!--- Dosyayı GUID ile yeniden adlandır: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx.cfm --->
+        <cfset guidName = lcase(createUUID()) & ".cfm">
+        <cfset destFile = uploadDir & guidName>
 
-        <cffile action="move" source="#tempFilePath#" destination="#uploadDir##safeName#" nameconflict="overwrite">
-        <cfset uploadedFileName = safeName>
-    </cfif>
+        <cffile action="rename"
+                source="#cffile.serverDirectory#/#cffile.serverFile#"
+                destination="#destFile#"
+                nameConflict="overwrite">
 
-    <!--- Gerçek Lucee multipart upload --->
-    <cfif NOT len(uploadedFileName) AND isDefined("form") AND structKeyExists(form,"cfm_file")>
-        <cfset uploadDir = expandPath("/report/special_report/")>
-        <cftry>
-            <cffile action="upload"
-                    fileField="cfm_file"
-                    destination="#uploadDir#"
-                    nameConflict="overwrite"
-                    accept=".cfm,text/plain,text/html">
+        <cfset uploadedFileName = guidName>
 
-            <cfif lcase(listLast(cffile.serverFile,".")) NEQ "cfm">
-                <cffile action="delete" file="#cffile.serverDirectory#/#cffile.serverFile#">
-                <cfset response.message = "Yalnızca .cfm uzantılı dosya yüklenebilir.">
-                <cfoutput>#serializeJSON(response)#</cfoutput>
-                <cfabort>
-            </cfif>
-
-            <!--- Güvenli dosya adı --->
-            <cfset safeName = reReplace(listFirst(cffile.serverFile,"."),"[^a-zA-Z0-9_\-]","_","all") & ".cfm">
-            <cfif safeName NEQ cffile.serverFile>
-                <cffile action="rename"
-                        source="#cffile.serverDirectory#/#cffile.serverFile#"
-                        destination="#cffile.serverDirectory#/#safeName#"
-                        nameConflict="overwrite">
-            </cfif>
-            <cfset uploadedFileName = safeName>
-            <cfcatch type="any">
-                <!--- Dosya yüklenmemişse sessizce geç --->
-            </cfcatch>
-        </cftry>
-    </cfif>
+        <cfcatch type="any">
+            <!--- Dosya seçilmemişse veya upload başarısızsa sessizce geç --->
+            <cflog file="application" type="warning" text="save_report upload hata: #cfcatch.message#">
+        </cfcatch>
+    </cftry>
 
     <cfif editMode>
         <!--- UPDATE --->
@@ -141,13 +117,15 @@
         </cfquery>
         <cfset response.success   = true>
         <cfset response.mode      = "added">
-        <cfset response.report_id = val(insReport.report_id)>
+        <cfset response.report_id = val(insResult.generatedKey)>
     </cfif>
 
     <cfcatch type="any">
+        <cfset response.success = false>
         <cfset response.message = cfcatch.message & " " & cfcatch.detail>
         <cflog file="application" type="error" text="save_report.cfm hata: #cfcatch.message# | #cfcatch.detail#">
     </cfcatch>
 </cftry>
 
 <cfoutput>#serializeJSON(response)#</cfoutput>
+<cfabort>

@@ -176,7 +176,7 @@
                     <!--- Kaydet --->
                     <div class="d-grid mt-3">
                         <button type="button" class="btn btn-primary" id="saveBtn" onclick="saveParti()">
-                            <i class="fas fa-save me-2"></i>Sipariş Olarak Kaydet
+                            <i class="fas fa-save me-2"></i>Parti Oluştur
                         </button>
                     </div>
 
@@ -419,7 +419,7 @@ function saveParti() {
         dataType: 'json',
         success: function(res) {
             if (res.success) {
-                window.location.href = 'index.cfm?fuseaction=order.list_orders';
+                window.location.href = 'index.cfm?fuseaction=ship.list_partiler&ship_id=#getShip.ship_id#';
             } else {
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-save me-2"></i>Sipariş Olarak Kaydet';
