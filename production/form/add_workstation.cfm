@@ -4,10 +4,24 @@
 <cfset currentId  = editMode ? val(url.station_id) : 0>
 
 <cfif editMode>
-    <cfquery name="getRec" datasource="boyahane">
+    <cfquery name="getRec" datasource="boyahane" result="resa">
         SELECT * FROM workstations
         WHERE station_id = <cfqueryparam value="#currentId#" cfsqltype="cf_sql_integer">
     </cfquery>
+   <!--- Debug output
+   debug:
+    
+    <table>
+       <cfoutput>
+        <cfloop list="#resa.COLUMNLIST#" index="currentColumn">
+            <tr>
+                <td>#currentColumn#</td>
+                <td>#getRec[currentColumn]#</td>
+            </tr>
+        </cfloop>
+       </cfoutput>
+    </table>
+    ---->
     <cfif NOT getRec.recordCount>
         <cfset editMode = false>
         <cfset currentId  = 0>
@@ -97,6 +111,22 @@
     <cfset arrayAppend(opTypesArr, { "operation_type_id": val(operation_type_id), "operation_type": operation_type ?: "" })>
 </cfloop>
 
+<!--- Lokasyon listesi (id = stocks_location PK, stock_fis.location_in/out ile tutarlı) --->
+<cfquery name="getLocs" datasource="boyahane">
+    SELECT id AS location_id, department_id, department_location
+    FROM stocks_location
+    WHERE COALESCE(status, true) = true
+    ORDER BY department_id, department_location
+</cfquery>
+<cfset locsArr = []>
+<cfloop query="getLocs">
+    <cfset arrayAppend(locsArr, {
+        "location_id"        : val(location_id),
+        "department_id"      : val(department_id),
+        "department_location": department_location ?: ""
+    })>
+</cfloop>
+
 <!--- Mevcut değerler --->
 <cfset fName     = editMode ? (getRec.station_name     ?: "") : "">
 <cfset fDept     = editMode ? (isNumeric(getRec.department) ? val(getRec.department) : 0) : 0>
@@ -109,6 +139,24 @@
 <cfset fComment   = editMode ? (getRec.comment ?: "") : "">
 <cfset fUpStation = editMode ? (isNumeric(getRec.up_station) ? val(getRec.up_station) : 0) : 0>
 
+<!--- Stok fişi depo/lokasyon alanları --->
+<cfset fExitDep  = editMode ? (isNumeric(getRec.exit_dep_id)       ? val(getRec.exit_dep_id)       : 0) : 0>
+<cfset fExitLoc  = editMode ? (isNumeric(getRec.exit_loc_id)       ? val(getRec.exit_loc_id)       : 0) : 0>
+<cfset fEnterDep = editMode ? (isNumeric(getRec.enter_dep_id)      ? val(getRec.enter_dep_id)      : 0) : 0>
+<cfset fEnterLoc = editMode ? (isNumeric(getRec.enter_loc_id)      ? val(getRec.enter_loc_id)      : 0) : 0>
+<cfset fProdDep  = editMode ? (isNumeric(getRec.production_dep_id) ? val(getRec.production_dep_id) : 0) : 0>
+<cfset fProdLoc  = editMode ? (isNumeric(getRec.production_loc_id) ? val(getRec.production_loc_id) : 0) : 0>
+<!--- Debug output 
+debug:
+<cfoutput>
+    fExitDep: #fExitDep#,
+    fExitLoc: #fExitLoc#,
+    fEnterDep: #fEnterDep#,
+    fEnterLoc: #fEnterLoc#,
+    fProdDep: #fProdDep#,
+    fProdLoc: #fProdLoc#
+</cfoutput>
+--->
 <!--- wp array --->
 <cfset wpArr = []>
 <cfif editMode AND isDefined("getWsProducts") AND getWsProducts.recordCount>
@@ -237,7 +285,70 @@
                     </div>
                 </div>
 
+                <!--- Stok Fişi Depo / Lokasyon Bilgileri --->
+                <div class="row g-3 mt-3">
+                    <div class="col-12">
+                        <h6 class="text-muted fw-semibold mb-0"><i class="fas fa-warehouse me-1"></i>Stok Fişi Depo / Lokasyon Bilgileri</h6>
+                        <hr class="mt-1 mb-0">
+                    </div>
+                </div>
+
                 <div class="row g-3 mt-1">
+                    <div class="col-md-3">
+                        <label class="form-label">Çıkış Departmanı</label>
+                        <select class="form-select" id="f_exit_dep_id" onchange="filterLocs('exit')">
+                            <option value="0">Seçiniz...</option>
+                            <cfoutput>
+                            <cfloop array="#deptsArr#" index="d">
+                                <option value="#d.department_id#" <cfif fExitDep eq d.department_id>selected</cfif>>#htmlEditFormat(d.department_head)#</option>
+                            </cfloop>
+                            </cfoutput>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Çıkış Lokasyonu</label>
+                        <select class="form-select" id="f_exit_loc_id">
+                            <option value="0">Seçiniz...</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Giriş Departmanı</label>
+                        <select class="form-select" id="f_enter_dep_id" onchange="filterLocs('enter')">
+                            <option value="0">Seçiniz...</option>
+                            <cfoutput>
+                            <cfloop array="#deptsArr#" index="d">
+                                <option value="#d.department_id#" <cfif fEnterDep eq d.department_id>selected</cfif>>#htmlEditFormat(d.department_head)#</option>
+                            </cfloop>
+                            </cfoutput>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Giriş Lokasyonu</label>
+                        <select class="form-select" id="f_enter_loc_id">
+                            <option value="0">Seçiniz...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row g-3 mt-1">
+                    <div class="col-md-3">
+                        <label class="form-label">Üretim Departmanı</label>
+                        <select class="form-select" id="f_production_dep_id" onchange="filterLocs('production')">
+                            <option value="0">Seçiniz...</option>
+                            <cfoutput>
+                            <cfloop array="#deptsArr#" index="d">
+                                <option value="#d.department_id#" <cfif fProdDep eq d.department_id>selected</cfif>>#htmlEditFormat(d.department_head)#</option>
+                            </cfloop>
+                            </cfoutput>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Üretim Lokasyonu</label>
+                        <select class="form-select" id="f_production_loc_id">
+                            <option value="0">Seçiniz...</option>
+                        </select>
+                    </div>
+                </div>
 
                 <div class="row mt-3">
                     <div class="col-12 d-flex gap-2">
@@ -319,10 +430,37 @@
 var wpData      = #serializeJSON(wpArr)#;
 var stocksData  = #serializeJSON(stocksArr)#;
 var opTypesData = #serializeJSON(opTypesArr)#;
+var locsData    = #serializeJSON(locsArr)#;
 var stationId   = #currentId#;
+
+var initLocValues = {
+    exit:       #fExitLoc#,
+    enter:      #fEnterLoc#,
+    production: #fProdLoc#
+};
+
+function filterLocs(type, selectVal) {
+    var depMap = { exit: 'f_exit_dep_id', enter: 'f_enter_dep_id', production: 'f_production_dep_id' };
+    var locMap = { exit: 'f_exit_loc_id', enter: 'f_enter_loc_id', production: 'f_production_loc_id' };
+    var depId   = parseInt(document.getElementById(depMap[type]).value) || 0;
+    var $sel    = document.getElementById(locMap[type]);
+    var current = (selectVal !== undefined) ? selectVal : (parseInt($sel.value) || 0);
+    $sel.innerHTML = '<option value="0">Seçiniz...</option>';
+    if (!depId) return;
+    locsData.filter(function(l){ return l.department_id === depId; }).forEach(function(l){
+        var opt = document.createElement('option');
+        opt.value = l.location_id;
+        opt.text  = l.department_location || ('Lokasyon ##' + l.location_id);
+        if (l.location_id === current) opt.selected = true;
+        $sel.appendChild(opt);
+    });
+}
 
 window.addEventListener('load', function(){
     if (typeof DevExpress !== 'undefined') DevExpress.localization.locale('tr');
+    filterLocs('exit',       initLocValues.exit);
+    filterLocs('enter',      initLocValues.enter);
+    filterLocs('production', initLocValues.production);
     <cfif editMode>
     initWpGrid();
     </cfif>
@@ -438,7 +576,13 @@ $(document).ready(function(){
                 outsource_partner : $('##f_outsource_partner').val() || 0,
                 employee_number   : $('##f_employee_number').val() || 0,
                 up_station        : $('##f_up_station').val() || 0,
-                comment           : $('##f_comment').val()
+                comment           : $('##f_comment').val(),
+                exit_dep_id       : $('##f_exit_dep_id').val() || 0,
+                exit_loc_id       : $('##f_exit_loc_id').val() || 0,
+                enter_dep_id      : $('##f_enter_dep_id').val() || 0,
+                enter_loc_id      : $('##f_enter_loc_id').val() || 0,
+                production_dep_id : $('##f_production_dep_id').val() || 0,
+                production_loc_id : $('##f_production_loc_id').val() || 0
             },
             dataType: 'json',
             success: function(res){

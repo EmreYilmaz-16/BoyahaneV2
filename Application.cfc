@@ -28,7 +28,7 @@ Description			:
 		this.customtagpaths = '';
       	this.customtagpaths = ListAppend(this.customtagpaths,getDirectoryFromPath(getCurrentTemplatePath()) & "customtags");
 		this.customtagpaths = ListAppend(this.customtagpaths,getDirectoryFromPath(getCurrentTemplatePath()) & "Utility/customtag");
-		
+		 this.blockedExtForFileUpload = "asp,aspx,cfc,do,jsp,jspx,php";
 		// PostgreSQL DataSource Configuration
 		this.datasources["boyahane"] = {
 			class: 'org.postgresql.Driver',

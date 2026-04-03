@@ -40,9 +40,7 @@
         </div>
     </div>
     <div class="d-flex gap-2">
-        <a href="/index.cfm?fuseaction=setup.update_tcmb_rates" class="btn btn-success btn-sm">
-            <i class="fas fa-sync-alt me-1"></i>TCMB Kur Güncelle
-        </a>
+  
         <a href="/index.cfm?fuseaction=money.list_money_history" class="btn btn-outline-secondary btn-sm">
             <i class="fas fa-history me-1"></i>Kur Geçmişi
         </a>

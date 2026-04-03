@@ -35,7 +35,7 @@
 <div class="row g-3">
 
     <!--- SOL: Güncel Kurlar --->
-    <div class="col-3">
+    <div class="col-12 col-sm-6 col-lg-3">
         <div class="grid-card h-100">
             <div class="grid-card-header">
                 <div class="grid-card-header-title"><i class="fas fa-chart-line"></i>Güncel Kurlar</div>
@@ -69,7 +69,7 @@
     </div>
 
     <!--- ORTA: Kısayollar --->
-    <div class="col-6">
+    <div class="col-12 col-sm-12 col-lg-6">
         <div class="grid-card h-100">
             <div class="grid-card-header">
                 <div class="grid-card-header-title"><i class="fas fa-bookmark"></i>Kısayollarım</div>
@@ -81,7 +81,7 @@
                         <cfloop query="getUserFavorites">
                         <cfset ci = ((currentRow - 1) mod arrayLen(favColors)) + 1>
                         <cfset cc = favColors[ci]>
-                        <div class="col-1">
+                        <div class="col-6 col-sm-3 col-md-2 col-lg-1">
                             <a href="index.cfm?fuseaction=#fuseaction#" class="text-decoration-none">
                                 <div class="grid-card welcome-fav-card" style="--fav-color:#cc#">
                                     <i class="#htmlEditFormat(page_icon)# welcome-fav-icon"></i>
@@ -103,7 +103,7 @@
     </div>
 
     <!--- SAĞ: (ileride doldurulur) --->
-    <div class="col-3">
+    <div class="col-12 col-sm-6 col-lg-3">
         <div class="grid-card h-100">
             <div class="grid-card-header">
                 <div class="grid-card-header-title"><i class="fas fa-bell"></i>Bildirimler</div>

@@ -330,7 +330,8 @@ window.addEventListener('load', function() {
                 ? partiRowsData.filter(function(r){ return (r.ORDER_ID||r.order_id) == activeOrderId; })
                 : partiRowsData;
 
-            var g = $('##partiRowGrid').dxDataGrid('instance');
+            var _el = document.getElementById('partiRowGrid');
+            var g = _el ? DevExpress.ui.dxDataGrid.getInstance(_el) : null;
             if (g) g.option('dataSource', filtered);
 
             /* Filtre başlık güncelle */
@@ -511,7 +512,7 @@ window.addEventListener('load', function() {
                         break;
                     }
                 }
-                refreshRowGrid();
+                try { refreshRowGrid(); } catch(e) { console.warn('refreshRowGrid:', e); }
                 var modal = bootstrap.Modal.getInstance(document.getElementById('colorPickerModal'));
                 if (modal) modal.hide();
             } else {

@@ -38,7 +38,7 @@
             </cfquery>
             
             <!--- Başarılı --->
-            <cflocation url="../display/list_product_cat.cfm?success=added" addtoken="false">
+            <cflocation url="#cgi.script_name#?fuseaction=product.list_product_cat&success=added" addtoken="false">
             <cfabort>
             
             <cfcatch type="any">
@@ -58,7 +58,7 @@
             <p>Ürün kategorisi bilgilerini doldurun</p>
         </div>
     </div>
-    <a href="../display/list_product_cat.cfm" class="btn-back">
+    <a href="<cfoutput>#cgi.script_name#?fuseaction=product.list_product_cat</cfoutput>" class="btn-back">
         <i class="fas fa-arrow-left"></i>Geri Dön
     </a>
 </div>
@@ -83,7 +83,7 @@
                     </div>
                 </div>
                 <div class="p-4">
-                    <form method="post" action="add_product_cat.cfm" id="categoryForm">
+                    <form method="post" action="<cfoutput>#cgi.script_name#?fuseaction=product.add_product_cat</cfoutput>" id="categoryForm">
 
                         <div class="mb-4">
                             <label for="hierarchy" class="form-label">
@@ -128,7 +128,7 @@
                         </div>
 
                         <div class="d-flex justify-content-end gap-2">
-                            <a href="../display/list_product_cat.cfm" class="btn btn-light">
+                            <a href="/index.cfm?fuseaction=product.list_product_cat" class="btn btn-light">
                                 <i class="fas fa-times me-1"></i>İptal
                             </a>
                             <button type="submit" name="submit" class="btn-save">

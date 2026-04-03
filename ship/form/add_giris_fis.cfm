@@ -130,8 +130,8 @@
             </cfif>
         </div>
     </div>
-    <a href="index.cfm?fuseaction=ship.list_ship" class="btn-back">
-        <i class="fas fa-arrow-left"></i>İrsaliye Listesi
+    <a href="index.cfm?fuseaction=ship.list_giris_fis" class="btn-back">
+        <i class="fas fa-arrow-left"></i>Girişi Fişleri
     </a>
 </div>
 

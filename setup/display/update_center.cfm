@@ -215,7 +215,7 @@ async function addReleaseNote(){
 async function loadReleaseNotes(){
     const r = await callService('getReleaseNotes');
     const box = document.getElementById('releaseNotesList');
-    if(!r.success){ box.innerHTML = '<div class="text-danger">Sürüm notları yüklenemedi.</div>'; return; }
+    if(!r.SUCCESS){ box.innerHTML = '<div class="text-danger">Sürüm notları yüklenemedi.</div>'; return; }
     const notes = (getResponseData(r) || []).map(normalizeNote);
     box.innerHTML = notes.map(n => `
         <div class="border rounded p-2 mb-2">

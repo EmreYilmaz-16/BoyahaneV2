@@ -37,8 +37,9 @@
 
     <!--- Mevcut fiyatları çek --->
     <cfquery name="getCurrentPrices" datasource="boyahane">
-        SELECT price_id, price, price_kdv, tax
-        FROM price
+        SELECT price_id, price, price_kdv, p.tax 
+        FROM price 
+        left join product p on price.product_id = p.product_id
         WHERE price_catid = <cfqueryparam value="#catId#" cfsqltype="cf_sql_integer">
     </cfquery>
 
