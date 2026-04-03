@@ -140,7 +140,7 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#uretim">
+                        <a class="nav-link" href="/index.cfm?fuseaction=production.list_production_orders">
                             <i class="fas fa-cogs"></i> Üretim
                         </a>
                     </li>
@@ -150,7 +150,7 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#raporlar">
+                        <a class="nav-link" href="/index.cfm?fuseaction=report.list_reports">
                             <i class="fas fa-chart-bar"></i> Raporlar
                         </a>
                     </li>
