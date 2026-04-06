@@ -14,9 +14,9 @@ COPY . /var/www/
 # Nginx config override: static file serving + security rules
 COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
 
-# Fix file permissions so nginx (www-data) can read static assets
-RUN find /var/www/assets -type d -exec chmod 755 {} \; && \
-    find /var/www/assets -type f -exec chmod 644 {} \;
+# Entrypoint: fix permissions at runtime (volume mounts override build-time perms)
+COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
 # Expose ports
 EXPOSE 80 8888
@@ -24,3 +24,6 @@ EXPOSE 80 8888
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD curl -f http://localhost/ || exit 1
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+CMD ["supervisord", "-c", "/etc/supervisor/supervisord.conf"]
