@@ -86,6 +86,7 @@
 var usersData = #serializeJSON(usersArr)#;
 var modulesData = #serializeJSON(modulesArr)#;
 var selectedUserId = 0;
+var gridInitialized = false;
 
 $(function() {
     if (typeof DevExpress !== 'undefined') DevExpress.localization.locale('tr');
@@ -157,11 +158,11 @@ function loadPermissions() {
 
 function buildGrid(rows) {
     var $el = $('##permissionGrid');
-    var instance = $el.dxDataGrid('instance');
-    if (instance) {
-        instance.option('dataSource', rows);
+    if (gridInitialized) {
+        $el.dxDataGrid('instance').option('dataSource', rows);
         return;
     }
+    gridInitialized = true;
     $el.dxDataGrid({
         dataSource: rows,
         keyExpr: 'module_id',
@@ -194,19 +195,28 @@ function buildGrid(rows) {
         },
         onRowUpdating: function(e) {
             var newData = $.extend({}, e.oldData, e.newData);
+            var grid = e.component;
 
             if (!newData.can_view) {
                 newData.can_update = false;
                 newData.can_delete = false;
             }
 
-            var d = $.Deferred();
-            e.cancel = d.promise();
+            e.cancel = true;
+            grid.cancelEditData();
 
             savePermission(newData, function(ok){
-                d.resolve(true); // DevExtreme'in kendi güncellemesini her zaman iptal et
                 if (ok) {
-                    loadPermissions(); // Sunucudan taze veri çek
+                    var ds = grid.option('dataSource');
+                    for (var i = 0; i < ds.length; i++) {
+                        if (ds[i].module_id === newData.module_id) {
+                            ds[i].can_view   = newData.can_view;
+                            ds[i].can_update = newData.can_update;
+                            ds[i].can_delete = newData.can_delete;
+                            break;
+                        }
+                    }
+                    grid.refresh();
                 }
             });
         }

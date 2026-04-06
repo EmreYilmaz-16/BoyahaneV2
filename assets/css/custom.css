@@ -878,3 +878,78 @@ body.sidebar-collapsed .footer {
     display: block;
     line-height: 1.4;
 }
+
+/* ===== AJAX MODAL (ui-draggable-box) ===== */
+.ui-draggable-box {
+    display: none;
+    visibility: hidden;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 99999;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+    overflow: hidden;
+    max-height: 90vh;
+    overflow-y: auto;
+    width: 600px;
+}
+
+.ui-draggable-box-small    { width: 420px; }
+.ui-draggable-box-large    { width: 860px; }
+.ui-draggable-box-wwide    { width: 1100px; }
+.ui-draggable-box-full     { width: 95vw; max-height: 92vh; }
+.ui-draggable-box-list     { width: 720px; }
+
+@media (max-width: 768px) {
+    .ui-draggable-box,
+    .ui-draggable-box-small,
+    .ui-draggable-box-large,
+    .ui-draggable-box-wwide,
+    .ui-draggable-box-list {
+        width: 96vw !important;
+        left: 2vw;
+        transform: translateY(-50%);
+    }
+}
+
+/* Backdrop - modal arkası karartma */
+.modal-opened::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(2px);
+    z-index: 99998;
+}
+
+/* ===== AJAX LOADING OVERLAY (#working_div_main) ===== */
+#working_div_main {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 999999999;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(2px);
+    align-items: center;
+    justify-content: center;
+}
+
+#working_div_main.active {
+    display: flex;
+}
+
+#working_div_main .spinner {
+    width: 52px;
+    height: 52px;
+    border: 5px solid rgba(255,255,255,0.2);
+    border-top-color: var(--accent, #e67e22);
+    border-radius: 50%;
+    animation: wdm-spin 0.7s linear infinite;
+}
+
+@keyframes wdm-spin {
+    to { transform: rotate(360deg); }
+}

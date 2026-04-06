@@ -379,13 +379,18 @@
     
     <!--- Sidebar Backdrop for Mobile --->
     <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+    <!--- AJAX Loading Overlay --->
+    <div id="working_div_main">
+        <div class="spinner"></div>
+    </div>
     </cfif>
 
     <!--- Main Content --->
     <cfif showLayout>
     <div class="content-wrapper">
     </cfif>
-        <div class="container-fluid main-content">
+        <div class="<cfif showLayout>container-fluid main-content</cfif>">
         <cfif isDefined("attributes.fuseaction") and attributes.fuseaction neq "">
             <cfif getObject.recordCount>
                     <cfif accessDenied>
@@ -438,6 +443,9 @@
     <script src="https://cdn3.devexpress.com/jslib/23.2.5/js/localization/dx.messages.tr.js"></script>
     
     <!--- Custom JavaScript --->
+
+    <script src="/assets/js/ajax.js"></script>
+    <script src="/assets/js/AjaxControl/dist/build.js"></script>
     <script src="/assets/js/index.js"></script>
     </cfif>
 </body>

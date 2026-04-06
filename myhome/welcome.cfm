@@ -113,6 +113,7 @@
                 Yeni bildirim yok.
             </div>
         </div>
+    <!---   <cf_box title="Bildirimler" add_href="index.cfm?fuseaction=product.add_product"></cf_box>---->
     </div>
 
 </div><!--- row --->

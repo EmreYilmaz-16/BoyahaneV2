@@ -26,7 +26,7 @@ Description			:
 		this.secureJSON = false;
 		this.secureJSONPrefix = "";
 		this.customtagpaths = '';
-      	this.customtagpaths = ListAppend(this.customtagpaths,getDirectoryFromPath(getCurrentTemplatePath()) & "customtags");
+      	this.customtagpaths = ListAppend(this.customtagpaths,getDirectoryFromPath(getCurrentTemplatePath()) & "customTags");
 		this.customtagpaths = ListAppend(this.customtagpaths,getDirectoryFromPath(getCurrentTemplatePath()) & "Utility/customtag");
 		 this.blockedExtForFileUpload = "asp,aspx,cfc,do,jsp,jspx,php";
 		// PostgreSQL DataSource Configuration
