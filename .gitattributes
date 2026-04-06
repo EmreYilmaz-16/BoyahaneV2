@@ -1,0 +1,28 @@
+# Shell scriptleri her zaman LF olarak sakla (Linux container'da çalışır)
+*.sh text eol=lf
+
+# Nginx ve Docker config dosyaları LF olsun
+docker/nginx/*.conf text eol=lf
+
+# Genel metin dosyaları platform satır sonunu kullansın
+*.cfm text=auto
+*.cfc text=auto
+*.js text=auto
+*.css text=auto
+*.html text=auto
+*.sql text=auto
+*.json text=auto
+*.md text=auto
+
+# Binary dosyalar değiştirilmesin
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.pdf binary
+*.zip binary
