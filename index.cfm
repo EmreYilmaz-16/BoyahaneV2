@@ -9,13 +9,53 @@
 <cfset showLayout = true>
 <cfset loadAssets = true>
 <cfset pageContent = "">
+<cfset permissionEnforced = false>
+<cfset accessDenied = false>
+<cfset accessDeniedMessage = "Bu modül için yetkiniz bulunmamaktadır.">
+<cfset requiredPermission = "view">
+<cfset currentModuleId = 0>
 
 <cfif isDefined("attributes.fuseaction") and attributes.fuseaction neq "">
     <cfquery name="getObject" datasource="boyahane">
         SELECT * FROM pbs_objects WHERE full_fuseaction = <cfqueryparam value="#attributes.fuseaction#" cfsqltype="cf_sql_varchar">
     </cfquery>
+
+    <!--- Kullanıcının herhangi bir modül yetkisi tanımlı mı? --->
+    <cfquery name="getUserPermissionCount" datasource="boyahane">
+        SELECT COUNT(*) AS cnt
+        FROM user_module_permissions
+        WHERE user_id = <cfqueryparam value="#session.user.id#" cfsqltype="cf_sql_integer">
+    </cfquery>
+    <cfset permissionEnforced = val(getUserPermissionCount.cnt) gt 0>
     
     <cfif getObject.recordCount>
+        <cfset currentModuleId = val(getObject.module_id)>
+        <cfif findNoCase(".delete", attributes.fuseaction)>
+            <cfset requiredPermission = "delete">
+        <cfelseif findNoCase(".save", attributes.fuseaction) OR findNoCase(".add", attributes.fuseaction) OR findNoCase(".edit", attributes.fuseaction) OR findNoCase(".update", attributes.fuseaction)>
+            <cfset requiredPermission = "update">
+        </cfif>
+
+        <cfif permissionEnforced>
+            <cfquery name="getCurrentModulePermission" datasource="boyahane">
+                SELECT can_view, can_update, can_delete
+                FROM user_module_permissions
+                WHERE user_id = <cfqueryparam value="#session.user.id#" cfsqltype="cf_sql_integer">
+                  AND module_id = <cfqueryparam value="#currentModuleId#" cfsqltype="cf_sql_integer">
+            </cfquery>
+
+            <cfif NOT getCurrentModulePermission.recordCount OR NOT getCurrentModulePermission.can_view>
+                <cfset accessDenied = true>
+                <cfset accessDeniedMessage = "Bu modülü görüntüleme yetkiniz bulunmuyor.">
+            <cfelseif requiredPermission EQ "update" AND NOT getCurrentModulePermission.can_update>
+                <cfset accessDenied = true>
+                <cfset accessDeniedMessage = "Bu işlem için güncelleme yetkiniz bulunmuyor.">
+            <cfelseif requiredPermission EQ "delete" AND NOT getCurrentModulePermission.can_delete>
+                <cfset accessDenied = true>
+                <cfset accessDeniedMessage = "Bu işlem için silme yetkiniz bulunmuyor.">
+            </cfif>
+        </cfif>
+
         <!--- Window type'a göre ayarları yap --->
         <cfif getObject.window_type eq "popup">
             <cfset showLayout = false>
@@ -66,7 +106,54 @@
 </head>
 <body>
     <!--- Menü için verileri çek (sadece layout varsa) --->
-    <cfif showLayout>
+<cfif showLayout>
+    <cfif permissionEnforced>
+    <cfquery name="getSolutions" datasource="boyahane">
+        SELECT DISTINCT s.*
+        FROM pbs_solution s
+        INNER JOIN pbs_family f ON f.solution_id = s.solution_id
+        INNER JOIN pbs_module m ON m.family_id = f.family_id
+        INNER JOIN user_module_permissions ump ON ump.module_id = m.module_id
+        WHERE s.is_active = true AND s.show_menu = true
+          AND f.is_active = true AND f.show_menu = true
+          AND m.is_active = true AND m.show_menu = true
+          AND ump.user_id = <cfqueryparam value="#session.user.id#" cfsqltype="cf_sql_integer">
+          AND ump.can_view = true
+        ORDER BY s.order_no, s.solution_name
+    </cfquery>
+    
+    <cfquery name="getFamilies" datasource="boyahane">
+        SELECT DISTINCT f.*
+        FROM pbs_family f
+        INNER JOIN pbs_module m ON m.family_id = f.family_id
+        INNER JOIN user_module_permissions ump ON ump.module_id = m.module_id
+        WHERE f.is_active = true AND f.show_menu = true
+          AND m.is_active = true AND m.show_menu = true
+          AND ump.user_id = <cfqueryparam value="#session.user.id#" cfsqltype="cf_sql_integer">
+          AND ump.can_view = true
+        ORDER BY f.solution_id, f.order_no, f.family_name
+    </cfquery>
+    
+    <cfquery name="getModules" datasource="boyahane">
+        SELECT m.*
+        FROM pbs_module m
+        INNER JOIN user_module_permissions ump ON ump.module_id = m.module_id
+        WHERE m.is_active = true AND m.show_menu = true
+          AND ump.user_id = <cfqueryparam value="#session.user.id#" cfsqltype="cf_sql_integer">
+          AND ump.can_view = true
+        ORDER BY m.family_id, m.order_no, m.module_name
+    </cfquery>
+    
+    <cfquery name="getObjects" datasource="boyahane">
+        SELECT o.*
+        FROM pbs_objects o
+        INNER JOIN user_module_permissions ump ON ump.module_id = o.module_id
+        WHERE o.is_active = true AND o.show_menu = true
+          AND ump.user_id = <cfqueryparam value="#session.user.id#" cfsqltype="cf_sql_integer">
+          AND ump.can_view = true
+        ORDER BY o.module_id, o.order_no, o.object_name
+    </cfquery>
+    <cfelse>
     <cfquery name="getSolutions" datasource="boyahane">
         SELECT * FROM pbs_solution 
         WHERE is_active = true AND show_menu = true
@@ -90,6 +177,7 @@
         WHERE is_active = true AND show_menu = true
         ORDER BY module_id, order_no, object_name
     </cfquery>
+    </cfif>
 
     <!--- Kullanıcı favorileri --->    
     <cfquery name="getUserFavorites" datasource="boyahane">
@@ -300,7 +388,16 @@
         <div class="container-fluid main-content">
         <cfif isDefined("attributes.fuseaction") and attributes.fuseaction neq "">
             <cfif getObject.recordCount>
-                    <cfinclude template="#getObject.file_path#">
+                    <cfif accessDenied>
+                        <div class="alert alert-warning text-center" role="alert">
+                            <h4 class="alert-heading"><i class="fas fa-lock me-2"></i>Yetki Hatası</h4>
+                            <p><cfoutput>#accessDeniedMessage#</cfoutput></p>
+                            <hr>
+                            <p class="mb-0">Ana sayfaya dönmek için <a href="index.cfm?fuseaction=myhome.welcome" class="alert-link">buraya tıklayın</a>.</p>
+                        </div>
+                    <cfelse>
+                        <cfinclude template="#getObject.file_path#">
+                    </cfif>
                 <cfelse>
                     <div class="alert alert-danger text-center" role="alert">
                         <h4 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i>Hata!</h4>
