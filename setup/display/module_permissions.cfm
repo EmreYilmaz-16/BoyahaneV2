@@ -90,7 +90,7 @@ var selectedUserId = 0;
 $(function() {
     if (typeof DevExpress !== 'undefined') DevExpress.localization.locale('tr');
 
-    $('#userSelect').dxSelectBox({
+    $('##userSelect').dxSelectBox({
         dataSource: usersData,
         valueExpr: 'id',
         displayExpr: function(item){
@@ -108,7 +108,7 @@ $(function() {
     if (usersData.length > 0) {
         var firstActive = usersData.find(function(u){ return !!u.is_active; }) || usersData[0];
         selectedUserId = firstActive.id;
-        $('#userSelect').dxSelectBox('instance').option('value', selectedUserId);
+        $('##userSelect').dxSelectBox('instance').option('value', selectedUserId);
     } else {
         buildGrid([]);
     }
@@ -156,7 +156,7 @@ function loadPermissions() {
 }
 
 function buildGrid(rows) {
-    $('#permissionGrid').dxDataGrid({
+    $('##permissionGrid').dxDataGrid({
         dataSource: rows,
         keyExpr: 'module_id',
         showBorders: true,
@@ -166,7 +166,7 @@ function buildGrid(rows) {
         searchPanel: { visible: true, placeholder: 'Modül ara...' },
         filterRow: { visible: true },
         onContentReady: function(e) {
-            $('#recordCount').text(e.component.totalCount() + ' kayıt');
+            $('##recordCount').text(e.component.totalCount() + ' kayıt');
         },
         columns: [
             { dataField: 'solution_name', caption: 'Çözüm', minWidth: 150 },
@@ -198,7 +198,7 @@ function buildGrid(rows) {
             savePermission(newData, function(ok){
                 if (ok) {
                     Object.assign(e.oldData, newData);
-                    $('#permissionGrid').dxDataGrid('instance').refresh();
+                    $('##permissionGrid').dxDataGrid('instance').refresh();
                 }
             });
         }
