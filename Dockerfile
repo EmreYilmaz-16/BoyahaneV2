@@ -11,6 +11,13 @@ RUN apt-get update \
 # Copy application files
 COPY . /var/www/
 
+# Nginx config override: static file serving + security rules
+COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
+
+# Fix file permissions so nginx (www-data) can read static assets
+RUN find /var/www/assets -type d -exec chmod 755 {} \; && \
+    find /var/www/assets -type f -exec chmod 644 {} \;
+
 # Expose ports
 EXPOSE 80 8888
 

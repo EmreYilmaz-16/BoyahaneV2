@@ -12,7 +12,7 @@ services:
     volumes:
       - ./:/var/www
       - lucee-config:/opt/lucee/web
-    depends_on:
+    depends_on: 
       - postgres
     networks:
       - boyahane-network
