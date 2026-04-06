@@ -156,7 +156,13 @@ function loadPermissions() {
 }
 
 function buildGrid(rows) {
-    $('##permissionGrid').dxDataGrid({
+    var $el = $('##permissionGrid');
+    var instance = $el.dxDataGrid('instance');
+    if (instance) {
+        instance.option('dataSource', rows);
+        return;
+    }
+    $el.dxDataGrid({
         dataSource: rows,
         keyExpr: 'module_id',
         showBorders: true,
@@ -194,11 +200,13 @@ function buildGrid(rows) {
                 newData.can_delete = false;
             }
 
-            e.cancel = true;
+            var d = $.Deferred();
+            e.cancel = d.promise();
+
             savePermission(newData, function(ok){
+                d.resolve(true); // DevExtreme'in kendi güncellemesini her zaman iptal et
                 if (ok) {
-                    Object.assign(e.oldData, newData);
-                    $('##permissionGrid').dxDataGrid('instance').refresh();
+                    loadPermissions(); // Sunucudan taze veri çek
                 }
             });
         }
