@@ -56,7 +56,10 @@ BEGIN
         ('setup.add_print_template',    '/setup/form/add_print_template.cfm',      'Şablon Ekle/Düzenle', v_module_id, 11, true, false, 'standart'),
         ('setup.save_print_template',   '/setup/form/save_print_template.cfm',     'Şablon Kaydet',       v_module_id, 12, true, false, 'standart'),
         ('setup.delete_print_template', '/setup/form/delete_print_template.cfm',   'Şablon Sil',          v_module_id, 13, true, false, 'standart'),
-        ('setup.print_document',        '/setup/display/print_document.cfm',       'Belge Yazdır',        v_module_id, 14, true, false, 'standart')
+        ('setup.print_document',        '/setup/display/print_document.cfm',       'Belge Yazdır',        v_module_id, 14, true, false, 'standart'),
+        ('setup.module_permissions',    '/setup/display/module_permissions.cfm',    'Modül Yetkilendirme', v_module_id, 30, true, true,  'standart'),
+        ('setup.get_user_module_permissions', '/setup/form/get_user_module_permissions.cfm', 'Modül Yetki Liste (JSON)', v_module_id, 31, true, false, 'ajaxpage'),
+        ('setup.save_user_module_permission', '/setup/form/save_user_module_permission.cfm', 'Modül Yetki Kaydet (JSON)', v_module_id, 32, true, false, 'ajaxpage')
     ON CONFLICT (full_fuseaction) DO UPDATE SET
         file_path    = EXCLUDED.file_path,
         object_name  = EXCLUDED.object_name,
