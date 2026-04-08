@@ -81,9 +81,14 @@
             <p>Alış ve satış siparişleri</p>
         </div>
     </div>
-    <button class="btn-add" onclick="addOrder()">
-        <i class="fas fa-plus"></i>Yeni Sipariş
-    </button>
+    <div class="d-flex gap-2">
+        <button class="btn btn-warning text-dark" onclick="openQuickSale()">
+            <i class="fas fa-bolt"></i>Hızlı Satış
+        </button>
+        <button class="btn-add" onclick="addOrder()">
+            <i class="fas fa-plus"></i>Yeni Sipariş
+        </button>
+    </div>
 </div>
 
 <div class="px-3">
@@ -409,6 +414,10 @@ window.addEventListener('load', function() {
 
 function addOrder() {
     window.location.href = 'index.cfm?fuseaction=order.add_order';
+}
+
+function openQuickSale() {
+    window.location.href = 'index.cfm?fuseaction=order.quick_sale';
 }
 
 function viewOrder(orderId) {
