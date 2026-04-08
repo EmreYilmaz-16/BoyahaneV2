@@ -302,11 +302,26 @@ function showMachineModal(row){
   editingMachineId = row ? row.machine_id : 0;
   $('##m_code').val(row ? row.machine_code : ''); $('##m_name').val(row ? row.machine_name : ''); $('##m_dept').val(row ? row.department_id : '');
   $('##m_loc').val(row ? row.location_text : ''); $('##m_status').val(row ? row.current_status_code : '1'); $('##m_active').val(row && row.is_active===false ? '0' : '1');
-  $('##m_note').val(row ? row.current_status_note : ''); new bootstrap.Modal(document.getElementById('machineModal')).show();
+  $('##m_note').val(row ? row.current_status_note : '');
+  var mel = document.getElementById('machineModal');
+  if (mel.parentElement !== document.body) document.body.appendChild(mel);
+  new bootstrap.Modal(mel).show();
 }
-function showPlanModal(){ new bootstrap.Modal(document.getElementById('planModal')).show(); }
-function showFaultModal(){ new bootstrap.Modal(document.getElementById('faultModal')).show(); }
-function showMaintenanceModal(){ new bootstrap.Modal(document.getElementById('maintenanceModal')).show(); }
+function showPlanModal(){
+  var el = document.getElementById('planModal');
+  if (el.parentElement !== document.body) document.body.appendChild(el);
+  new bootstrap.Modal(el).show();
+}
+function showFaultModal(){
+  var el = document.getElementById('faultModal');
+  if (el.parentElement !== document.body) document.body.appendChild(el);
+  new bootstrap.Modal(el).show();
+}
+function showMaintenanceModal(){
+  var el = document.getElementById('maintenanceModal');
+  if (el.parentElement !== document.body) document.body.appendChild(el);
+  new bootstrap.Modal(el).show();
+}
 
 function saveMachine(){
   $.post('/machine/form/save_machine.cfm',{machine_id:editingMachineId,machine_code:$('##m_code').val(),machine_name:$('##m_name').val(),department_id:$('##m_dept').val(),location_text:$('##m_loc').val(),current_status_code:$('##m_status').val(),is_active:$('##m_active').val(),current_status_note:$('##m_note').val()},ajaxDone,'json').fail(ajaxFail);
