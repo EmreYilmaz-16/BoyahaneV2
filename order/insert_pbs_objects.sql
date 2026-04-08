@@ -8,6 +8,7 @@ VALUES
 
 -- Sipariş Modülü
 ('order.list_orders',  '/order/display/list_orders.cfm', 'list_orders',  'Siparişler',         'page', NULL, 20, true, true),
+('order.quick_sale',   '/order/form/quick_sale.cfm',     'quick_sale',   'Hızlı Satış',        'page', NULL, 20, true, true),
 ('order.add_order',    '/order/form/add_order.cfm',      'add_order',    'Sipariş Ekle',       'page', NULL, 21, true, true),
 ('order.edit_order',   '/order/form/add_order.cfm',      'edit_order',   'Sipariş Düzenle',    'page', NULL, 22, true, false),
 ('order.view_order',   '/order/form/add_order.cfm',      'view_order',   'Sipariş Görüntüle',  'page', NULL, 23, true, false),
