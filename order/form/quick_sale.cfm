@@ -2,8 +2,8 @@
 
 <cfquery name="getCompanies" datasource="boyahane">
     SELECT company_id,
-           COALESCE(nickname, fullname, company_code, 'Firma') AS display_name,
-           company_code
+           COALESCE(nickname, fullname, member_code, 'Firma') AS display_name,
+           member_code
     FROM company
     ORDER BY display_name
     LIMIT 500
@@ -21,33 +21,12 @@
     ORDER BY money_name
 </cfquery>
 
-<cfquery name="getStocks" datasource="boyahane">
-    SELECT s.stock_id, s.stock_code, s.barcod,
-           p.product_id, p.product_name, p.product_code
-    FROM stocks s
-    LEFT JOIN product p ON p.product_id = s.product_id
-    WHERE s.stock_status = true
-    ORDER BY p.product_name, s.stock_code
-</cfquery>
-
 <cfset companiesData = []>
 <cfloop query="getCompanies">
     <cfset arrayAppend(companiesData, {
         "company_id": company_id,
         "display_name": display_name ?: "",
-        "company_code": company_code ?: ""
-    })>
-</cfloop>
-
-<cfset productsData = []>
-<cfloop query="getStocks">
-    <cfset arrayAppend(productsData, {
-        "stock_id": stock_id,
-        "product_id": product_id ?: 0,
-        "product_name": product_name ?: "Ürün",
-        "product_code": product_code ?: "",
-        "stock_code": stock_code ?: "",
-        "barcod": barcod ?: ""
+        "company_code": member_code ?: ""
     })>
 </cfloop>
 
@@ -89,7 +68,23 @@
                 </div>
             </div>
 
-            <div class="row g-3" id="productGrid"></div>
+            <div id="productGridWrap">
+                <div class="text-center text-muted py-4" id="productHint">
+                    <i class="fas fa-search me-1"></i>Aramak için en az 2 karakter girin
+                </div>
+                <div class="row g-3" id="productGrid"></div>
+                <div class="text-center py-3" id="loadMoreWrap" style="display:none!important">
+                    <button class="btn btn-outline-secondary" id="loadMoreBtn" type="button" onclick="loadMore()">
+                        <i class="fas fa-chevron-down me-1"></i>Daha fazla yükle
+                    </button>
+                </div>
+            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
         </div>
 
         <div class="col-lg-5">
@@ -164,7 +159,12 @@
 </style>
 
 <script>
-var allProducts = #serializeJSON(productsData)#;
+var productCache = {};
+var currentPage = 1;
+var currentSearch = '';
+var currentSort = 'name';
+var isLoading = false;
+var searchTimer = null;
 var cart = [];
 
 function fmt(num) {
@@ -172,49 +172,91 @@ function fmt(num) {
 }
 
 function esc(str) {
-    return String(str || '').replace(/[&<>\"]/g, function(m){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[m]; });
+    return String(str || '').replace(/[&<>"]/g, function(m){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[m]; });
 }
 
 function clearFilters() {
     document.getElementById('productSearch').value = '';
     document.getElementById('productSort').value = 'name';
-    renderProducts();
+    resetAndSearch();
 }
 
-function renderProducts() {
-    var search = (document.getElementById('productSearch').value || '').toLowerCase().trim();
-    var sort = document.getElementById('productSort').value;
-    var source = allProducts.filter(function(p) {
-        if (!search) return true;
-        return (p.product_name || '').toLowerCase().includes(search)
-            || (p.product_code || '').toLowerCase().includes(search)
-            || (p.stock_code || '').toLowerCase().includes(search)
-            || (p.barcod || '').toLowerCase().includes(search);
+function resetAndSearch() {
+    currentPage = 1;
+    document.getElementById('productGrid').innerHTML = '';
+    document.getElementById('loadMoreWrap').style.display = 'none';
+    loadProducts(true);
+}
+
+function loadProducts(reset) {
+    var search = (document.getElementById('productSearch').value || '').trim();
+    var sort   = document.getElementById('productSort').value;
+    var hint   = document.getElementById('productHint');
+    var grid   = document.getElementById('productGrid');
+
+    if (search.length < 2) {
+        grid.innerHTML = '';
+        document.getElementById('loadMoreWrap').style.display = 'none';
+        hint.style.display = '';
+        return;
+    }
+    hint.style.display = 'none';
+
+    if (reset) { currentPage = 1; currentSearch = search; currentSort = sort; grid.innerHTML = ''; }
+
+    if (isLoading) return;
+    isLoading = true;
+
+    var btn = document.getElementById('loadMoreBtn');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Yükleniyor...'; }
+
+    $.getJSON('/order/form/quick_sale_products.cfm', {
+        search: search,
+        sort: sort,
+        page: currentPage
+    }, function(res) {
+        isLoading = false;
+        var items = res.items || [];
+        items.forEach(function(p){ productCache[p.stock_id] = p; });
+
+        var html = items.map(function(p){
+            return '<div class="col-xl-4 col-md-6">'
+                + '<div class="product-card">'
+                + '<div class="product-name">' + esc(p.product_name) + '</div>'
+                + '<div class="product-meta">Stok: ' + esc(p.stock_code) + '</div>'
+                + '<div class="product-meta mb-2">Kod: ' + esc(p.product_code) + (p.barcod ? ' · Barkod: ' + esc(p.barcod) : '') + '</div>'
+                + '<div class="mt-auto d-flex gap-2">'
+                + '  <input type="number" min="1" value="1" class="form-control form-control-sm" id="qty_' + p.stock_id + '">'
+                + '  <button class="btn btn-sm btn-primary" onclick="addToCart(' + p.stock_id + ')"><i class="fas fa-cart-plus me-1"></i>Sepete Ekle</button>'
+                + '</div>'
+                + '</div></div>';
+        }).join('');
+
+        grid.insertAdjacentHTML('beforeend', html);
+        if (!grid.innerHTML.trim()) {
+            grid.innerHTML = '<div class="col-12"><div class="alert alert-light border">Ürün bulunamadı.</div></div>';
+        }
+
+        var wrap = document.getElementById('loadMoreWrap');
+        if (res.hasMore) {
+            wrap.style.cssText = '';
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-chevron-down me-1"></i>Daha fazla yükle'; }
+        } else {
+            wrap.style.display = 'none';
+        }
+    }).fail(function() {
+        isLoading = false;
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-chevron-down me-1"></i>Daha fazla yükle'; }
     });
+}
 
-    source.sort(function(a,b){
-        if (sort === 'code') return (a.stock_code || '').localeCompare(b.stock_code || '', 'tr');
-        return (a.product_name || '').localeCompare(b.product_name || '', 'tr');
-    });
-
-    var html = source.map(function(p){
-        return '<div class="col-xl-4 col-md-6">'
-            + '<div class="product-card">'
-            + '<div class="product-name">' + esc(p.product_name) + '</div>'
-            + '<div class="product-meta">Stok: ' + esc(p.stock_code) + '</div>'
-            + '<div class="product-meta mb-2">Kod: ' + esc(p.product_code) + (p.barcod ? ' · Barkod: ' + esc(p.barcod) : '') + '</div>'
-            + '<div class="mt-auto d-flex gap-2">'
-            + '  <input type="number" min="1" value="1" class="form-control form-control-sm" id="qty_' + p.stock_id + '">'
-            + '  <button class="btn btn-sm btn-primary" onclick="addToCart(' + p.stock_id + ')"><i class="fas fa-cart-plus me-1"></i>Sepete Ekle</button>'
-            + '</div>'
-            + '</div></div>';
-    }).join('');
-
-    document.getElementById('productGrid').innerHTML = html || '<div class="col-12"><div class="alert alert-light border">Ürün bulunamadı.</div></div>';
+function loadMore() {
+    currentPage++;
+    loadProducts(false);
 }
 
 function addToCart(stockId) {
-    var p = allProducts.find(function(x){ return x.stock_id === stockId; });
+    var p = productCache[stockId];
     if (!p) return;
     var qtyInput = document.getElementById('qty_' + stockId);
     var qty = parseFloat(qtyInput ? qtyInput.value : '1') || 1;
@@ -328,10 +370,12 @@ function saveQuickOrder() {
 }
 
 window.addEventListener('load', function(){
-    renderProducts();
     renderCart();
-    document.getElementById('productSearch').addEventListener('input', renderProducts);
-    document.getElementById('productSort').addEventListener('change', renderProducts);
+    document.getElementById('productSearch').addEventListener('input', function(){
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(resetAndSearch, 350);
+    });
+    document.getElementById('productSort').addEventListener('change', resetAndSearch);
 });
 </script>
 </cfoutput>
