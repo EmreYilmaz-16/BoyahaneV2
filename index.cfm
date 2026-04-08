@@ -387,11 +387,26 @@
     </div>
     </cfif>
 
-    <!--- Main Content --->
-    <cfif showLayout>
     <div class="content-wrapper">
-    </cfif>
         <div class="<cfif showLayout>container-fluid main-content</cfif>">
+             <!--- Kısayol Çubuğu --->
+    <cfif 1 eq 0 and showLayout AND getUserFavorites.recordCount>
+        <cfoutput>
+        <cfset favColors = ["##3b82f6","##10b981","##f59e0b","##8b5cf6","##ef4444","##06b6d4","##f97316","##ec4899"]>
+        <div class="fav-shortcut-bar">
+            <span class="fav-shortcut-bar-title"><i class="fas fa-bookmark"></i></span>
+            <div class="fav-shortcut-chips">
+                <cfloop query="getUserFavorites">
+                <cfset itemColor = favColors[((currentRow - 1) mod arrayLen(favColors)) + 1]>
+                <a class="fav-shortcut-chip" href="index.cfm?fuseaction=#fuseaction#" title="#htmlEditFormat(page_title)#">
+                    <span class="fav-icon-dot" style="background:#itemColor#"><i class="#page_icon#"></i></span>
+                    <span class="fav-chip-text">#htmlEditFormat(page_title)#</span>
+                </a>
+                </cfloop>
+            </div>
+        </div>
+        </cfoutput>
+    </cfif>
         <cfif isDefined("attributes.fuseaction") and attributes.fuseaction neq "">
             <cfif getObject.recordCount>
                     <cfif accessDenied>
@@ -447,7 +462,10 @@
 
     <script src="/assets/js/ajax.js"></script>
     <script src="/assets/js/AjaxControl/dist/build.js"></script>
+    <script src="/assets/js/sidebar.js"></script>
+    
     <script src="/assets/js/index.js"></script>
+
     </cfif>
 </body>
 </html>

@@ -263,3 +263,10 @@ function AjaxControlPostDataJson( url, data, calback, beforeSend ){
 function AjaxControlGetDataJson( url, data, calback ){
     new AjaxControl.AjaxRequest().getDataJson(url + "&isAjax=1", data, calback) 
 }
+// Verilen url'e istek gönderir ve gelen yanıtı target_div içinde gösterir
+function loadContent( url, target_div ){
+    $( target_div ).html('<div id="divPageLoad"><?xml version="1.0" encoding="utf-8"?><svg width="32px" height="32px" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid" class="uil-ring-alt"><rect x="0" y="0" width="100" height="100" fill="none" class="bk"></rect><circle cx="50" cy="50" r="40" stroke="rgba(255,255,255,0)" fill="none" stroke-width="10" stroke-linecap="round"></circle><circle cx="50" cy="50" r="40" stroke="#ff8a00" fill="none" stroke-width="6" stroke-linecap="round"><animate attributeName="stroke-dashoffset" dur="2s" repeatCount="indefinite" from="0" to="502"></animate><animate attributeName="stroke-dasharray" dur="2s" repeatCount="indefinite" values="150.6 100.4;1 250;150.6 100.4"></animate></circle></svg></div>');
+    new AjaxControl.AjaxRequest().get(url + "&isAjax=1", function( response ){
+        $( target_div ).html( response );
+    });
+}

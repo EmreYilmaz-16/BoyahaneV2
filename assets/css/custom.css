@@ -879,6 +879,89 @@ body.sidebar-collapsed .footer {
     line-height: 1.4;
 }
 
+/* ===== SHORTCUT BAR (içerik alanı üstü) ===== */
+.fav-shortcut-bar {
+    background: #fff;
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    box-shadow: 0 1px 6px rgba(26, 58, 92, 0.07);
+    border: 1px solid #e8edf3;
+    border-left: 3px solid var(--accent);
+    display: flex;
+    align-items: stretch;
+    margin-bottom: 18px;
+    overflow: hidden;
+    min-height: 42px;
+}
+
+.fav-shortcut-bar-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 14px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border-right: 1px solid #eef1f6;
+    white-space: nowrap;
+    background: rgba(230, 126, 34, 0.05);
+    flex-shrink: 0;
+}
+
+.fav-shortcut-chips {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+    align-items: stretch;
+}
+
+.fav-shortcut-chips::-webkit-scrollbar {
+    display: none;
+}
+
+.fav-shortcut-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 16px;
+    text-decoration: none;
+    color: #4b5878;
+    font-size: 0.8rem;
+    font-weight: 500;
+    border-right: 1px solid #f0f4f8;
+    transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.fav-shortcut-chip:hover {
+    background: rgba(26, 58, 92, 0.05);
+    color: var(--primary);
+}
+
+.fav-shortcut-chip:last-child {
+    border-right: none;
+}
+
+.fav-shortcut-chip .fav-icon-dot {
+    width: 20px;
+    height: 20px;
+    border-radius: 5px;
+    font-size: 0.62rem;
+    margin-right: 0;
+    flex-shrink: 0;
+}
+
+.fav-chip-text {
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 /* ===== AJAX MODAL (ui-draggable-box) ===== */
 .ui-draggable-box {
     display: none;
