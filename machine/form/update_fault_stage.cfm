@@ -13,6 +13,11 @@
         <cfoutput>#serializeJSON(response)#</cfoutput><cfabort>
     </cfif>
 
+    <cfif stage NEQ "cancelled" AND isNull(assignedEmp)>
+        <cfset response.message = "Personel ataması zorunludur.">
+        <cfoutput>#serializeJSON(response)#</cfoutput><cfabort>
+    </cfif>
+
     <cfquery name="getFault" datasource="boyahane">
         SELECT fault_id, machine_id, fault_status, opened_at, assigned_at, resolved_at
         FROM machine_faults
