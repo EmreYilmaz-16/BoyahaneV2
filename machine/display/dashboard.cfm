@@ -256,6 +256,7 @@
         </div>
     </div>
     <div class="d-flex gap-2">
+        <a class="btn btn-info btn-sm" href="/index.cfm?fuseaction=machine.status_board"><i class="fas fa-th-large"></i> Durum Takip Ekranı</a>
         <button class="btn btn-primary btn-sm" onclick="showMachineModal()"><i class="fas fa-plus"></i> Makine Ekle</button>
         <button class="btn btn-warning btn-sm" onclick="showPlanModal()"><i class="fas fa-calendar-plus"></i> Bakım Planı</button>
         <button class="btn btn-danger btn-sm" onclick="showFaultModal()"><i class="fas fa-exclamation-triangle"></i> Arıza Bildir</button>
