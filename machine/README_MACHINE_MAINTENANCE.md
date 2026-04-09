@@ -69,9 +69,8 @@ Dashboard fuseaction:
 
 ### E) Teknik personel arıza kapatma
 Arızalar sekmesindeki **Aksiyon** kolonundan:
-- `Atandı` → arıza işleme alındı
-- `Müdahale` → teknik servis müdahalesi başladı
-- `Çöz` → arıza kapatıldı
+- `Aşama Güncelle` → personel ID ataması + aşama geçişi (Atandı/Müdahale/Çöz/İptal)
+- `Tarihçe` → arızaya ait tüm işlem geçmişini modal içinde gösterir
 
 Örnek zaman akışı:
 - Açılış: 01.01.2026 17:00
@@ -96,6 +95,7 @@ Sekmeler:
 - **Arızalar**: arıza listesi + aşama yönetimi + süre metrikleri
 - **Bakım Planları**: periyodik planlar
 - **Bakım Kayıtları**: gerçekleşen bakım sonuçları ve süre
+- **Makine Arıza Analiz**: geçmiş arıza kayıtları + makine bazlı en sık arıza tipi takibi
 
 ## 4) Önerilen Ek Geliştirmeler
 

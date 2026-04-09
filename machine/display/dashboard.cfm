@@ -30,6 +30,11 @@
     SELECT f.fault_id, f.fault_no, f.machine_id, m.machine_code, m.machine_name,
            f.fault_title, f.priority_level, f.fault_status,
            f.opened_at, f.assigned_at, f.resolved_at,
+           f.assigned_emp_id,
+           CASE
+               WHEN f.assigned_emp_id IS NOT NULL THEN 'Personel #' || f.assigned_emp_id::varchar
+               ELSE ''
+           END AS assigned_employee,
            COALESCE(f.intervention_note, '') AS intervention_note,
            COALESCE(f.resolution_note, '') AS resolution_note,
            CASE
@@ -44,6 +49,45 @@
     INNER JOIN machine_machines m ON m.machine_id = f.machine_id
     ORDER BY f.opened_at DESC
     LIMIT 300
+</cfquery>
+
+<cfquery name="qFaultEvents" datasource="boyahane">
+    SELECT fe.fault_event_id, fe.fault_id, fe.event_type, fe.event_note, fe.event_date,
+           CASE
+               WHEN fe.employee_id IS NOT NULL THEN 'Personel #' || fe.employee_id::varchar
+               ELSE ''
+           END AS event_employee
+    FROM machine_fault_events fe
+    ORDER BY fe.event_date DESC
+    LIMIT 1500
+</cfquery>
+
+<cfquery name="qMachineFaultStats" datasource="boyahane">
+    SELECT f.machine_id, m.machine_code, m.machine_name, f.fault_title,
+           COUNT(*) AS fault_count,
+           MAX(f.opened_at) AS last_fault_at
+    FROM machine_faults f
+    INNER JOIN machine_machines m ON m.machine_id = f.machine_id
+    GROUP BY f.machine_id, m.machine_code, m.machine_name, f.fault_title
+    ORDER BY COUNT(*) DESC, MAX(f.opened_at) DESC
+    LIMIT 2000
+</cfquery>
+
+<cfquery name="qMachineFaultHistory" datasource="boyahane">
+    SELECT f.fault_id, f.fault_no, f.machine_id, m.machine_code, m.machine_name,
+           f.fault_title, f.priority_level, f.fault_status, f.opened_at, f.assigned_at, f.resolved_at,
+           CASE
+               WHEN f.assigned_emp_id IS NOT NULL THEN 'Personel #' || f.assigned_emp_id::varchar
+               ELSE ''
+           END AS assigned_employee,
+           CASE
+               WHEN f.resolved_at IS NOT NULL THEN ROUND(EXTRACT(EPOCH FROM (f.resolved_at - f.opened_at)) / 60.0, 2)
+               ELSE NULL
+           END AS close_duration_min
+    FROM machine_faults f
+    INNER JOIN machine_machines m ON m.machine_id = f.machine_id
+    ORDER BY f.opened_at DESC
+    LIMIT 3000
 </cfquery>
 
 <cfquery name="qPlans" datasource="boyahane">
@@ -113,12 +157,26 @@
         "fault_id": val(fault_id), "fault_no": fault_no ?: "", "machine_id": val(machine_id),
         "machine_code": machine_code ?: "", "machine_name": machine_name ?: "", "fault_title": fault_title ?: "",
         "priority_level": val(priority_level), "fault_status": fault_status ?: "",
+        "assigned_emp_id": isNumeric(assigned_emp_id) ? val(assigned_emp_id) : 0,
+        "assigned_employee": assigned_employee ?: "",
         "opened_at": isDate(opened_at) ? dateFormat(opened_at, "dd/mm/yyyy") & " " & timeFormat(opened_at, "HH:mm") : "",
         "assigned_at": isDate(assigned_at) ? dateFormat(assigned_at, "dd/mm/yyyy") & " " & timeFormat(assigned_at, "HH:mm") : "",
         "resolved_at": isDate(resolved_at) ? dateFormat(resolved_at, "dd/mm/yyyy") & " " & timeFormat(resolved_at, "HH:mm") : "",
         "intervention_note": intervention_note ?: "", "resolution_note": resolution_note ?: "",
         "first_response_min": isNumeric(first_response_min) ? val(first_response_min) : javacast("null",""),
         "close_duration_min": isNumeric(close_duration_min) ? val(close_duration_min) : javacast("null","")
+    })>
+</cfloop>
+
+<cfset faultEventsArr = []>
+<cfloop query="qFaultEvents">
+    <cfset arrayAppend(faultEventsArr, {
+        "fault_event_id": val(fault_event_id),
+        "fault_id": val(fault_id),
+        "event_type": event_type ?: "",
+        "event_note": event_note ?: "",
+        "event_date": isDate(event_date) ? dateFormat(event_date, "dd/mm/yyyy") & " " & timeFormat(event_date, "HH:mm") : "",
+        "event_employee": event_employee ?: ""
     })>
 </cfloop>
 
@@ -147,6 +205,39 @@
 
 <cfset deptArr = []>
 <cfloop query="qDepartments"><cfset arrayAppend(deptArr,{"department_id":val(department_id),"department_head":department_head ?: ""})></cfloop>
+
+<cfset machineFaultStatsArr = []>
+<cfloop query="qMachineFaultStats">
+    <cfset arrayAppend(machineFaultStatsArr, {
+        "machine_id": val(machine_id),
+        "machine_code": machine_code ?: "",
+        "machine_name": machine_name ?: "",
+        "fault_title": fault_title ?: "",
+        "fault_count": val(fault_count),
+        "last_fault_at": isDate(last_fault_at) ? dateFormat(last_fault_at, "dd/mm/yyyy") & " " & timeFormat(last_fault_at, "HH:mm") : ""
+    })>
+</cfloop>
+
+<cfset machineFaultHistoryArr = []>
+<cfloop query="qMachineFaultHistory">
+    <cfset arrayAppend(machineFaultHistoryArr, {
+        "fault_id": val(fault_id),
+        "fault_no": fault_no ?: "",
+        "machine_id": val(machine_id),
+        "machine_code": machine_code ?: "",
+        "machine_name": machine_name ?: "",
+        "fault_title": fault_title ?: "",
+        "priority_level": val(priority_level),
+        "fault_status": fault_status ?: "",
+        "opened_at": isDate(opened_at) ? dateFormat(opened_at, "dd/mm/yyyy") & " " & timeFormat(opened_at, "HH:mm") : "",
+        "assigned_at": isDate(assigned_at) ? dateFormat(assigned_at, "dd/mm/yyyy") & " " & timeFormat(assigned_at, "HH:mm") : "",
+        "resolved_at": isDate(resolved_at) ? dateFormat(resolved_at, "dd/mm/yyyy") & " " & timeFormat(resolved_at, "HH:mm") : "",
+        "assigned_employee": assigned_employee ?: "",
+        "close_duration_min": isNumeric(close_duration_min) ? val(close_duration_min) : javacast("null","")
+    })>
+</cfloop>
+
+<cfset currentEmployeeId = isDefined("session.user.employee_id") and isNumeric(session.user.employee_id) ? val(session.user.employee_id) : 0>
 
 <cfoutput>
 <div class="page-header">
@@ -180,6 +271,7 @@
       <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="##tab-faults" type="button">Arızalar</button></li>
       <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="##tab-plans" type="button">Bakım Planları</button></li>
       <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="##tab-maint" type="button">Bakım Kayıtları</button></li>
+      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="##tab-fault-analysis" type="button">Makine Arıza Analiz</button></li>
     </ul>
 
     <div class="tab-content border border-top-0 p-2 bg-white">
@@ -187,6 +279,24 @@
       <div class="tab-pane fade" id="tab-faults"><div id="faultsGrid"></div></div>
       <div class="tab-pane fade" id="tab-plans"><div id="plansGrid"></div></div>
       <div class="tab-pane fade" id="tab-maint"><div id="maintGrid"></div></div>
+      <div class="tab-pane fade" id="tab-fault-analysis">
+        <div class="row g-2 align-items-end mb-3">
+          <div class="col-md-5">
+            <label class="form-label mb-1">Makine seç</label>
+            <select id="analysisMachine" class="form-select"></select>
+          </div>
+          <div class="col-md-3">
+            <button class="btn btn-outline-primary" onclick="refreshMachineAnalysis()"><i class="fas fa-filter"></i> Uygula</button>
+          </div>
+          <div class="col-md-4 text-md-end">
+            <div id="topFaultInfo" class="small text-muted">Makine seçerek en çok arıza tipini görün.</div>
+          </div>
+        </div>
+        <div class="row g-3">
+          <div class="col-lg-5"><div id="machineFaultFreqGrid"></div></div>
+          <div class="col-lg-7"><div id="machineFaultHistoryGrid"></div></div>
+        </div>
+      </div>
     </div>
 </div>
 
@@ -225,20 +335,38 @@
 <div><label>Not</label><textarea id="r_note" class="form-control" rows="2"></textarea></div>
 </div><div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button><button class="btn btn-success" onclick="saveMaintenance()">Kaydet</button></div></div></div></div>
 
+<div class="modal fade" id="faultStageModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5>Arıza Aşama Güncelle</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body">
+<div class="mb-2"><label>Arıza No</label><input id="s_fault_no" class="form-control" readonly></div>
+<div class="mb-2"><label>Makine</label><input id="s_machine_name" class="form-control" readonly></div>
+<div class="mb-2"><label>Aşama</label><select id="s_stage" class="form-select"><option value="assigned">Atandı</option><option value="intervention">Müdahale</option><option value="resolved">Çöz</option><option value="cancelled">İptal</option></select></div>
+<div class="mb-2"><label>Atanan Personel ID</label><input id="s_assigned_emp" type="number" min="1" class="form-control" placeholder="Örn: 123"></div>
+<div><label>Aşama Notu</label><textarea id="s_stage_note" class="form-control" rows="3"></textarea></div>
+</div><div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button><button class="btn btn-primary" onclick="saveFaultStage()">Kaydet</button></div></div></div></div>
+
+<div class="modal fade" id="faultHistoryModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header"><h5>Arıza İşlem Tarihçesi</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div id="faultHistoryGrid"></div></div></div></div></div>
+
 <script>
 var machinesData = #serializeJSON(machinesArr)#;
 var faultsData = #serializeJSON(faultsArr)#;
 var plansData = #serializeJSON(plansArr)#;
 var maintData = #serializeJSON(maintArr)#;
 var departments = #serializeJSON(deptArr)#;
+var faultEventsData = #serializeJSON(faultEventsArr)#;
+var machineFaultStatsData = #serializeJSON(machineFaultStatsArr)#;
+var machineFaultHistoryData = #serializeJSON(machineFaultHistoryArr)#;
+var selectedFaultForStage = null;
+var currentEmployeeId = #currentEmployeeId#;
 
 function statusText(code){ return ({1:'Arıza Yok',2:'Bakımda',3:'Arızalı'})[code] || '-'; }
 function priorityText(code){ return ({1:'Düşük',2:'Orta',3:'Yüksek',4:'Kritik'})[code] || '-'; }
+function stageText(code){ return ({assigned:'Atandı',intervention:'Müdahale',resolved:'Çöz',cancelled:'İptal',opened:'Açıldı'})[code] || code || '-'; }
 
 $(function(){
     if (typeof DevExpress !== 'undefined') DevExpress.localization.locale('tr');
     buildGrids();
     fillSelects();
+    refreshMachineAnalysis();
+    $('##analysisMachine').on('change', refreshMachineAnalysis);
 });
 
 function buildGrids(){
@@ -263,13 +391,12 @@ function buildGrids(){
       {dataField:'fault_no',caption:'Arıza No',width:130}, {dataField:'machine_name',caption:'Makine',minWidth:150}, {dataField:'fault_title',caption:'Başlık',minWidth:180},
       {dataField:'priority_level',caption:'Öncelik',width:90, cellTemplate:function(c,o){c.text(priorityText(o.value));}},
       {dataField:'fault_status',caption:'Durum',width:110, cellTemplate:function(c,o){var t=o.value;var cls=t=='open'?'danger':t=='in_progress'?'primary':t=='resolved'?'success':'secondary'; c.html('<span class="badge bg-'+cls+'">'+t+'</span>');}},
+      {dataField:'assigned_employee',caption:'Atanan',width:150},
       {dataField:'opened_at',caption:'Açılış',width:140}, {dataField:'assigned_at',caption:'Müdahale',width:140}, {dataField:'resolved_at',caption:'Bitiş',width:140},
       {dataField:'first_response_min',caption:'İlk Müd. (dk)',width:110,alignment:'right'}, {dataField:'close_duration_min',caption:'Toplam (dk)',width:110,alignment:'right'},
-      {caption:'Aksiyon',width:220,allowFiltering:false,allowSorting:false,cellTemplate:function(c,o){
-        var id=o.data.fault_id;
-        $('<button class="btn btn-sm btn-outline-primary me-1">Atandı</button>').on('click',function(){updateFaultStage(id,'assigned');}).appendTo(c);
-        $('<button class="btn btn-sm btn-outline-warning me-1">Müdahale</button>').on('click',function(){updateFaultStage(id,'intervention');}).appendTo(c);
-        $('<button class="btn btn-sm btn-outline-success">Çöz</button>').on('click',function(){updateFaultStage(id,'resolved');}).appendTo(c);
+      {caption:'Aksiyon',width:250,allowFiltering:false,allowSorting:false,cellTemplate:function(c,o){
+        $('<button class="btn btn-sm btn-outline-primary me-1">Aşama Güncelle</button>').on('click',function(){showFaultStageModal(o.data);}).appendTo(c);
+        $('<button class="btn btn-sm btn-outline-dark">Tarihçe</button>').on('click',function(){showFaultHistoryModal(o.data);}).appendTo(c);
       }}
     ]
   });
@@ -281,6 +408,39 @@ function buildGrids(){
   $('##maintGrid').dxDataGrid({ dataSource:maintData,keyExpr:'maintenance_log_id',showBorders:true,rowAlternationEnabled:true,searchPanel:{visible:true},paging:{pageSize:15},columns:[
     {dataField:'machine_name',caption:'Makine',minWidth:170},{dataField:'maintenance_type',caption:'Tip',width:100},{dataField:'maintenance_result',caption:'Sonuç',width:100},{dataField:'maintenance_start',caption:'Başlangıç',width:150},{dataField:'maintenance_end',caption:'Bitiş',width:150},{dataField:'duration_min',caption:'Süre (dk)',width:90},{dataField:'result_note',caption:'Not',minWidth:200}
   ]});
+
+  $('##faultHistoryGrid').dxDataGrid({
+    dataSource: [], keyExpr: 'fault_event_id', showBorders:true, rowAlternationEnabled:true, searchPanel:{visible:true}, paging:{pageSize:10},
+    columns:[
+      {dataField:'event_date',caption:'Tarih',width:150},
+      {dataField:'event_type',caption:'Aşama',width:120, cellTemplate:function(c,o){c.text(stageText(o.value));}},
+      {dataField:'event_employee',caption:'İşlemi Yapan',width:180},
+      {dataField:'event_note',caption:'Not',minWidth:250}
+    ]
+  });
+
+  $('##machineFaultFreqGrid').dxDataGrid({
+    dataSource:[], keyExpr:'fault_title', showBorders:true, rowAlternationEnabled:true, searchPanel:{visible:true}, paging:{pageSize:10},
+    columns:[
+      {dataField:'fault_title',caption:'Arıza Tipi',minWidth:180},
+      {dataField:'fault_count',caption:'Adet',width:90,alignment:'right'},
+      {dataField:'last_fault_at',caption:'Son Görülme',width:150}
+    ]
+  });
+
+  $('##machineFaultHistoryGrid').dxDataGrid({
+    dataSource:[], keyExpr:'fault_id', showBorders:true, rowAlternationEnabled:true, searchPanel:{visible:true}, paging:{pageSize:12},
+    columns:[
+      {dataField:'fault_no',caption:'Arıza No',width:130},
+      {dataField:'fault_title',caption:'Başlık',minWidth:180},
+      {dataField:'priority_level',caption:'Öncelik',width:90, cellTemplate:function(c,o){c.text(priorityText(o.value));}},
+      {dataField:'fault_status',caption:'Durum',width:110},
+      {dataField:'assigned_employee',caption:'Personel',width:150},
+      {dataField:'opened_at',caption:'Açılış',width:140},
+      {dataField:'resolved_at',caption:'Kapanış',width:140},
+      {dataField:'close_duration_min',caption:'Süre (dk)',width:90,alignment:'right'}
+    ]
+  });
 }
 
 function fillSelects(){
@@ -290,7 +450,7 @@ function fillSelects(){
 
   var machineOpt = '<option value="">Seçiniz</option>';
   machinesData.forEach(function(m){ machineOpt += '<option value="'+m.machine_id+'">'+m.machine_code+' - '+m.machine_name+'</option>'; });
-  $('##p_machine, ##f_machine, ##r_machine').html(machineOpt);
+  $('##p_machine, ##f_machine, ##r_machine, ##analysisMachine').html(machineOpt);
 
   var planOpt = '<option value="">Plan seçmeden kaydet</option>';
   plansData.forEach(function(p){ planOpt += '<option value="'+p.plan_id+'">'+p.machine_code+' - '+p.plan_title+'</option>'; });
@@ -335,9 +495,66 @@ function saveFault(){
 function saveMaintenance(){
   $.post('/machine/form/save_maintenance_result.cfm',{machine_id:$('##r_machine').val(),plan_id:$('##r_plan').val(),maintenance_start:$('##r_start').val(),maintenance_end:$('##r_end').val(),maintenance_result:$('##r_result').val(),result_note:$('##r_note').val()},ajaxDone,'json').fail(ajaxFail);
 }
-function updateFaultStage(faultId, stage){
-  var note = prompt('Aşama notu (opsiyonel):','') || '';
-  $.post('/machine/form/update_fault_stage.cfm',{fault_id:faultId,stage:stage,stage_note:note},ajaxDone,'json').fail(ajaxFail);
+
+function showFaultStageModal(row){
+  selectedFaultForStage = row || null;
+  if(!selectedFaultForStage){ return; }
+  $('##s_fault_no').val(selectedFaultForStage.fault_no || '');
+  $('##s_machine_name').val(selectedFaultForStage.machine_name || '');
+  $('##s_stage').val(selectedFaultForStage.fault_status === 'resolved' ? 'resolved' : 'assigned');
+  $('##s_assigned_emp').val(selectedFaultForStage.assigned_emp_id ? String(selectedFaultForStage.assigned_emp_id) : (currentEmployeeId > 0 ? String(currentEmployeeId) : ''));
+  $('##s_stage_note').val('');
+
+  var el = document.getElementById('faultStageModal');
+  if (el.parentElement !== document.body) document.body.appendChild(el);
+  new bootstrap.Modal(el).show();
+}
+
+function saveFaultStage(){
+  if(!selectedFaultForStage){ return; }
+  var stage = $('##s_stage').val();
+  var assignedEmpId = $('##s_assigned_emp').val();
+  if(stage !== 'cancelled' && !assignedEmpId){
+    DevExpress.ui.notify('Arıza ataması için personel seçimi zorunludur.', 'warning', 3000);
+    return;
+  }
+
+  $.post('/machine/form/update_fault_stage.cfm',{
+    fault_id:selectedFaultForStage.fault_id,
+    stage:stage,
+    stage_note:$('##s_stage_note').val(),
+    assigned_emp_id:assignedEmpId
+  },ajaxDone,'json').fail(ajaxFail);
+}
+
+function showFaultHistoryModal(row){
+  if(!row){ return; }
+  var events = faultEventsData.filter(function(e){ return Number(e.fault_id) === Number(row.fault_id); });
+  var grid = $('##faultHistoryGrid').dxDataGrid('instance');
+  if(grid){ grid.option('dataSource', events); }
+  var el = document.getElementById('faultHistoryModal');
+  if (el.parentElement !== document.body) document.body.appendChild(el);
+  new bootstrap.Modal(el).show();
+}
+
+function refreshMachineAnalysis(){
+  var machineId = Number($('##analysisMachine').val() || 0);
+  var filteredStats = machineId > 0 ? machineFaultStatsData.filter(function(x){ return Number(x.machine_id) === machineId; }) : machineFaultStatsData;
+  var filteredHistory = machineId > 0 ? machineFaultHistoryData.filter(function(x){ return Number(x.machine_id) === machineId; }) : machineFaultHistoryData;
+
+  var freqGrid = $('##machineFaultFreqGrid').dxDataGrid('instance');
+  var historyGrid = $('##machineFaultHistoryGrid').dxDataGrid('instance');
+  if(freqGrid){ freqGrid.option('dataSource', filteredStats); }
+  if(historyGrid){ historyGrid.option('dataSource', filteredHistory); }
+
+  if(machineId > 0 && filteredStats.length){
+    var top = filteredStats.slice().sort(function(a,b){ return Number(b.fault_count) - Number(a.fault_count); })[0];
+    $('##topFaultInfo').text('En sık arıza: ' + (top.fault_title || '-') + ' (' + top.fault_count + ' kez)');
+  } else if(machineId > 0){
+    $('##topFaultInfo').text('Seçilen makine için arıza kaydı bulunamadı.');
+  } else {
+    $('##topFaultInfo').text('Tüm makineler görüntüleniyor.');
+  }
 }
 
 function ajaxDone(res){
