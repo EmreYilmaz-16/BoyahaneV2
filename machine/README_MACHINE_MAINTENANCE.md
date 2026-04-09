@@ -69,7 +69,7 @@ Dashboard fuseaction:
 
 ### E) Teknik personel arıza kapatma
 Arızalar sekmesindeki **Aksiyon** kolonundan:
-- `Aşama Güncelle` → personel ID ataması + aşama geçişi (Atandı/Müdahale/Çöz/İptal)
+- `Aşama Güncelle` → personel ataması + aşama geçişi (Atandı/Müdahale/Çöz/İptal)
 - `Tarihçe` → arızaya ait tüm işlem geçmişini modal içinde gösterir
 
 Örnek zaman akışı:

@@ -31,10 +31,7 @@
            f.fault_title, f.priority_level, f.fault_status,
            f.opened_at, f.assigned_at, f.resolved_at,
            f.assigned_emp_id,
-           CASE
-               WHEN f.assigned_emp_id IS NOT NULL THEN 'Personel #' || f.assigned_emp_id::varchar
-               ELSE ''
-           END AS assigned_employee,
+           COALESCE(e.employee_name || ' ' || e.employee_surname, '') AS assigned_employee,
            COALESCE(f.intervention_note, '') AS intervention_note,
            COALESCE(f.resolution_note, '') AS resolution_note,
            CASE
@@ -47,19 +44,25 @@
            END AS close_duration_min
     FROM machine_faults f
     INNER JOIN machine_machines m ON m.machine_id = f.machine_id
+    LEFT JOIN employees e ON e.employee_id = f.assigned_emp_id
     ORDER BY f.opened_at DESC
     LIMIT 300
 </cfquery>
 
 <cfquery name="qFaultEvents" datasource="boyahane">
     SELECT fe.fault_event_id, fe.fault_id, fe.event_type, fe.event_note, fe.event_date,
-           CASE
-               WHEN fe.employee_id IS NOT NULL THEN 'Personel #' || fe.employee_id::varchar
-               ELSE ''
-           END AS event_employee
+           COALESCE(e.employee_name || ' ' || e.employee_surname, '') AS event_employee
     FROM machine_fault_events fe
+    LEFT JOIN employees e ON e.employee_id = fe.employee_id
     ORDER BY fe.event_date DESC
     LIMIT 1500
+</cfquery>
+
+<cfquery name="qEmployees" datasource="boyahane">
+    SELECT employee_id,
+           COALESCE(employee_name || ' ' || employee_surname, '') AS employee_fullname
+    FROM employees
+    ORDER BY employee_name, employee_surname
 </cfquery>
 
 <cfquery name="qMachineFaultStats" datasource="boyahane">
@@ -76,16 +79,14 @@
 <cfquery name="qMachineFaultHistory" datasource="boyahane">
     SELECT f.fault_id, f.fault_no, f.machine_id, m.machine_code, m.machine_name,
            f.fault_title, f.priority_level, f.fault_status, f.opened_at, f.assigned_at, f.resolved_at,
-           CASE
-               WHEN f.assigned_emp_id IS NOT NULL THEN 'Personel #' || f.assigned_emp_id::varchar
-               ELSE ''
-           END AS assigned_employee,
+           COALESCE(e.employee_name || ' ' || e.employee_surname, '') AS assigned_employee,
            CASE
                WHEN f.resolved_at IS NOT NULL THEN ROUND(EXTRACT(EPOCH FROM (f.resolved_at - f.opened_at)) / 60.0, 2)
                ELSE NULL
            END AS close_duration_min
     FROM machine_faults f
     INNER JOIN machine_machines m ON m.machine_id = f.machine_id
+    LEFT JOIN employees e ON e.employee_id = f.assigned_emp_id
     ORDER BY f.opened_at DESC
     LIMIT 3000
 </cfquery>
@@ -180,6 +181,14 @@
     })>
 </cfloop>
 
+<cfset employeesArr = []>
+<cfloop query="qEmployees">
+    <cfset arrayAppend(employeesArr, {
+        "employee_id": val(employee_id),
+        "employee_fullname": employee_fullname ?: ""
+    })>
+</cfloop>
+
 <cfset plansArr = []>
 <cfloop query="qPlans">
     <cfset arrayAppend(plansArr, {
@@ -236,8 +245,6 @@
         "close_duration_min": isNumeric(close_duration_min) ? val(close_duration_min) : javacast("null","")
     })>
 </cfloop>
-
-<cfset currentEmployeeId = isDefined("session.user.employee_id") and isNumeric(session.user.employee_id) ? val(session.user.employee_id) : 0>
 
 <cfoutput>
 <div class="page-header">
@@ -339,7 +346,7 @@
 <div class="mb-2"><label>Arıza No</label><input id="s_fault_no" class="form-control" readonly></div>
 <div class="mb-2"><label>Makine</label><input id="s_machine_name" class="form-control" readonly></div>
 <div class="mb-2"><label>Aşama</label><select id="s_stage" class="form-select"><option value="assigned">Atandı</option><option value="intervention">Müdahale</option><option value="resolved">Çöz</option><option value="cancelled">İptal</option></select></div>
-<div class="mb-2"><label>Atanan Personel ID</label><input id="s_assigned_emp" type="number" min="1" class="form-control" placeholder="Örn: 123"></div>
+<div class="mb-2"><label>Atanan Personel</label><select id="s_assigned_emp" class="form-select"><option value="">Personel seçiniz</option></select></div>
 <div><label>Aşama Notu</label><textarea id="s_stage_note" class="form-control" rows="3"></textarea></div>
 </div><div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button><button class="btn btn-primary" onclick="saveFaultStage()">Kaydet</button></div></div></div></div>
 
@@ -351,11 +358,11 @@ var faultsData = #serializeJSON(faultsArr)#;
 var plansData = #serializeJSON(plansArr)#;
 var maintData = #serializeJSON(maintArr)#;
 var departments = #serializeJSON(deptArr)#;
+var employeesData = #serializeJSON(employeesArr)#;
 var faultEventsData = #serializeJSON(faultEventsArr)#;
 var machineFaultStatsData = #serializeJSON(machineFaultStatsArr)#;
 var machineFaultHistoryData = #serializeJSON(machineFaultHistoryArr)#;
 var selectedFaultForStage = null;
-var currentEmployeeId = #currentEmployeeId#;
 
 function statusText(code){ return ({1:'Arıza Yok',2:'Bakımda',3:'Arızalı'})[code] || '-'; }
 function priorityText(code){ return ({1:'Düşük',2:'Orta',3:'Yüksek',4:'Kritik'})[code] || '-'; }
@@ -455,6 +462,10 @@ function fillSelects(){
   var planOpt = '<option value="">Plan seçmeden kaydet</option>';
   plansData.forEach(function(p){ planOpt += '<option value="'+p.plan_id+'">'+p.machine_code+' - '+p.plan_title+'</option>'; });
   $('##r_plan').html(planOpt);
+
+  var empOpt = '<option value="">Personel seçiniz</option>';
+  employeesData.forEach(function(e){ empOpt += '<option value="'+e.employee_id+'">'+e.employee_fullname+'</option>'; });
+  $('##s_assigned_emp').html(empOpt);
 }
 
 var editingMachineId = 0;
@@ -502,7 +513,7 @@ function showFaultStageModal(row){
   $('##s_fault_no').val(selectedFaultForStage.fault_no || '');
   $('##s_machine_name').val(selectedFaultForStage.machine_name || '');
   $('##s_stage').val(selectedFaultForStage.fault_status === 'resolved' ? 'resolved' : 'assigned');
-  $('##s_assigned_emp').val(selectedFaultForStage.assigned_emp_id ? String(selectedFaultForStage.assigned_emp_id) : (currentEmployeeId > 0 ? String(currentEmployeeId) : ''));
+  $('##s_assigned_emp').val(selectedFaultForStage.assigned_emp_id ? String(selectedFaultForStage.assigned_emp_id) : '');
   $('##s_stage_note').val('');
 
   var el = document.getElementById('faultStageModal');
