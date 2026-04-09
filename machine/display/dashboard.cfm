@@ -34,6 +34,8 @@
            COALESCE(e.name || ' ' || e.surname, '') AS assigned_employee,
            COALESCE(f.intervention_note, '') AS intervention_note,
            COALESCE(f.resolution_note, '') AS resolution_note,
+           COALESCE(f.root_cause_code, '') AS root_cause_code,
+           COALESCE(f.downtime_category, 'unplanned') AS downtime_category,
            CASE
                WHEN f.assigned_at IS NOT NULL THEN ROUND(EXTRACT(EPOCH FROM (f.assigned_at - f.opened_at)) / 60.0, 2)
                ELSE NULL
@@ -135,6 +137,38 @@
     WHERE opened_at >= (CURRENT_TIMESTAMP - INTERVAL '30 day')
 </cfquery>
 
+<cftry>
+    <cfquery name="qSlaRules" datasource="boyahane">
+        SELECT priority_level, response_target_min, close_target_min
+        FROM machine_sla_rules
+        WHERE is_active = true
+        ORDER BY priority_level
+    </cfquery>
+    <cfcatch type="any">
+        <cfset qSlaRules = queryNew("priority_level,response_target_min,close_target_min", "integer,integer,integer")>
+    </cfcatch>
+</cftry>
+
+<cftry>
+    <cfquery name="qPmOverdue" datasource="boyahane">
+        SELECT COUNT(*) AS overdue_count
+        FROM machine_maintenance_plans
+        WHERE is_active = true
+          AND next_planned_date IS NOT NULL
+          AND next_planned_date < CURRENT_TIMESTAMP
+    </cfquery>
+    <cfcatch type="any">
+        <cfset qPmOverdue = queryNew("overdue_count", "integer")>
+        <cfset queryAddRow(qPmOverdue)>
+        <cfset querySetCell(qPmOverdue, "overdue_count", 0)>
+    </cfcatch>
+</cftry>
+
+<cfset slaMap = {}>
+<cfloop query="qSlaRules">
+    <cfset slaMap[toString(priority_level)] = {response: val(response_target_min), close: val(close_target_min)}>
+</cfloop>
+
 <cfset machinesArr = []>
 <cfloop query="qMachines">
     <cfset arrayAppend(machinesArr, {
@@ -152,8 +186,14 @@
     })>
 </cfloop>
 
+<cfset slaBreachCount = 0>
 <cfset faultsArr = []>
 <cfloop query="qFaults">
+    <cfset _sla = slaMap[toString(priority_level)] ?: {response: 120, close: 1440}>
+    <cfset _nowMin = isDate(opened_at) ? dateDiff("n", opened_at, now()) : 0>
+    <cfset _isActive = fault_status EQ 'open' OR fault_status EQ 'in_progress'>
+    <cfset _closeBreach = _isActive AND _nowMin GT _sla.close>
+    <cfif _closeBreach><cfset slaBreachCount = slaBreachCount + 1></cfif>
     <cfset arrayAppend(faultsArr, {
         "fault_id": val(fault_id), "fault_no": fault_no ?: "", "machine_id": val(machine_id),
         "machine_code": machine_code ?: "", "machine_name": machine_name ?: "", "fault_title": fault_title ?: "",
@@ -165,7 +205,11 @@
         "resolved_at": isDate(resolved_at) ? dateFormat(resolved_at, "dd/mm/yyyy") & " " & timeFormat(resolved_at, "HH:mm") : "",
         "intervention_note": intervention_note ?: "", "resolution_note": resolution_note ?: "",
         "first_response_min": isNumeric(first_response_min) ? val(first_response_min) : javacast("null",""),
-        "close_duration_min": isNumeric(close_duration_min) ? val(close_duration_min) : javacast("null","")
+        "close_duration_min": isNumeric(close_duration_min) ? val(close_duration_min) : javacast("null",""),
+        "root_cause_code": root_cause_code ?: "",
+        "downtime_category": downtime_category ?: "",
+        "sla_close_breached": _closeBreach,
+        "sla_response_breached": _isActive AND NOT isDate(assigned_at) AND _nowMin GT _sla.response
     })>
 </cfloop>
 
@@ -196,7 +240,8 @@
         "plan_title": plan_title ?: "", "period_days": val(period_days),
         "next_planned_date": isDate(next_planned_date) ? dateFormat(next_planned_date, "dd/mm/yyyy") & " " & timeFormat(next_planned_date, "HH:mm") : "",
         "last_done_date": isDate(last_done_date) ? dateFormat(last_done_date, "dd/mm/yyyy") & " " & timeFormat(last_done_date, "HH:mm") : "",
-        "is_active": is_active, "notes": notes ?: ""
+        "is_active": is_active, "notes": notes ?: "",
+        "is_overdue": is_active AND isDate(next_planned_date) AND next_planned_date LT now()
     })>
 </cfloop>
 
@@ -272,6 +317,8 @@
         <div class="col-md-2"><div class="card shadow-sm border-0"><div class="card-body"><small>Arızalı</small><h3 class="text-danger">#val(qSummary.status_fault)#</h3></div></div></div>
         <div class="col-md-2"><div class="card shadow-sm border-0"><div class="card-body"><small>Açık Arıza</small><h3 class="text-danger">#val(qFaultSummary.open_count)#</h3></div></div></div>
         <div class="col-md-2"><div class="card shadow-sm border-0"><div class="card-body"><small>Devam Eden</small><h3 class="text-primary">#val(qFaultSummary.in_progress_count)#</h3></div></div></div>
+        <div class="col-md-2"><div class="card shadow-sm border-0 border-start border-3 border-danger"><div class="card-body"><small class="text-danger fw-semibold"><i class="fas fa-exclamation-circle me-1"></i>SLA İhlali</small><h3 class="text-danger">#slaBreachCount#</h3></div></div></div>
+        <div class="col-md-2"><div class="card shadow-sm border-0 border-start border-3 border-warning"><div class="card-body"><small class="text-warning fw-semibold"><i class="fas fa-clock me-1"></i>Gecikmiş Bakım</small><h3 class="text-warning">#val(qPmOverdue.overdue_count)#</h3></div></div></div>
     </div>
 
     <ul class="nav nav-tabs" id="machineTab" role="tablist">
@@ -331,6 +378,10 @@
 <div class="mb-2"><label>Makine</label><select id="f_machine" class="form-select"></select></div>
 <div class="mb-2"><label>Başlık</label><input id="f_title" class="form-control"></div>
 <div class="mb-2"><label>Öncelik</label><select id="f_priority" class="form-select"><option value="1">Düşük</option><option value="2" selected>Orta</option><option value="3">Yüksek</option><option value="4">Kritik</option></select></div>
+<div class="row g-2 mb-2">
+  <div class="col-6"><label class="form-label">Kök Neden</label><select id="f_root_cause" class="form-select"><option value="">Bilinmiyor</option><option value="mechanical">Mekanik</option><option value="electrical">Elektrik</option><option value="pneumatic">Pnömatik</option><option value="hydraulic">Hidrolik</option><option value="operator_error">Operatör Hatası</option><option value="wear">Yıpranma / Eskime</option><option value="other">Diğer</option></select></div>
+  <div class="col-6"><label class="form-label">Duruş Türü</label><select id="f_downtime_cat" class="form-select"><option value="unplanned">Planlanmamış (Arıza)</option><option value="planned">Planlı Duruş</option><option value="production_change">Ürün Değişimi</option><option value="cleaning">Temizlik</option></select></div>
+</div>
 <div><label>Açıklama</label><textarea id="f_desc" class="form-control" rows="3"></textarea></div>
 </div><div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button><button class="btn btn-danger" onclick="saveFault()">Arıza Aç</button></div></div></div></div>
 
@@ -368,6 +419,8 @@ var selectedFaultForStage = null;
 function statusText(code){ return ({1:'Arıza Yok',2:'Bakımda',3:'Arızalı'})[code] || '-'; }
 function priorityText(code){ return ({1:'Düşük',2:'Orta',3:'Yüksek',4:'Kritik'})[code] || '-'; }
 function stageText(code){ return ({assigned:'Atandı',intervention:'Müdahale',resolved:'Çöz',cancelled:'İptal',opened:'Açıldı'})[code] || code || '-'; }
+function rootCauseText(code){ return ({mechanical:'Mekanik',electrical:'Elektrik',pneumatic:'Pnömatik',hydraulic:'Hidrolik',operator_error:'Operatör Hatası',wear:'Yıpranma',other:'Diğer'})[code] || (code || '-'); }
+function downtimeCatText(code){ return ({unplanned:'Planlanmamış',planned:'Planlı',production_change:'Ürün Değişimi',cleaning:'Temizlik'})[code] || (code || '-'); }
 
 $(function(){
     if (typeof DevExpress !== 'undefined') DevExpress.localization.locale('tr');
@@ -402,6 +455,15 @@ function buildGrids(){
       {dataField:'assigned_employee',caption:'Atanan',width:150},
       {dataField:'opened_at',caption:'Açılış',width:140}, {dataField:'assigned_at',caption:'Müdahale',width:140}, {dataField:'resolved_at',caption:'Bitiş',width:140},
       {dataField:'first_response_min',caption:'İlk Müd. (dk)',width:110,alignment:'right'}, {dataField:'close_duration_min',caption:'Toplam (dk)',width:110,alignment:'right'},
+      {dataField:'root_cause_code',caption:'Kök Neden',width:130, cellTemplate:function(c,o){c.text(rootCauseText(o.value));}},
+      {dataField:'downtime_category',caption:'Duruş Türü',width:120, cellTemplate:function(c,o){c.text(downtimeCatText(o.value));}},
+      {caption:'SLA',width:150,allowFiltering:false,allowSorting:false,cellTemplate:function(c,o){
+        var d=o.data; if(!d) return;
+        if(d.sla_close_breached){ c.html('<span class="badge bg-danger"><i class="fas fa-fire me-1"></i>Kapanış Gecikti</span>'); }
+        else if(d.sla_response_breached){ c.html('<span class="badge" style="background:##ffd7e14;"><i class="fas fa-clock me-1"></i>Müdahale Gecikti</span>'); }
+        else if(d.fault_status==='resolved'||d.fault_status==='cancelled'){ c.html(''); }
+        else{ c.html('<span class="badge bg-success">SLA Tamam</span>'); }
+      }},
       {caption:'Aksiyon',width:250,allowFiltering:false,allowSorting:false,cellTemplate:function(c,o){
         $('<button class="btn btn-sm btn-outline-primary me-1">Aşama Güncelle</button>').on('click',function(){showFaultStageModal(o.data);}).appendTo(c);
         $('<button class="btn btn-sm btn-outline-dark">Tarihçe</button>').on('click',function(){showFaultHistoryModal(o.data);}).appendTo(c);
@@ -410,7 +472,12 @@ function buildGrids(){
   });
 
   $('##plansGrid').dxDataGrid({ dataSource:plansData,keyExpr:'plan_id',showBorders:true,rowAlternationEnabled:true,searchPanel:{visible:true},paging:{pageSize:15},columns:[
-    {dataField:'machine_name',caption:'Makine',minWidth:170},{dataField:'plan_title',caption:'Plan',minWidth:170},{dataField:'period_days',caption:'Periyot',width:90},{dataField:'next_planned_date',caption:'Sonraki Tarih',width:150},{dataField:'last_done_date',caption:'Son Yapılan',width:150},{dataField:'is_active',caption:'Aktif',width:70}
+    {dataField:'machine_name',caption:'Makine',minWidth:170},{dataField:'plan_title',caption:'Plan',minWidth:170},{dataField:'period_days',caption:'Periyot',width:90},{dataField:'next_planned_date',caption:'Sonraki Tarih',width:150},{dataField:'last_done_date',caption:'Son Yapılan',width:150},{dataField:'is_active',caption:'Aktif',width:70},
+    {caption:'Plan Durumu',width:130,allowFiltering:false,cellTemplate:function(c,o){
+      if(o.data.is_overdue){ c.html('<span class="badge bg-danger"><i class="fas fa-clock me-1"></i>Gecikmiş</span>'); }
+      else if(!o.data.next_planned_date){ c.html('<span class="badge bg-secondary">Tarih Yok</span>'); }
+      else{ c.html('<span class="badge bg-success">Zamaninda</span>'); }
+    }}
   ]});
 
   $('##maintGrid').dxDataGrid({ dataSource:maintData,keyExpr:'maintenance_log_id',showBorders:true,rowAlternationEnabled:true,searchPanel:{visible:true},paging:{pageSize:15},columns:[
@@ -502,7 +569,7 @@ function savePlan(){
   $.post('/machine/form/save_maintenance_plan.cfm',{machine_id:$('##p_machine').val(),plan_title:$('##p_title').val(),period_days:$('##p_days').val(),next_planned_date:$('##p_next').val(),notes:$('##p_note').val()},ajaxDone,'json').fail(ajaxFail);
 }
 function saveFault(){
-  $.post('/machine/form/save_fault.cfm',{machine_id:$('##f_machine').val(),fault_title:$('##f_title').val(),fault_description:$('##f_desc').val(),priority_level:$('##f_priority').val()},ajaxDone,'json').fail(ajaxFail);
+  $.post('/machine/form/save_fault.cfm',{machine_id:$('##f_machine').val(),fault_title:$('##f_title').val(),fault_description:$('##f_desc').val(),priority_level:$('##f_priority').val(),root_cause_code:$('##f_root_cause').val(),downtime_category:$('##f_downtime_cat').val()},ajaxDone,'json').fail(ajaxFail);
 }
 function saveMaintenance(){
   $.post('/machine/form/save_maintenance_result.cfm',{machine_id:$('##r_machine').val(),plan_id:$('##r_plan').val(),maintenance_start:$('##r_start').val(),maintenance_end:$('##r_end').val(),maintenance_result:$('##r_result').val(),result_note:$('##r_note').val()},ajaxDone,'json').fail(ajaxFail);

@@ -7,17 +7,15 @@
     <cfset faultTitle     = left(trim(form.fault_title ?: ""), 200)>
     <cfset faultDesc      = left(trim(form.fault_description ?: ""), 4000)>
     <cfset priorityLevel  = isDefined("form.priority_level") and isNumeric(form.priority_level) ? val(form.priority_level) : 2>
-
-    <cfif machineId lte 0 OR NOT len(faultTitle)>
-        <cfset response.message = "Makine ve arıza başlığı zorunludur.">
-        <cfoutput>#serializeJSON(response)#</cfoutput><cfabort>
-    </cfif>
+    <cfset rootCauseCode  = listFindNoCase("mechanical,electrical,pneumatic,hydraulic,operator_error,wear,other", trim(form.root_cause_code ?: "")) ? trim(form.root_cause_code) : "">
+    <cfset downtimeCat    = listFindNoCase("unplanned,planned,production_change,cleaning", trim(form.downtime_category ?: "")) ? trim(form.downtime_category) : "unplanned">
 
     <cfset faultNo = "ARZ-" & dateFormat(now(),"yyyymmdd") & "-" & right("0000" & randRange(1,9999),4)>
 
     <cfquery name="insFault" datasource="boyahane">
         INSERT INTO machine_faults (
             machine_id, fault_no, fault_title, fault_description, priority_level,
+            root_cause_code, downtime_category,
             fault_status, opened_at, opened_by, record_date
         ) VALUES (
             <cfqueryparam value="#machineId#" cfsqltype="cf_sql_integer">,
@@ -25,6 +23,8 @@
             <cfqueryparam value="#faultTitle#" cfsqltype="cf_sql_varchar">,
             <cfqueryparam value="#faultDesc#" cfsqltype="cf_sql_varchar" null="#NOT len(faultDesc)#">,
             <cfqueryparam value="#priorityLevel#" cfsqltype="cf_sql_integer">,
+            <cfqueryparam value="#rootCauseCode#" cfsqltype="cf_sql_varchar" null="#NOT len(rootCauseCode)#">,
+            <cfqueryparam value="#downtimeCat#" cfsqltype="cf_sql_varchar">,
             'open', CURRENT_TIMESTAMP,
             <cfqueryparam value="#session.user.employee_id ?: 0#" cfsqltype="cf_sql_integer" null="#NOT isDefined('session.user.employee_id')#">,
             CURRENT_TIMESTAMP

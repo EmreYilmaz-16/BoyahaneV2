@@ -83,7 +83,7 @@ body {
     color: #fff;
 }
 
-.nav-link {
+.navbar .nav-link {
     color: rgba(255, 255, 255, 0.78) !important;
     font-size: 0.85rem;
     padding: 6px 11px !important;
@@ -94,10 +94,38 @@ body {
     gap: 5px;
 }
 
-.nav-link:hover,
-.nav-link.active {
+.navbar .nav-link:hover,
+.navbar .nav-link.active {
     color: #fff !important;
     background-color: rgba(255, 255, 255, 0.12);
+}
+
+/* nav-tabs — sayfa içi sekmeler */
+.nav-tabs .nav-link {
+    color: #4b5563 !important;
+    font-weight: 600;
+    font-size: 0.875rem;
+    border-radius: 8px 8px 0 0;
+    padding: 9px 18px !important;
+    border: 1px solid transparent;
+    background: none;
+    transition: color 0.15s, background 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.nav-tabs .nav-link:hover {
+    color: var(--primary, #1a3a5c) !important;
+    background-color: rgba(26, 58, 92, 0.06) !important;
+    border-color: #e5e7eb #e5e7eb transparent;
+}
+
+.nav-tabs .nav-link.active {
+    color: var(--primary, #1a3a5c) !important;
+    background-color: #fff !important;
+    border-color: #dee2e6 #dee2e6 #fff;
+    border-bottom-color: #fff !important;
 }
 
 .dropdown-menu {
