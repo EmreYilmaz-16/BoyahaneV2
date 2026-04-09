@@ -31,7 +31,7 @@
            f.fault_title, f.priority_level, f.fault_status,
            f.opened_at, f.assigned_at, f.resolved_at,
            f.assigned_emp_id,
-           COALESCE(e.employee_name || ' ' || e.employee_surname, '') AS assigned_employee,
+           COALESCE(e.name || ' ' || e.surname, '') AS assigned_employee,
            COALESCE(f.intervention_note, '') AS intervention_note,
            COALESCE(f.resolution_note, '') AS resolution_note,
            CASE
@@ -44,25 +44,25 @@
            END AS close_duration_min
     FROM machine_faults f
     INNER JOIN machine_machines m ON m.machine_id = f.machine_id
-    LEFT JOIN employees e ON e.employee_id = f.assigned_emp_id
+    LEFT JOIN kullanicilar e ON e.id = f.assigned_emp_id
     ORDER BY f.opened_at DESC
     LIMIT 300
 </cfquery>
 
 <cfquery name="qFaultEvents" datasource="boyahane">
     SELECT fe.fault_event_id, fe.fault_id, fe.event_type, fe.event_note, fe.event_date,
-           COALESCE(e.employee_name || ' ' || e.employee_surname, '') AS event_employee
+           COALESCE(e.name || ' ' || e.surname, '') AS event_employee
     FROM machine_fault_events fe
-    LEFT JOIN employees e ON e.employee_id = fe.employee_id
+    LEFT JOIN kullanicilar e ON e.id = fe.employee_id
     ORDER BY fe.event_date DESC
     LIMIT 1500
 </cfquery>
 
 <cfquery name="qEmployees" datasource="boyahane">
-    SELECT employee_id,
-           COALESCE(employee_name || ' ' || employee_surname, '') AS employee_fullname
-    FROM employees
-    ORDER BY employee_name, employee_surname
+    SELECT id AS employee_id,
+           COALESCE(name || ' ' || surname, '') AS employee_fullname
+    FROM kullanicilar
+    ORDER BY name, surname
 </cfquery>
 
 <cfquery name="qMachineFaultStats" datasource="boyahane">
@@ -79,14 +79,14 @@
 <cfquery name="qMachineFaultHistory" datasource="boyahane">
     SELECT f.fault_id, f.fault_no, f.machine_id, m.machine_code, m.machine_name,
            f.fault_title, f.priority_level, f.fault_status, f.opened_at, f.assigned_at, f.resolved_at,
-           COALESCE(e.employee_name || ' ' || e.employee_surname, '') AS assigned_employee,
+           COALESCE(e.name || ' ' || e.surname, '') AS assigned_employee,
            CASE
                WHEN f.resolved_at IS NOT NULL THEN ROUND(EXTRACT(EPOCH FROM (f.resolved_at - f.opened_at)) / 60.0, 2)
                ELSE NULL
            END AS close_duration_min
     FROM machine_faults f
     INNER JOIN machine_machines m ON m.machine_id = f.machine_id
-    LEFT JOIN employees e ON e.employee_id = f.assigned_emp_id
+    LEFT JOIN kullanicilar e ON e.id = f.assigned_emp_id
     ORDER BY f.opened_at DESC
     LIMIT 3000
 </cfquery>
