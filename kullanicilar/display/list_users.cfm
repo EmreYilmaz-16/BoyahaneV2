@@ -1,4 +1,4 @@
-<cfprocessingdirective pageEncoding="utf-8">
+﻿<cfprocessingdirective pageEncoding="utf-8">
 
 <cfquery name="qUsers" datasource="boyahane">
     SELECT
@@ -30,7 +30,7 @@
         "id"          : val(id),
         "name"        : name        ?: "",
         "surname"     : surname     ?: "",
-        "fullname"    : (name & " " & surname) ?: "",
+        "fullname"    : trim(name & " " & surname),
         "username"    : username    ?: "",
         "w3userid"    : w3userid    ?: "",
         "is_active"   : isBoolean(is_active) ? is_active : true,
@@ -166,42 +166,42 @@
     <!--- Header --->
     <div class="usr-header">
         <div class="usr-header-left">
-            <div class="usr-header-icon"><i class="bi bi-people-fill"></i></div>
+            <div class="usr-header-icon"><i class="fas fa-users"></i></div>
             <div>
                 <p class="usr-header-title">Kullanıcı Yönetimi</p>
                 <p class="usr-header-sub">Sistem kullanıcılarını görüntüle ve yönet</p>
             </div>
         </div>
         <button class="usr-header-btn usr-header-btn-accent" onclick="openUserModal(null)">
-            <i class="bi bi-person-plus-fill"></i> Yeni Kullanıcı
+            <i class="fas fa-user-plus"></i> Yeni Kullanıcı
         </button>
     </div>
 
     <!--- Özet Kartlar --->
     <div class="usr-stats">
         <div class="usr-stat">
-            <div class="usr-stat-icon total"><i class="bi bi-people"></i></div>
+            <div class="usr-stat-icon total"><i class="fas fa-users"></i></div>
             <div>
                 <div class="usr-stat-label">Toplam</div>
                 <div class="usr-stat-val">#val(qSummary.total_users)#</div>
             </div>
         </div>
         <div class="usr-stat">
-            <div class="usr-stat-icon active"><i class="bi bi-person-check"></i></div>
+            <div class="usr-stat-icon active"><i class="fas fa-user-check"></i></div>
             <div>
                 <div class="usr-stat-label">Aktif</div>
                 <div class="usr-stat-val">#val(qSummary.active_users)#</div>
             </div>
         </div>
         <div class="usr-stat">
-            <div class="usr-stat-icon passive"><i class="bi bi-person-x"></i></div>
+            <div class="usr-stat-icon passive"><i class="fas fa-user-xmark"></i></div>
             <div>
                 <div class="usr-stat-label">Pasif</div>
                 <div class="usr-stat-val">#val(qSummary.passive_users)#</div>
             </div>
         </div>
         <div class="usr-stat">
-            <div class="usr-stat-icon recent"><i class="bi bi-clock-history"></i></div>
+            <div class="usr-stat-icon recent"><i class="fas fa-clock-rotate-left"></i></div>
             <div>
                 <div class="usr-stat-label">Son 7 Gün</div>
                 <div class="usr-stat-val">#val(qSummary.recent_logins)#</div>
@@ -247,17 +247,17 @@
                             <td class="text-center">
                                 <cfif is_active>
                                     <span class="badge" style="background:##f0fdf4;color:##16a34a;font-weight:700;font-size:0.72rem;">
-                                        <i class="bi bi-circle-fill me-1" style="font-size:.45rem;"></i>Aktif
+                                        <i class="fas fa-circle me-1" style="font-size:.45rem;"></i>Aktif
                                     </span>
                                 <cfelse>
                                     <span class="badge" style="background:##fef2f2;color:##dc2626;font-weight:700;font-size:0.72rem;">
-                                        <i class="bi bi-circle-fill me-1" style="font-size:.45rem;"></i>Pasif
+                                        <i class="fas fa-circle me-1" style="font-size:.45rem;"></i>Pasif
                                     </span>
                                 </cfif>
                             </td>
                             <td style="font-size:0.78rem;color:##64748b;">
                                 <cfif isDate(last_login)>
-                                    <i class="bi bi-clock me-1"></i>#dateFormat(last_login,"dd/mm/yyyy")# #timeFormat(last_login,"HH:mm")#
+                                    <i class="fas fa-clock me-1"></i>#dateFormat(last_login,"dd/mm/yyyy")# #timeFormat(last_login,"HH:mm")#
                                 <cfelse>
                                     <span class="text-muted">—</span>
                                 </cfif>
@@ -269,11 +269,11 @@
                                 <div class="d-flex gap-1">
                                     <button class="btn btn-sm" style="background:##eff6ff;color:##3b82f6;border:none;padding:4px 9px;border-radius:6px;font-size:0.75rem;"
                                             onclick="openUserModal({id:#val(id)#,name:'#jsStringFormat(name)#',surname:'#jsStringFormat(surname)#',username:'#jsStringFormat(username)#',w3userid:'#jsStringFormat(w3userid)#',is_active:#is_active ? 'true' : 'false'#})">
-                                        <i class="bi bi-pencil"></i>
+                                        <i class="fas fa-pencil"></i>
                                     </button>
                                     <button class="btn btn-sm" style="background:##fef2f2;color:##dc2626;border:none;padding:4px 9px;border-radius:6px;font-size:0.75rem;"
                                             onclick="confirmDelete(#val(id)#,'#jsStringFormat(name & ' ' & surname)#')">
-                                        <i class="bi bi-trash3"></i>
+                                        <i class="fas fa-trash"></i>
                                     </button>
                                 </div>
                             </td>
@@ -282,7 +282,7 @@
                     <cfelse>
                         <tr id="emptyRow">
                             <td colspan="8" class="text-center py-5 text-muted">
-                                <i class="bi bi-people" style="font-size:2rem;display:block;margin-bottom:8px;color:##cbd5e1;"></i>
+                                <i class="fas fa-users" style="font-size:2.5rem;display:block;margin-bottom:12px;color:##cbd5e1;"></i>
                                 Kayıtlı kullanıcı bulunamadı.
                             </td>
                         </tr>
@@ -300,7 +300,7 @@
         <div class="modal-content">
             <div class="modal-header" style="background:linear-gradient(135deg,##1a3a5c,##0d2137);">
                 <h5 class="modal-title text-white" id="userModalTitle">
-                    <i class="bi bi-person-plus me-2"></i>Yeni Kullanıcı
+                    <i class="fas fa-user-plus me-2"></i>Yeni Kullanıcı
                 </h5>
                 <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
@@ -338,9 +338,9 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
-                <button class="btn btn-primary px-4" onclick="saveUser()">
-                    <i class="bi bi-floppy me-1"></i>Kaydet
+                <button class="btn btn-light" data-bs-dismiss="modal">İptal</button>
+                <button class="btn px-4" style="background:##e67e22;color:##fff;border:none;font-weight:600;" onclick="saveUser()">
+                    <i class="fas fa-floppy-disk me-1"></i>Kaydet
                 </button>
             </div>
         </div>
@@ -352,7 +352,7 @@
     <div class="modal-dialog modal-sm">
         <div class="modal-content">
             <div class="modal-header border-0 pb-0">
-                <h6 class="modal-title fw-bold"><i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Kullanıcı Sil</h6>
+                <h6 class="modal-title fw-bold"><i class="fas fa-triangle-exclamation text-danger me-2"></i>Kullanıcı Sil</h6>
                 <button class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body pt-2">
@@ -361,8 +361,10 @@
                 </p>
             </div>
             <div class="modal-footer border-0 pt-0">
-                <button class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Vazgeç</button>
-                <button class="btn btn-sm btn-danger" onclick="deleteUser()">Sil</button>
+                <button class="btn btn-sm btn-light" data-bs-dismiss="modal">Vazgeç</button>
+                <button class="btn btn-sm px-3" style="background:##dc2626;color:##fff;border:none;font-weight:600;" onclick="deleteUser()">
+                    <i class="fas fa-trash me-1"></i>Sil
+                </button>
             </div>
         </div>
     </div>
@@ -375,8 +377,8 @@ var deleteUserId = 0;
 function openUserModal(row) {
     var isEdit = row && row.id > 0;
     document.getElementById('userModalTitle').innerHTML = isEdit
-        ? '<i class="bi bi-pencil me-2"></i>Kullanıcı Güncelle'
-        : '<i class="bi bi-person-plus me-2"></i>Yeni Kullanıcı';
+        ? '<i class="fas fa-pencil me-2"></i>Kullanıcı Güncelle'
+        : '<i class="fas fa-user-plus me-2"></i>Yeni Kullanıcı';
 
     document.getElementById('u_id').value       = isEdit ? row.id : 0;
     document.getElementById('u_name').value     = isEdit ? row.name : '';
@@ -419,8 +421,11 @@ function saveUser() {
         is_active: isActive
     }, function(res) {
         if (res && res.success) {
+            var mEl = document.getElementById('userModal');
+            var mInst = bootstrap.Modal.getInstance(mEl);
+            if (mInst) mInst.hide();
             usrNotify('Kullanıcı kaydedildi.', 'success');
-            setTimeout(function(){ location.reload(); }, 600);
+            setTimeout(function(){ location.reload(); }, 1000);
         } else {
             usrNotify((res && res.message) || 'İşlem başarısız.', 'error');
         }
@@ -439,17 +444,31 @@ function deleteUser() {
     if (!deleteUserId) return;
     $.post('/kullanicilar/form/delete_user.cfm', { user_id: deleteUserId }, function(res) {
         if (res && res.success) {
+            var mEl = document.getElementById('deleteModal');
+            var mInst = bootstrap.Modal.getInstance(mEl);
+            if (mInst) mInst.hide();
             usrNotify('Kullanıcı silindi.', 'success');
-            setTimeout(function(){ location.reload(); }, 600);
+            setTimeout(function(){ location.reload(); }, 1000);
         } else {
             usrNotify((res && res.message) || 'İşlem başarısız.', 'error');
         }
     }, 'json').fail(function(){ usrNotify('Sunucu hatası.', 'error'); });
 }
 
+/* ---- Bildirim fonksiyonu ---- */
+function usrNotify(msg, type) {
+    var colors = { success: '##16a34a', error: '##dc2626', warning: '##d97706', info: '##3b82f6' };
+    var icons  = { success: 'fa-circle-check', error: 'fa-circle-xmark', warning: 'fa-triangle-exclamation', info: 'fa-circle-info' };
+    var t = document.createElement('div');
+    t.style.cssText = 'position:fixed;top:18px;right:18px;z-index:99999;background:##fff;border-left:4px solid '+(colors[type]||colors.info)+';border-radius:8px;padding:12px 18px;box-shadow:0 4px 20px rgba(0,0,0,.15);display:flex;align-items:center;gap:10px;font-size:.85rem;max-width:340px;';
+    t.innerHTML = '<i class="fas '+(icons[type]||icons.info)+'" style="color:'+(colors[type]||colors.info)+';font-size:1rem;flex-shrink:0;"></i><span>'+msg+'</span>';
+    document.body.appendChild(t);
+    setTimeout(function(){ t.style.opacity='0'; t.style.transition='opacity .4s'; setTimeout(function(){ t.remove(); }, 400); }, 2800);
+}
+
 function filterUsers() {
     var q = document.getElementById('usrSearch').value.toLowerCase().trim();
-    var rows = document.querySelectorAll('#usrTable tbody tr[data-search]');
+    var rows = document.querySelectorAll('##usrTable tbody tr[data-search]');
     var visible = 0;
     rows.forEach(function(row) {
         var match = !q || row.dataset.search.indexOf(q) !== -1;

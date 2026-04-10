@@ -71,7 +71,7 @@
 <div class="row g-3">
 
     <!--- SOL: Güncel Kurlar --->
-    <div class="col-12 col-sm-6 col-lg-3" id="solcol">
+    <div class="col-12 col-sm-6 col-lg-4" id="solcol">
         <div class="grid-card h-100">
             <div class="grid-card-header">
                 <div class="grid-card-header-title"><i class="fas fa-chart-line"></i>Güncel Kurlar</div>
@@ -105,7 +105,7 @@
     </div>
 
      <!--- SAĞ: (ileride doldurulur) --->
-    <div class="col-12 col-sm-6 col-lg-7">
+    <div class="col-12 col-sm-6 col-lg-5">
         <div class="grid-card h-100">
             <div class="grid-card-header">
                 <div class="grid-card-header-title"><i class="fas fa-bell"></i>Bildirimler</div>
@@ -119,7 +119,7 @@
     </div>
 
     <!--- ORTA: Kısayollar --->
-    <div class="col-12 col-sm-12 col-lg-2">
+    <div class="col-12 col-sm-12 col-lg-3">
         <div class="grid-card h-100">
             <div class="grid-card-header">
                 <div class="grid-card-header-title"><i class="fas fa-bookmark"></i>Kısayollarım</div>
@@ -160,7 +160,7 @@
 
 <!--- Boyahane İş Özeti (ship_type=5) --->
 <div class="row g-3 mt-3">
-    <div class="col-12 col-sm-6 col-lg-3">
+    <div class="col-12 col-sm-6 col-lg-4">
         <div class="grid-card">
             <div class="grid-card-header">
                 <div class="grid-card-header-title"><i class="fas fa-industry"></i>Boyahane İş Özeti (Firmaya Göre)</div>
@@ -230,7 +230,7 @@
             </div>
         </div>
     </div>
-    <div class="col-12 col-sm-12 col-lg-6"></div>
+    <div class="col-12 col-sm-12 col-lg-5"></div>
     <div class="col-12 col-sm-6 col-lg-3"></div>
         <!--- İleride buraya boyahane ile ilgili grafikler konulabilir --->
 </div><!--- ship stats row --->

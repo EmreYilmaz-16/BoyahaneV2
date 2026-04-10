@@ -2,15 +2,17 @@
 <cfcontent type="application/json; charset=utf-8">
 
 <cftry>
-    <cfparam name="url.search" default="">
-    <cfparam name="url.sort"   default="name">
-    <cfparam name="url.page"   default="1">
+    <cfparam name="url.search"    default="">
+    <cfparam name="url.sort"      default="name">
+    <cfparam name="url.page"      default="1">
+    <cfparam name="url.price_cat" default="0">
 
-    <cfset search  = trim(url.search)>
-    <cfset sort    = (url.sort eq "code") ? "code" : "name">
-    <cfset pageNum = max(1, int(val(url.page)))>
-    <cfset pageSize = 30>
-    <cfset offset   = (pageNum - 1) * pageSize>
+    <cfset search    = trim(url.search)>
+    <cfset sort      = (url.sort eq "code") ? "code" : "name">
+    <cfset pageNum   = max(1, int(val(url.page)))>
+    <cfset pageSize  = 30>
+    <cfset offset    = (pageNum - 1) * pageSize>
+    <cfset priceCat  = val(url.price_cat)>
 
     <cfif len(search) lt 2>
         <cfoutput>#serializeJSON({"items": [], "hasMore": false, "page": 1})#</cfoutput>
@@ -22,9 +24,16 @@
 
     <cfquery name="getProducts" datasource="boyahane">
         SELECT s.stock_id, s.stock_code, s.barcod,
-               p.product_id, p.product_name, p.product_code
+               p.product_id, p.product_name, p.product_code,
+               COALESCE(pr.price, 0) AS list_price
         FROM stocks s
         LEFT JOIN product p ON p.product_id = s.product_id
+        <cfif priceCat gt 0>
+        LEFT JOIN price pr ON pr.product_id = p.product_id
+                           AND pr.price_catid = <cfqueryparam value="#priceCat#" cfsqltype="cf_sql_integer">
+                           AND pr.startdate < NOW()
+                           AND (pr.finishdate >= NOW() OR pr.finishdate IS NULL)
+        </cfif>
         WHERE s.stock_status = true
           AND (
               p.product_name ILIKE <cfqueryparam value="#searchParam#" cfsqltype="cf_sql_varchar">
@@ -44,12 +53,13 @@
         <cfset rowNum++>
         <cfif rowNum lte pageSize>
             <cfset arrayAppend(items, {
-                "stock_id":     stock_id,
-                "product_id":   product_id ?: 0,
-                "product_name": product_name ?: "Ürün",
-                "product_code": product_code ?: "",
-                "stock_code":   stock_code ?: "",
-                "barcod":       barcod ?: ""
+                "stock_id":        stock_id,
+                "product_id":      product_id ?: 0,
+                "product_name":    product_name ?: "Ürün",
+                "product_code":    product_code ?: "",
+                "stock_code":      stock_code ?: "",
+                "barcod":          barcod ?: "",
+                "list_price":      val(list_price)
             })>
         </cfif>
     </cfloop>

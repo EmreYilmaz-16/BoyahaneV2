@@ -1,13 +1,21 @@
-<cfprocessingdirective pageEncoding="utf-8">
+<style>
+    #cartItems > div > div.d-flex.gap-2.align-items-center > input{
+        font-size:8pt !important;
+        padding: 5px 6px !important;
+        border-radius: 0;
 
-<cfquery name="getCompanies" datasource="boyahane">
-    SELECT company_id,
-           COALESCE(nickname, fullname, member_code, 'Firma') AS display_name,
-           member_code
-    FROM company
-    ORDER BY display_name
-    LIMIT 500
-</cfquery>
+    }
+    #productGrid > div > div > div.mt-auto.d-flex.gap-2 > input{
+     font-size:8pt !important;
+        padding: 5px 6px !important;
+        border-radius: 0;
+    }
+    webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+</style>
+<cfprocessingdirective pageEncoding="utf-8">
 
 <cfquery name="getPaymethods" datasource="boyahane">
     SELECT paymethod_id, paymethod
@@ -21,14 +29,11 @@
     ORDER BY money_name
 </cfquery>
 
-<cfset companiesData = []>
-<cfloop query="getCompanies">
-    <cfset arrayAppend(companiesData, {
-        "company_id": company_id,
-        "display_name": display_name ?: "",
-        "company_code": member_code ?: ""
-    })>
-</cfloop>
+<cfquery name="getShipMethods" datasource="boyahane">
+    SELECT ship_method_id, ship_method
+    FROM ship_method
+    ORDER BY ship_method
+</cfquery>
 
 <div class="page-header">
     <div class="page-header-left">
@@ -68,7 +73,7 @@
                 </div>
             </div>
 
-            <div id="productGridWrap">
+            <div id="productGridWrap" style="overflow-y: scroll;height: 66vh;max-height: 66vh;overflow-x: hidden;">
                 <div class="text-center text-muted py-4" id="productHint">
                     <i class="fas fa-search me-1"></i>Aramak için en az 2 karakter girin
                 </div>
@@ -87,22 +92,24 @@
                 <div class="card-body p-3">
                     <div class="mb-2">
                         <label class="form-label fw-semibold">Müşteri</label>
-                        <select id="company_id" class="form-select">
-                            <option value="0">-- Firma Seçin --</option>
-                            <cfoutput query="getCompanies">
-                                <option value="#company_id#">#xmlFormat(display_name)#</option>
-                            </cfoutput>
-                        </select>
+                        <div id="company_id_box"></div>
                     </div>
                     <div class="row g-2">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label class="form-label fw-semibold">Ödeme</label>
                             <select id="paymethod" class="form-select">
                                 <option value="0">-- Seçin --</option>
                                 <cfoutput query="getPaymethods"><option value="#paymethod_id#">#xmlFormat(paymethod)#</option></cfoutput>
                             </select>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Sevk Yöntemi</label>
+                            <select id="ship_method" class="form-select">
+                                <option value="0">-- Seçin --</option>
+                                <cfoutput query="getShipMethods"><option value="#ship_method_id#">#xmlFormat(ship_method)#</option></cfoutput>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
                             <label class="form-label fw-semibold">Para Birimi</label>
                             <select id="order_currency" class="form-select">
                                 <option value="0">-- Seçin --</option>
@@ -123,7 +130,7 @@
                     <span class="record-count" id="cartCount">0 ürün</span>
                 </div>
                 <div class="card-body p-3">
-                    <div id="cartItems" class="cart-items"></div>
+                    <div id="cartItems" class="cart-items" style="overflow-y: scroll;max-height: 30vh;height: 30vh;"></div>
                     <div class="totals-box mt-3">
                         <div><span>Ara Toplam</span><strong id="totalGross">0,00</strong></div>
                         <div><span>KDV</span><strong id="totalTax">0,00</strong></div>
@@ -160,6 +167,7 @@ var currentSort = 'name';
 var isLoading = false;
 var searchTimer = null;
 var cart = [];
+var currentPriceCat = 0;
 
 function fmt(num) {
     return (num || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -207,21 +215,26 @@ function loadProducts(reset) {
     $.getJSON('/order/form/quick_sale_products.cfm', {
         search: search,
         sort: sort,
-        page: currentPage
+        page: currentPage,
+        price_cat: currentPriceCat
     }, function(res) {
         isLoading = false;
         var items = res.items || [];
         items.forEach(function(p){ productCache[p.stock_id] = p; });
 
         var html = items.map(function(p){
+            var priceHtml = (p.list_price > 0)
+                ? '<div class="product-meta mb-1" style="color:##e67e22;font-weight:600;">Fiyat: ' + fmt(p.list_price) + '</div>'
+                : '';
             return '<div class="col-xl-4 col-md-6">'
                 + '<div class="product-card">'
                 + '<div class="product-name">' + esc(p.product_name) + '</div>'
                 + '<div class="product-meta">Stok: ' + esc(p.stock_code) + '</div>'
                 + '<div class="product-meta mb-2">Kod: ' + esc(p.product_code) + (p.barcod ? ' · Barkod: ' + esc(p.barcod) : '') + '</div>'
+                + priceHtml
                 + '<div class="mt-auto d-flex gap-2">'
                 + '  <input type="number" min="1" value="1" class="form-control form-control-sm" id="qty_' + p.stock_id + '">'
-                + '  <button class="btn btn-sm btn-primary" onclick="addToCart(' + p.stock_id + ')"><i class="fas fa-cart-plus me-1"></i>Sepete Ekle</button>'
+                + '  <button class="btn btn-sm btn-primary" onclick="addToCart(' + p.stock_id + ')"><i class="fas fa-cart-plus me-1"></i></button>'
                 + '</div>'
                 + '</div></div>';
         }).join('');
@@ -264,7 +277,7 @@ function addToCart(stockId) {
             product_name: p.product_name,
             product_code: p.product_code || '',
             quantity: qty,
-            price: 0,
+            price: p.list_price > 0 ? p.list_price : 0,
             tax: 20,
             discount_1: 0,
             unit: '',
@@ -314,7 +327,7 @@ function renderCart() {
 }
 
 function saveQuickOrder() {
-    var companyId = parseInt(document.getElementById('company_id').value, 10) || 0;
+    var companyId = parseInt($("##company_id_box").dxSelectBox("instance").option("value") || 0, 10) || 0;
     if (!companyId) { alert('Lütfen müşteri seçin.'); return; }
     if (!cart.length) { alert('Sepet boş.'); return; }
 
@@ -341,7 +354,7 @@ function saveQuickOrder() {
             deliverdate: '',
             company_id: companyId,
             paymethod: parseInt(document.getElementById('paymethod').value, 10) || 0,
-            ship_method: 0,
+            ship_method: parseInt(document.getElementById('ship_method').value, 10) || 0,
             order_currency: parseInt(document.getElementById('order_currency').value, 10) || 0,
             order_status: '1',
             rows: JSON.stringify(cart)
@@ -365,6 +378,57 @@ function saveQuickOrder() {
 
 window.addEventListener('load', function(){
     renderCart();
+
+    // DevExtreme aranabilir müşteri seçici — remote
+    $("##company_id_box").dxSelectBox({
+        dataSource: new DevExpress.data.DataSource({
+            store: new DevExpress.data.CustomStore({
+                key: "company_id",
+                load: function(loadOptions) {
+                    var kw = loadOptions.searchValue || '';
+                    if (kw.length < 2) return $.Deferred().resolve([]).promise();
+                    return $.getJSON('/order/form/quick_sale_companies.cfm', { keyword: kw });
+                },
+                byKey: function(key) {
+                    if (!key) return $.Deferred().resolve(null).promise();
+                    return $.getJSON('/order/form/quick_sale_companies.cfm', { by_id: key })
+                        .then(function(data){ return data && data.length ? data[0] : null; });
+                }
+            }),
+            paginate: false
+        }),
+        valueExpr: "company_id",
+        displayExpr: "display_name",
+        searchEnabled: true,
+        searchExpr: "display_name",
+        searchMode: "contains",
+        minSearchLength: 2,
+        showClearButton: true,
+        placeholder: "Firma adı veya kodu yazın...",
+        noDataText: "Sonuç bulunamadı.",
+        value: null,
+        stylingMode: "outlined",
+        height: 36,        onValueChanged: function(e) {
+            var cid = e.value;
+            currentPriceCat = 0;
+            if (!cid) return;
+            $.getJSON('/order/form/quick_sale_customer_info.cfm', { company_id: cid }, function(res) {
+                if (!res || !res.success) return;
+                if (res.paymethod_id)   document.getElementById('paymethod').value   = res.paymethod_id;
+                if (res.ship_method_id) document.getElementById('ship_method').value = res.ship_method_id;
+                currentPriceCat = res.price_cat || 0;
+                if (currentSearch.length >= 2) resetAndSearch();
+            });
+        },        itemTemplate: function(data){
+            return $('<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">').append(
+                $('<span>').text(data.display_name),
+                data.company_code
+                    ? $('<span style="color:##94a3b8;font-size:.75rem;">').text(data.company_code)
+                    : null
+            );
+        }
+    });
+
     document.getElementById('productSearch').addEventListener('input', function(){
         clearTimeout(searchTimer);
         searchTimer = setTimeout(resetAndSearch, 350);
