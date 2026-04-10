@@ -24,4 +24,5 @@ BEGIN
         ('report.add_report',         '/report/form/add_report.cfm',            'Rapor Ekle / Düzenle', v_module_id, 12, true, false),
         ('report.save_report',        '/report/form/save_report.cfm',           'Rapor Kaydet',         v_module_id, 13, true, false),
         ('report.delete_report',      '/report/form/delete_report.cfm',         'Rapor Sil',            v_module_id, 14, true, false);
+        ON CONFLICT (full_fuseaction) DO NOTHING;
 END $$;
