@@ -131,6 +131,5 @@ INSERT INTO "pbs_objects" ("object_id", "object_name", "module_id", "show_menu",
 (168,	'Bakım Planı Kaydet',	31,	'0',	'standart',	'machine.save_maintenance_plan',	'/machine/form/save_maintenance_plan.cfm',	62,	'1',	'2026-04-08 14:59:55.161935',	'2026-04-08 14:59:55.161935'),
 (169,	'Bakım Sonucu Kaydet',	31,	'0',	'standart',	'machine.save_maintenance_result',	'/machine/form/save_maintenance_result.cfm',	63,	'1',	'2026-04-08 14:59:55.161935',	'2026-04-08 14:59:55.161935'),
 (170,	'Arıza Kaydı Oluştur',	31,	'0',	'standart',	'machine.save_fault',	'/machine/form/save_fault.cfm',	64,	'1',	'2026-04-08 14:59:55.161935',	'2026-04-08 14:59:55.161935'),
-(171,	'Arıza Aşaması Güncelle',	31,	'0',	'standart',	'machine.update_fault_stage',	'/machine/form/update_fault_stage.cfm',	65,	'1',	'2026-04-08 14:59:55.161935',	'2026-04-08 14:59:55.161935');
--- 2026-04-16 10:36:39 UTC
+(171,	'Arıza Aşaması Güncelle',	31,	'0',	'standart',	'machine.update_fault_stage',	'/machine/form/update_fault_stage.cfm',	65,	'1',	'2026-04-08 14:59:55.161935',	'2026-04-08 14:59:55.161935')
 ON CONFLICT (full_fuseaction) DO NOTHING;
