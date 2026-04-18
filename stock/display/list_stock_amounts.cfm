@@ -17,7 +17,7 @@
     FROM department d
     INNER JOIN stocks_row sr ON sr.store = d.department_id
     WHERE COALESCE(d.department_status, true) = true
-    ORDER BY d.department_head
+    ORDER BY COALESCE(d.department_head,'')
 </cfquery>
 
 <cfquery name="qLocs" datasource="boyahane">

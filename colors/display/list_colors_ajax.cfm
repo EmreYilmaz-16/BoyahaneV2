@@ -284,7 +284,7 @@ function initGrid() {
                 cellTemplate: function(c, o) {
                     var g = $('<div>').addClass('d-flex gap-1 justify-content-center');
                     $('<a>').addClass('btn btn-sm btn-outline-primary').attr('title','Düzenle')
-                        .attr('href','index.cfm?fuseaction=colors.add_color&stock_id='+o.data.stock_id)
+                        .attr('href','index.cfm?fuseaction=colors.add_color&color_id='+o.data.color_id)
                         .html('<i class="fas fa-edit"></i>').appendTo(g);
                     $('<a>').addClass('btn btn-sm btn-outline-secondary').attr('title','Reçeteyi Görüntüle')
                         .attr('href','index.cfm?fuseaction=product.view_product_tree&stock_id='+o.data.stock_id)
@@ -417,7 +417,7 @@ function saveNewColor() {
         if (res && res.success) {
             DevExpress.ui.notify('Renk olu\u015fturuldu, re\u00e7ete sayfas\u0131na y\u00f6nlendiriliyorsunuz...', 'success', 2500);
             setTimeout(function() {
-                window.location.href = 'index.cfm?fuseaction=colors.add_color_v2&stock_id=' + res.stock_id;
+                window.location.href = 'index.cfm?fuseaction=colors.add_color&color_id=' + res.color_id;
             }, 1800);
         } else {
             DevExpress.ui.notify((res && res.message) || 'Kay\u0131t ba\u015far\u0131s\u0131z.', 'error', 3500);

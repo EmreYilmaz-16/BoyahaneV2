@@ -88,6 +88,12 @@
 
         <cfset savedStockId = stockId>
         <cfset mode         = "updated">
+
+        <!--- UPDATE sonrası color_id'yi al --->
+        <cfquery name="getColorId" datasource="boyahane">
+            SELECT color_id FROM color_info WHERE stock_id = <cfqueryparam value="#savedStockId#" cfsqltype="cf_sql_integer">
+        </cfquery>
+        <cfset savedColorId = getColorId.recordCount ? val(getColorId.color_id) : 0>
     <cfelse>
         <!--- ─── INSERT stocks ─── --->
         <!--- Otomatik renk stok kodu oluştur --->
@@ -114,7 +120,7 @@
         <cfset savedStockId = val(insStock.stock_id)>
 
         <!--- INSERT color_info --->
-        <cfquery datasource="boyahane">
+        <cfquery name="insColor" datasource="boyahane">
             INSERT INTO color_info
                 (stock_id, company_id, product_id, color_code, color_name,
                  kartela_no, kartela_date, renk_tonu, boya_derecesi, flote,
@@ -134,7 +140,9 @@
                 <cfqueryparam value="#info#"                                               cfsqltype="cf_sql_varchar" null="#NOT len(info)#">,
                 CURRENT_TIMESTAMP
             )
+            RETURNING color_id
         </cfquery>
+        <cfset savedColorId = val(insColor.color_id)>
 
         <cfset mode = "added">
     </cfif>
@@ -224,7 +232,7 @@
         </cfloop>
     </cfloop>
 
-    <cfset response = { "success": true, "stock_id": savedStockId, "mode": mode }>
+    <cfset response = { "success": true, "stock_id": savedStockId, "color_id": savedColorId, "mode": mode }>
 
     <cfcatch type="any">
         <cfset response = { "success": false, "message": "Hata: " & cfcatch.message }>
