@@ -74,7 +74,14 @@
     </cfif>
 <cfelse>
     <!--- Anasayfa --->
-    <cflocation url="index.cfm?fuseaction=myhome.welcome" addtoken="no">
+    <cfset defaultFuseaction = "myhome.welcome">
+    <cfif structKeyExists(session, "user")
+        AND structKeyExists(session.user, "default_fuseaction")
+        AND len(trim(session.user.default_fuseaction))
+        AND reFindNoCase("^[a-z0-9_]+\.[a-z0-9_]+$", trim(session.user.default_fuseaction))>
+        <cfset defaultFuseaction = trim(session.user.default_fuseaction)>
+    </cfif>
+    <cflocation url="index.cfm?fuseaction=#urlEncodedFormat(defaultFuseaction)#" addtoken="no">
 </cfif>
 
 <!DOCTYPE html>

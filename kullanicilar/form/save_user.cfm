@@ -14,6 +14,7 @@
     <cfset username = isDefined("form.username")   ? left(lCase(trim(form.username)), 50) : "">
     <cfset password = isDefined("form.password")   ? trim(form.password) : "">
     <cfset w3userid = isDefined("form.w3userid")   ? left(trim(form.w3userid), 100) : "">
+    <cfset defaultFuseaction = isDefined("form.default_fuseaction") ? lCase(trim(form.default_fuseaction)) : "">
     <cfset isActive = isDefined("form.is_active")  AND val(form.is_active) EQ 1>
 
     <!--- Zorunlu alan kontrolleri --->
@@ -31,6 +32,10 @@
     </cfif>
     <cfif userId EQ 0 AND NOT len(password)>
         <cfoutput>{"success":false,"message":"Şifre zorunludur."}</cfoutput>
+        <cfabort>
+    </cfif>
+    <cfif len(defaultFuseaction) AND NOT reFind("^[a-z0-9_]+\.[a-z0-9_]+$", defaultFuseaction)>
+        <cfoutput>{"success":false,"message":"Varsayılan giriş sayfası formatı geçersiz. Örnek: myhome.welcome"}</cfoutput>
         <cfabort>
     </cfif>
     <!--- Kullanıcı adı yalnızca harf, rakam, alt çizgi içerebilir --->
@@ -63,6 +68,7 @@
                     username   = <cfqueryparam value="#username#"  cfsqltype="cf_sql_varchar">,
                     password   = <cfqueryparam value="#password#"  cfsqltype="cf_sql_varchar">,
                     w3userid   = <cfqueryparam value="#w3userid#"  cfsqltype="cf_sql_varchar" null="#NOT len(w3userid)#">,
+                    default_fuseaction = <cfqueryparam value="#defaultFuseaction#" cfsqltype="cf_sql_varchar" null="#NOT len(defaultFuseaction)#">,
                     is_active  = <cfqueryparam value="#isActive#"  cfsqltype="cf_sql_bit">,
                     updated_at = <cfqueryparam value="#now()#"     cfsqltype="cf_sql_timestamp">
                 WHERE id = <cfqueryparam value="#userId#" cfsqltype="cf_sql_integer">
@@ -75,6 +81,7 @@
                     surname    = <cfqueryparam value="#surname#"   cfsqltype="cf_sql_varchar">,
                     username   = <cfqueryparam value="#username#"  cfsqltype="cf_sql_varchar">,
                     w3userid   = <cfqueryparam value="#w3userid#"  cfsqltype="cf_sql_varchar" null="#NOT len(w3userid)#">,
+                    default_fuseaction = <cfqueryparam value="#defaultFuseaction#" cfsqltype="cf_sql_varchar" null="#NOT len(defaultFuseaction)#">,
                     is_active  = <cfqueryparam value="#isActive#"  cfsqltype="cf_sql_bit">,
                     updated_at = <cfqueryparam value="#now()#"     cfsqltype="cf_sql_timestamp">
                 WHERE id = <cfqueryparam value="#userId#" cfsqltype="cf_sql_integer">
@@ -84,13 +91,14 @@
     <cfelse>
         <!--- YENİ KAYIT --->
         <cfquery name="ins" datasource="boyahane">
-            INSERT INTO kullanicilar (name, surname, username, password, w3userid, is_active, created_at, updated_at)
+            INSERT INTO kullanicilar (name, surname, username, password, w3userid, default_fuseaction, is_active, created_at, updated_at)
             VALUES (
                 <cfqueryparam value="#name#"      cfsqltype="cf_sql_varchar">,
                 <cfqueryparam value="#surname#"   cfsqltype="cf_sql_varchar">,
                 <cfqueryparam value="#username#"  cfsqltype="cf_sql_varchar">,
                 <cfqueryparam value="#password#"  cfsqltype="cf_sql_varchar">,
                 <cfqueryparam value="#w3userid#"  cfsqltype="cf_sql_varchar" null="#NOT len(w3userid)#">,
+                <cfqueryparam value="#defaultFuseaction#" cfsqltype="cf_sql_varchar" null="#NOT len(defaultFuseaction)#">,
                 <cfqueryparam value="#isActive#"  cfsqltype="cf_sql_bit">,
                 <cfqueryparam value="#now()#"     cfsqltype="cf_sql_timestamp">,
                 <cfqueryparam value="#now()#"     cfsqltype="cf_sql_timestamp">
