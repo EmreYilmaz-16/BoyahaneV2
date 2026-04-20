@@ -404,6 +404,68 @@
 
 <div class="modal fade" id="faultHistoryModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header"><h5>Arıza İşlem Tarihçesi</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div id="faultHistoryGrid"></div></div></div></div></div>
 
+<!-- Kullanılan Malzemeler Modalı -->
+<div class="modal fade" id="usedMaterialModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-box-open me-2"></i>Kullanılan Malzemeler</h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p id="um_record_title" class="text-muted small mb-3"></p>
+        <!-- Eklenmiş malzemeler listesi -->
+        <div id="um_list_wrap" class="mb-4">
+          <h6 class="fw-semibold border-bottom pb-1 mb-2">Eklenmiş Malzemeler</h6>
+          <div id="um_list"><div class="text-muted small">Yükleniyor...</div></div>
+        </div>
+        <!-- Yeni malzeme ekleme formu -->
+        <h6 class="fw-semibold border-bottom pb-1 mb-2">Yeni Malzeme Ekle</h6>
+        <div class="row g-2">
+          <div class="col-md-6">
+            <label class="form-label">Ürün <span class="text-danger">*</span></label>
+            <div class="position-relative">
+              <input type="text" id="um_product_search" class="form-control" placeholder="Ürün adı veya kodu yazın..." autocomplete="off">
+              <div id="um_product_suggestions" class="list-group position-absolute w-100 shadow" style="z-index:1070;display:none;max-height:200px;overflow-y:auto;"></div>
+            </div>
+            <input type="hidden" id="um_product_id">
+            <input type="hidden" id="um_product_name">
+            <input type="hidden" id="um_product_code">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Miktar <span class="text-danger">*</span></label>
+            <input type="number" id="um_quantity" class="form-control" value="1" min="0.001" step="0.001">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Birim</label>
+            <select id="um_unit" class="form-select">
+              <option value="adet">Adet</option>
+              <option value="litre">Litre</option>
+              <option value="lt">Lt</option>
+              <option value="kg">Kg</option>
+              <option value="gr">Gr</option>
+              <option value="metre">Metre</option>
+              <option value="cm">Cm</option>
+              <option value="mm">Mm</option>
+              <option value="kutu">Kutu</option>
+              <option value="paket">Paket</option>
+              <option value="rulo">Rulo</option>
+            </select>
+          </div>
+          <div class="col-12">
+            <label class="form-label">Not</label>
+            <input type="text" id="um_note" class="form-control" placeholder="Opsiyonel not...">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+        <button class="btn btn-success" onclick="saveUsedMaterial()"><i class="fas fa-plus me-1"></i>Malzeme Ekle</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 var machinesData = #serializeJSON(machinesArr)#;
 var faultsData = #serializeJSON(faultsArr)#;
@@ -415,6 +477,12 @@ var faultEventsData = #serializeJSON(faultEventsArr)#;
 var machineFaultStatsData = #serializeJSON(machineFaultStatsArr)#;
 var machineFaultHistoryData = #serializeJSON(machineFaultHistoryArr)#;
 var selectedFaultForStage = null;
+
+// ---- Kullanılan Malzemeler ----
+var umSourceType = '';
+var umSourceId   = 0;
+var umProductCache = [];
+var umSearchTimer  = null;
 
 function statusText(code){ return ({1:'Arıza Yok',2:'Bakımda',3:'Arızalı'})[code] || '-'; }
 function priorityText(code){ return ({1:'Düşük',2:'Orta',3:'Yüksek',4:'Kritik'})[code] || '-'; }
@@ -464,9 +532,10 @@ function buildGrids(){
         else if(d.fault_status==='resolved'||d.fault_status==='cancelled'){ c.html(''); }
         else{ c.html('<span class="badge bg-success">SLA Tamam</span>'); }
       }},
-      {caption:'Aksiyon',width:250,allowFiltering:false,allowSorting:false,cellTemplate:function(c,o){
+      {caption:'Aksiyon',width:320,allowFiltering:false,allowSorting:false,cellTemplate:function(c,o){
         $('<button class="btn btn-sm btn-outline-primary me-1">Aşama Güncelle</button>').on('click',function(){showFaultStageModal(o.data);}).appendTo(c);
-        $('<button class="btn btn-sm btn-outline-dark">Tarihçe</button>').on('click',function(){showFaultHistoryModal(o.data);}).appendTo(c);
+        $('<button class="btn btn-sm btn-outline-dark me-1">Tarihçe</button>').on('click',function(){showFaultHistoryModal(o.data);}).appendTo(c);
+        $('<button class="btn btn-sm btn-outline-secondary"><i class="fas fa-box-open me-1"></i>Malzeme</button>').on('click',function(){showUsedMaterialModal('fault',o.data.fault_id,'Arıza: '+o.data.fault_no+' — '+o.data.machine_name);}).appendTo(c);
       }}
     ]
   });
@@ -481,7 +550,10 @@ function buildGrids(){
   ]});
 
   $('##maintGrid').dxDataGrid({ dataSource:maintData,keyExpr:'maintenance_log_id',showBorders:true,rowAlternationEnabled:true,searchPanel:{visible:true},paging:{pageSize:15},columns:[
-    {dataField:'machine_name',caption:'Makine',minWidth:170},{dataField:'maintenance_type',caption:'Tip',width:100},{dataField:'maintenance_result',caption:'Sonuç',width:100},{dataField:'maintenance_start',caption:'Başlangıç',width:150},{dataField:'maintenance_end',caption:'Bitiş',width:150},{dataField:'duration_min',caption:'Süre (dk)',width:90},{dataField:'result_note',caption:'Not',minWidth:200}
+    {dataField:'machine_name',caption:'Makine',minWidth:170},{dataField:'maintenance_type',caption:'Tip',width:100},{dataField:'maintenance_result',caption:'Sonuç',width:100},{dataField:'maintenance_start',caption:'Başlangıç',width:150},{dataField:'maintenance_end',caption:'Bitiş',width:150},{dataField:'duration_min',caption:'Süre (dk)',width:90},{dataField:'result_note',caption:'Not',minWidth:200},
+    {caption:'İşlem',width:120,allowFiltering:false,allowSorting:false,cellTemplate:function(c,o){
+      $('<button class="btn btn-sm btn-outline-secondary"><i class="fas fa-box-open me-1"></i>Malzeme</button>').on('click',function(){showUsedMaterialModal('maintenance',o.data.maintenance_log_id,'Bakım ##'+o.data.maintenance_log_id+' — '+o.data.machine_name);}).appendTo(c);
+    }}
   ]});
 
   $('##faultHistoryGrid').dxDataGrid({
@@ -635,6 +707,138 @@ function refreshMachineAnalysis(){
     $('##topFaultInfo').text('Tüm makineler görüntüleniyor.');
   }
 }
+
+// ============================================================
+// Kullanılan Malzemeler fonksiyonları
+// ============================================================
+function showUsedMaterialModal(sourceType, sourceId, title) {
+  umSourceType = sourceType;
+  umSourceId   = sourceId;
+  $('##um_record_title').text(title || '');
+  // Form sıfırla
+  $('##um_product_search').val('');
+  $('##um_product_id').val('');
+  $('##um_product_name').val('');
+  $('##um_product_code').val('');
+  $('##um_quantity').val('1');
+  $('##um_unit').val('adet');
+  $('##um_note').val('');
+  $('##um_product_suggestions').hide();
+  // Modal aç
+  var el = document.getElementById('usedMaterialModal');
+  if (el.parentElement !== document.body) document.body.appendChild(el);
+  new bootstrap.Modal(el).show();
+  // Listeyi yükle
+  loadUsedMaterials();
+}
+
+function loadUsedMaterials() {
+  $('##um_list').html('<div class="text-muted small">Yükleniyor...</div>');
+  $.get('/machine/form/get_used_materials.cfm', {source_type: umSourceType, source_id: umSourceId}, function(res) {
+    if (!res || !res.success) {
+      $('##um_list').html('<div class="text-danger small">' + (res && res.message ? res.message : 'Hata') + '</div>');
+      return;
+    }
+    renderMaterialsList(res.data || []);
+  }, 'json').fail(function() {
+    $('##um_list').html('<div class="text-danger small">Sunucu hatası.</div>');
+  });
+}
+
+function renderMaterialsList(items) {
+  if (!items.length) {
+    $('##um_list').html('<div class="text-muted small fst-italic">Henüz malzeme eklenmemiş.</div>');
+    return;
+  }
+  var html = '<table class="table table-sm table-bordered mb-0"><thead class="table-light"><tr><th>Ürün</th><th>Kodu</th><th>Miktar</th><th>Birim</th><th>Not</th><th>Tarih</th><th style="width:48px"></th></tr></thead><tbody>';
+  items.forEach(function(m) {
+    html += '<tr>'
+      + '<td>' + (m.product_name || '-') + '</td>'
+      + '<td class="text-muted">' + (m.product_code || '-') + '</td>'
+      + '<td class="text-end">' + m.quantity + '</td>'
+      + '<td>' + (m.unit || '') + '</td>'
+      + '<td class="text-muted">' + (m.note || '') + '</td>'
+      + '<td class="text-muted" style="white-space:nowrap">' + (m.record_date || '') + '</td>'
+      + '<td><button class="btn btn-sm btn-outline-danger p-0 px-1" onclick="deleteUsedMaterial(' + m.material_id + ')"><i class="fas fa-times"></i></button></td>'
+      + '</tr>';
+  });
+  html += '</tbody></table>';
+  $('##um_list').html(html);
+}
+
+function deleteUsedMaterial(materialId) {
+  if (!confirm('Bu malzeme kaydı silinsin mi?')) return;
+  $.get('/machine/form/delete_used_material.cfm', {material_id: materialId}, function(res) {
+    if (res && res.success) { loadUsedMaterials(); }
+    else { DevExpress.ui.notify((res && res.message) || 'Silinemedi.', 'error', 2500); }
+  }, 'json').fail(function() { DevExpress.ui.notify('Sunucu hatası.', 'error', 2500); });
+}
+
+function saveUsedMaterial() {
+  var productName = $('##um_product_name').val().trim() || $('##um_product_search').val().trim();
+  if (!productName) { DevExpress.ui.notify('Ürün seçimi veya adı zorunludur.', 'warning', 2500); return; }
+  var qty = parseFloat($('##um_quantity').val());
+  if (isNaN(qty) || qty <= 0) { DevExpress.ui.notify('Geçerli bir miktar giriniz.', 'warning', 2500); return; }
+  $.post('/machine/form/save_used_material.cfm', {
+    source_type:  umSourceType,
+    source_id:    umSourceId,
+    product_id:   $('##um_product_id').val() || 0,
+    product_name: productName,
+    product_code: $('##um_product_code').val() || '',
+    quantity:     qty,
+    unit:         $('##um_unit').val(),
+    note:         $('##um_note').val()
+  }, function(res) {
+    if (res && res.success) {
+      DevExpress.ui.notify('Malzeme eklendi.', 'success', 1800);
+      // Form sıfırla
+      $('##um_product_search').val('');
+      $('##um_product_id, ##um_product_name, ##um_product_code').val('');
+      $('##um_quantity').val('1');
+      $('##um_note').val('');
+      loadUsedMaterials();
+    } else {
+      DevExpress.ui.notify((res && res.message) || 'Kaydedilemedi.', 'error', 3000);
+    }
+  }, 'json').fail(function() { DevExpress.ui.notify('Sunucu hatası.', 'error', 3000); });
+}
+
+// Ürün arama autocomplete
+$(document).on('input', '##um_product_search', function() {
+  clearTimeout(umSearchTimer);
+  var q = $(this).val().trim();
+  $('##um_product_id, ##um_product_name, ##um_product_code').val('');
+  if (q.length < 2) { $('##um_product_suggestions').hide(); return; }
+  umSearchTimer = setTimeout(function() {
+    $.get('/machine/form/search_products.cfm', {q: q}, function(data) {
+      umProductCache = data || [];
+      if (!umProductCache.length) { $('##um_product_suggestions').hide(); return; }
+      var items = '';
+      umProductCache.forEach(function(p, i) {
+        items += '<button type="button" class="list-group-item list-group-item-action py-1" data-idx="' + i + '">' + p.label + '</button>';
+      });
+      $('##um_product_suggestions').html(items).show();
+    }, 'json').fail(function() { $('##um_product_suggestions').hide(); });
+  }, 300);
+});
+
+$(document).on('click', '##um_product_suggestions button', function() {
+  var idx = Number($(this).data('idx'));
+  var p   = umProductCache[idx];
+  if (!p) return;
+  $('##um_product_id').val(p.product_id);
+  $('##um_product_name').val(p.product_name);
+  $('##um_product_code').val(p.product_code);
+  $('##um_product_search').val(p.product_name + (p.product_code ? ' [' + p.product_code + ']' : ''));
+  $('##um_product_suggestions').hide();
+});
+
+$(document).on('click', function(e) {
+  if (!$(e.target).closest('##um_product_search, ##um_product_suggestions').length) {
+    $('##um_product_suggestions').hide();
+  }
+});
+// ============================================================
 
 function ajaxDone(res){
   if(res && res.success){ DevExpress.ui.notify('İşlem başarılı. Sayfa yenileniyor...', 'success', 1500); setTimeout(function(){ location.reload(); }, 600); }

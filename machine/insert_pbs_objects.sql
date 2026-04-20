@@ -8,5 +8,9 @@ VALUES
 ('machine.save_maintenance_plan', '/machine/form/save_maintenance_plan.cfm', 'save_maintenance_plan', 'Bakım Planı Kaydet', 'page', NULL, 63, true, false),
 ('machine.save_maintenance_result', '/machine/form/save_maintenance_result.cfm', 'save_maintenance_result', 'Bakım Sonucu Kaydet', 'page', NULL, 64, true, false),
 ('machine.save_fault', '/machine/form/save_fault.cfm', 'save_fault', 'Arıza Kaydı Oluştur', 'page', NULL, 65, true, false),
-('machine.update_fault_stage', '/machine/form/update_fault_stage.cfm', 'update_fault_stage', 'Arıza Aşaması Güncelle', 'page', NULL, 66, true, false)
+('machine.update_fault_stage', '/machine/form/update_fault_stage.cfm', 'update_fault_stage', 'Arıza Aşaması Güncelle', 'page', NULL, 66, true, false),
+('machine.save_used_material', '/machine/form/save_used_material.cfm', 'save_used_material', 'Kullanılan Malzeme Kaydet', 'page', NULL, 67, true, false),
+('machine.delete_used_material', '/machine/form/delete_used_material.cfm', 'delete_used_material', 'Kullanılan Malzeme Sil', 'page', NULL, 68, true, false),
+('machine.get_used_materials', '/machine/form/get_used_materials.cfm', 'get_used_materials', 'Kullanılan Malzemeleri Getir', 'page', NULL, 69, true, false),
+('machine.search_products', '/machine/form/search_products.cfm', 'search_products', 'Ürün Arama (Malzeme)', 'page', NULL, 70, true, false)
 ON CONFLICT (full_fuseaction) DO NOTHING;
