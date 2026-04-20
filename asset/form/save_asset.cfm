@@ -17,9 +17,12 @@
         <cfabort>
     </cfif>
 
-    <cfset categoryId = isDefined("form.category_id") and isNumeric(form.category_id) ? val(form.category_id) : javacast("null", "")>
-    <cfset locationId = isDefined("form.location_id") and isNumeric(form.location_id) ? val(form.location_id) : javacast("null", "")>
-    <cfset purchaseDate = isDefined("form.purchase_date") and isDate(form.purchase_date) ? createODBCDate(form.purchase_date) : javacast("null", "")>
+    <cfset categoryIdNull  = not (isDefined("form.category_id") and isNumeric(form.category_id) and val(form.category_id) gt 0)>
+    <cfset categoryId      = categoryIdNull  ? 0 : val(form.category_id)>
+    <cfset locationIdNull  = not (isDefined("form.location_id") and isNumeric(form.location_id) and val(form.location_id) gt 0)>
+    <cfset locationId      = locationIdNull  ? 0 : val(form.location_id)>
+    <cfset purchaseDateNull = not (isDefined("form.purchase_date") and isDate(form.purchase_date))>
+    <cfset purchaseDate    = purchaseDateNull ? "" : createODBCDate(form.purchase_date)>
     <cfset acqCost = isDefined("form.acquisition_cost") and isNumeric(form.acquisition_cost) ? val(form.acquisition_cost) : 0>
 
     <cfif assetId gt 0>
@@ -28,14 +31,14 @@
                 asset_no = <cfqueryparam value="#left(trim(form.asset_no ?: ''), 50)#" cfsqltype="cf_sql_varchar" null="#not len(trim(form.asset_no ?: ''))#">,
                 asset_name = <cfqueryparam value="#assetName#" cfsqltype="cf_sql_varchar">,
                 asset_type = <cfqueryparam value="#assetType#" cfsqltype="cf_sql_varchar">,
-                category_id = <cfqueryparam value="#categoryId#" cfsqltype="cf_sql_integer" null="#isNull(categoryId)#">,
+                category_id = <cfqueryparam value="#categoryId#" cfsqltype="cf_sql_integer" null="#categoryIdNull#">,
                 brand = <cfqueryparam value="#left(trim(form.brand ?: ''),100)#" cfsqltype="cf_sql_varchar" null="#not len(trim(form.brand ?: ''))#">,
                 model = <cfqueryparam value="#left(trim(form.model ?: ''),100)#" cfsqltype="cf_sql_varchar" null="#not len(trim(form.model ?: ''))#">,
                 serial_no = <cfqueryparam value="#left(trim(form.serial_no ?: ''),100)#" cfsqltype="cf_sql_varchar" null="#not len(trim(form.serial_no ?: ''))#">,
-                purchase_date = <cfqueryparam value="#purchaseDate#" cfsqltype="cf_sql_date" null="#isNull(purchaseDate)#">,
+                purchase_date = <cfqueryparam value="#purchaseDate#" cfsqltype="cf_sql_date" null="#purchaseDateNull#">,
                 acquisition_cost = <cfqueryparam value="#acqCost#" cfsqltype="cf_sql_numeric">,
                 currency = <cfqueryparam value="#left(trim(form.currency ?: 'TRY'),10)#" cfsqltype="cf_sql_varchar">,
-                location_id = <cfqueryparam value="#locationId#" cfsqltype="cf_sql_integer" null="#isNull(locationId)#">,
+                location_id = <cfqueryparam value="#locationId#" cfsqltype="cf_sql_integer" null="#locationIdNull#">,
                 asset_status = <cfqueryparam value="#left(trim(form.asset_status ?: 'ACTIVE'),20)#" cfsqltype="cf_sql_varchar">,
                 detail = <cfqueryparam value="#trim(form.detail ?: '')#" cfsqltype="cf_sql_varchar" null="#not len(trim(form.detail ?: ''))#">,
                 update_emp = <cfqueryparam value="#session.user.employee_id ?: 0#" cfsqltype="cf_sql_integer">,
@@ -53,14 +56,14 @@
                 <cfqueryparam value="#left(trim(form.asset_no ?: ''), 50)#" cfsqltype="cf_sql_varchar" null="#not len(trim(form.asset_no ?: ''))#">,
                 <cfqueryparam value="#assetName#" cfsqltype="cf_sql_varchar">,
                 <cfqueryparam value="#assetType#" cfsqltype="cf_sql_varchar">,
-                <cfqueryparam value="#categoryId#" cfsqltype="cf_sql_integer" null="#isNull(categoryId)#">,
+                <cfqueryparam value="#categoryId#" cfsqltype="cf_sql_integer" null="#categoryIdNull#">,
                 <cfqueryparam value="#left(trim(form.brand ?: ''),100)#" cfsqltype="cf_sql_varchar" null="#not len(trim(form.brand ?: ''))#">,
                 <cfqueryparam value="#left(trim(form.model ?: ''),100)#" cfsqltype="cf_sql_varchar" null="#not len(trim(form.model ?: ''))#">,
                 <cfqueryparam value="#left(trim(form.serial_no ?: ''),100)#" cfsqltype="cf_sql_varchar" null="#not len(trim(form.serial_no ?: ''))#">,
-                <cfqueryparam value="#purchaseDate#" cfsqltype="cf_sql_date" null="#isNull(purchaseDate)#">,
+                <cfqueryparam value="#purchaseDate#" cfsqltype="cf_sql_date" null="#purchaseDateNull#">,
                 <cfqueryparam value="#acqCost#" cfsqltype="cf_sql_numeric">,
                 <cfqueryparam value="#left(trim(form.currency ?: 'TRY'),10)#" cfsqltype="cf_sql_varchar">,
-                <cfqueryparam value="#locationId#" cfsqltype="cf_sql_integer" null="#isNull(locationId)#">,
+                <cfqueryparam value="#locationId#" cfsqltype="cf_sql_integer" null="#locationIdNull#">,
                 <cfqueryparam value="#left(trim(form.asset_status ?: 'ACTIVE'),20)#" cfsqltype="cf_sql_varchar">,
                 <cfqueryparam value="#trim(form.detail ?: '')#" cfsqltype="cf_sql_varchar" null="#not len(trim(form.detail ?: ''))#">,
                 <cfqueryparam value="#session.user.employee_id ?: 0#" cfsqltype="cf_sql_integer">,

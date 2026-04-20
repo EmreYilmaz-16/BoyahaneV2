@@ -248,30 +248,30 @@ CREATE TABLE IF NOT EXISTS vehicle_driver_assignments (
     employee_id INTEGER NOT NULL,
     assignment_start TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     assignment_end TIMESTAMP WITHOUT TIME ZONE,
-    is_primary BOOLEAN DEFAULT true,
+    note TEXT,
+    record_emp INTEGER,
+    record_date TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS vehicle_tire_logs (
+    tire_log_id SERIAL PRIMARY KEY,
+    asset_id INTEGER NOT NULL REFERENCES asset_master(asset_id) ON DELETE CASCADE,
+    log_date DATE NOT NULL,
+    log_type VARCHAR(20) NOT NULL CHECK (log_type IN ('CHANGE','BALANCE','ROTATION','OTHER')),
+    odometer_km NUMERIC(18,1),
+    tire_position VARCHAR(50),
+    tire_brand VARCHAR(100),
+    tire_size VARCHAR(50),
+    cost NUMERIC(18,2) DEFAULT 0,
     note TEXT,
     record_date TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- ------------------------------------------------
--- 6) PBS OBJECTS (Menü / Fuseaction)
--- ------------------------------------------------
--- Not: Gerekirse önce eski kayıtları temizlemek için:
--- DELETE FROM pbs_objects WHERE full_fuseaction LIKE 'asset.%';
-
-INSERT INTO pbs_objects (full_fuseaction, file_path, object_name, object_title, object_type, parent_id, sort_order, is_active, is_menu)
-VALUES
-('asset.list_assets',            '/asset/display/list_assets.cfm',            'list_assets',            'Varlık Yönetimi',                  'page', NULL, 10, true, true),
-('asset.add_asset',              '/asset/form/add_asset.cfm',                 'add_asset',              'Varlık Ekle / Düzenle',             'page', NULL, 11, true, false),
-('asset.save_asset',             '/asset/form/save_asset.cfm',                'save_asset',             'Varlık Kaydet',                     'page', NULL, 12, true, false),
-('asset.delete_asset',           '/asset/form/delete_asset.cfm',              'delete_asset',           'Varlık Sil',                        'page', NULL, 13, true, false),
-('asset.list_maintenances',      '/asset/display/list_maintenances.cfm',      'list_maintenances',      'Bakım Kayıtları',                   'page', NULL, 14, true, true),
-('asset.save_maintenance',       '/asset/form/save_maintenance.cfm',          'save_maintenance',       'Bakım Kaydet',                      'page', NULL, 15, true, false),
-('asset.list_it_licenses',       '/asset/display/list_it_licenses.cfm',       'list_it_licenses',       'BT Lisans Yönetimi',                'page', NULL, 16, true, true),
-('asset.save_it_license',        '/asset/form/save_it_license.cfm',           'save_it_license',        'BT Lisans Kaydet',                  'page', NULL, 17, true, false),
-('asset.list_vehicle_operations','/asset/display/list_vehicle_operations.cfm', 'list_vehicle_operations','Araç Operasyonları',                'page', NULL, 18, true, true),
-('asset.save_vehicle_fuel',      '/asset/form/save_vehicle_fuel.cfm',         'save_vehicle_fuel',      'Araç Yakıt Kaydı',                  'page', NULL, 19, true, false),
-('asset.save_vehicle_service',   '/asset/form/save_vehicle_service.cfm',      'save_vehicle_service',   'Araç Servis Kaydı',                 'page', NULL, 20, true, false),
-('asset.save_vehicle_accident',  '/asset/form/save_vehicle_accident.cfm',     'save_vehicle_accident',  'Araç Hasar/Kaza Kaydı',             'page', NULL, 21, true, false);
+CREATE INDEX IF NOT EXISTS idx_asset_movements_asset ON asset_movements(asset_id);
+CREATE INDEX IF NOT EXISTS idx_asset_maintenance_asset ON asset_maintenance(asset_id);
+CREATE INDEX IF NOT EXISTS idx_vehicle_fuel_asset ON vehicle_fuel_logs(asset_id);
+CREATE INDEX IF NOT EXISTS idx_vehicle_service_asset ON vehicle_service_logs(asset_id);
+CREATE INDEX IF NOT EXISTS idx_vehicle_accident_asset ON vehicle_accidents(asset_id);
 
 COMMIT;
+
