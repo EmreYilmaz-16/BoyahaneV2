@@ -10,10 +10,9 @@
 
 <!--- Tüm aktif fuseaction listesi (pbs_objects) --->
 <cfquery name="qFuseactions" datasource="boyahane">
-    SELECT full_fuseaction, object_title
+    SELECT full_fuseaction, object_name
     FROM pbs_objects
     WHERE is_active = true
-      AND object_type = 'page'
     ORDER BY full_fuseaction
 </cfquery>
 
@@ -28,7 +27,7 @@
         k.name       AS user_name,
         k.surname    AS user_surname,
         k.username   AS user_username,
-        o.object_title
+        o.object_name
     FROM user_fuseaction_deny d
     JOIN kullanicilar k ON k.id = d.user_id
     LEFT JOIN pbs_objects o ON o.full_fuseaction = d.fuseaction
@@ -47,7 +46,7 @@
         "user_surname" : user_surname  ?: "",
         "fullname"     : trim((user_name ?: "") & " " & (user_surname ?: "")),
         "username"     : user_username ?: "",
-        "object_title" : len(trim(object_title ?: "")) ? object_title : fuseaction
+        "object_title" : len(trim(object_name ?: "")) ? object_name : fuseaction
     })>
 </cfloop>
 
@@ -66,7 +65,7 @@
 <cfloop query="qFuseactions">
     <cfset arrayAppend(faArr, {
         "fuseaction"   : full_fuseaction ?: "",
-        "object_title" : len(trim(object_title ?: "")) ? object_title : full_fuseaction
+        "object_title" : len(trim(object_name ?: "")) ? object_name : full_fuseaction
     })>
 </cfloop>
 
@@ -473,7 +472,7 @@ function deleteDeny() {
 
 function filterDeny() {
     var q = document.getElementById('fadSearch').value.toLowerCase().trim();
-    var rows = document.querySelectorAll('#fadTable tbody tr[data-search]');
+    var rows = document.querySelectorAll('##fadTable tbody tr[data-search]');
     var visible = 0;
     rows.forEach(function(row) {
         var match = !q || row.dataset.search.indexOf(q) !== -1;
@@ -487,7 +486,7 @@ function fadNotify(msg, type) {
     var colors = { success: '##16a34a', error: '##dc2626', warning: '##d97706', info: '##3b82f6' };
     var icons  = { success: 'fa-circle-check', error: 'fa-circle-xmark', warning: 'fa-triangle-exclamation', info: 'fa-circle-info' };
     var t = document.createElement('div');
-    t.style.cssText = 'position:fixed;top:18px;right:18px;z-index:99999;background:#fff;border-left:4px solid '+(colors[type]||colors.info)+';border-radius:8px;padding:12px 18px;box-shadow:0 4px 20px rgba(0,0,0,.15);display:flex;align-items:center;gap:10px;font-size:.85rem;max-width:340px;';
+    t.style.cssText = 'position:fixed;top:18px;right:18px;z-index:99999;background:##fff;border-left:4px solid '+(colors[type]||colors.info)+';border-radius:8px;padding:12px 18px;box-shadow:0 4px 20px rgba(0,0,0,.15);display:flex;align-items:center;gap:10px;font-size:.85rem;max-width:340px;';
     t.innerHTML = '<i class="fas '+(icons[type]||icons.info)+'" style="color:'+(colors[type]||colors.info)+';font-size:1rem;flex-shrink:0;"></i><span>'+msg+'</span>';
     document.body.appendChild(t);
     setTimeout(function(){ t.style.opacity='0'; t.style.transition='opacity .4s'; setTimeout(function(){ t.remove(); }, 400); }, 2800);
