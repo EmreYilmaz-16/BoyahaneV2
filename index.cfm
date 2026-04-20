@@ -14,11 +14,20 @@
 <cfset accessDeniedMessage = "Bu modül için yetkiniz bulunmamaktadır.">
 <cfset requiredPermission = "view">
 <cfset currentModuleId = 0>
+<cfset fuseactionDeniedForUser = false>
 
 <cfif isDefined("attributes.fuseaction") and attributes.fuseaction neq "">
     <cfquery name="getObject" datasource="boyahane">
         SELECT * FROM pbs_objects WHERE full_fuseaction = <cfqueryparam value="#attributes.fuseaction#" cfsqltype="cf_sql_varchar">
     </cfquery>
+    <cfquery name="getFuseactionDeny" datasource="boyahane">
+        SELECT reason
+        FROM user_fuseaction_deny
+        WHERE user_id = <cfqueryparam value="#session.user.id#" cfsqltype="cf_sql_integer">
+          AND fuseaction = <cfqueryparam value="#attributes.fuseaction#" cfsqltype="cf_sql_varchar">
+        LIMIT 1
+    </cfquery>
+    <cfset fuseactionDeniedForUser = getFuseactionDeny.recordCount GT 0>
 
     <!--- Kullanıcının herhangi bir modül yetkisi tanımlı mı? --->
     <cfquery name="getUserPermissionCount" datasource="boyahane">
@@ -36,7 +45,13 @@
             <cfset requiredPermission = "update">
         </cfif>
 
-        <cfif permissionEnforced>
+        <cfif fuseactionDeniedForUser>
+            <cfset accessDenied = true>
+            <cfset accessDeniedMessage = "Bu sayfayı görüntüleme yetkiniz bulunmuyor.">
+            <cfif len(trim(getFuseactionDeny.reason ?: ""))>
+                <cfset accessDeniedMessage = accessDeniedMessage & " Sebep: " & trim(getFuseactionDeny.reason)>
+            </cfif>
+        <cfelseif permissionEnforced>
             <cfquery name="getCurrentModulePermission" datasource="boyahane">
                 SELECT can_view, can_update, can_delete
                 FROM user_module_permissions
@@ -156,9 +171,13 @@
         SELECT o.*
         FROM pbs_objects o
         INNER JOIN user_module_permissions ump ON ump.module_id = o.module_id
+        LEFT JOIN user_fuseaction_deny ufd
+               ON ufd.user_id = <cfqueryparam value="#session.user.id#" cfsqltype="cf_sql_integer">
+              AND ufd.fuseaction = o.full_fuseaction
         WHERE o.is_active = true AND o.show_menu = true
           AND ump.user_id = <cfqueryparam value="#session.user.id#" cfsqltype="cf_sql_integer">
           AND ump.can_view = true
+          AND ufd.deny_id IS NULL
         ORDER BY o.module_id, o.order_no, o.object_name
     </cfquery>
     <cfelse>
@@ -183,6 +202,11 @@
     <cfquery name="getObjects" datasource="boyahane">
         SELECT * FROM pbs_objects
         WHERE is_active = true AND show_menu = true
+          AND full_fuseaction NOT IN (
+            SELECT fuseaction
+            FROM user_fuseaction_deny
+            WHERE user_id = <cfqueryparam value="#session.user.id#" cfsqltype="cf_sql_integer">
+          )
         ORDER BY module_id, order_no, object_name
     </cfquery>
     </cfif>
