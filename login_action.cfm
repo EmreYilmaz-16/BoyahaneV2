@@ -20,7 +20,8 @@
         username,
         password,
         w3userid,
-        is_active
+        is_active,
+        default_fuseaction
     FROM 
         kullanicilar
     WHERE 
@@ -49,6 +50,7 @@
     <cfset session.user.surname = getUser.surname>
     <cfset session.user.username = getUser.username>
     <cfset session.user.w3userid = getUser.w3userid>
+    <cfset session.user.default_fuseaction = trim(getUser.default_fuseaction ?: "")>
     <cfset session.user.fullname = getUser.name & " " & getUser.surname>
     <cfset session.user.loginTime = now()>
 </cflock>
@@ -65,5 +67,9 @@
     <cfcookie name="boyahane_remember" value="#hash(getUser.username, 'SHA-256')#" expires="30">
 </cfif>
 
-<!--- Ana sayfaya yönlendir --->
-<cflocation url="index.cfm" addtoken="false">
+<!--- Personele özel varsayılan sayfaya yönlendir --->
+<cfset redirectFuseaction = "myhome.welcome">
+<cfif len(trim(getUser.default_fuseaction ?: "")) AND reFindNoCase("^[a-z0-9_]+\.[a-z0-9_]+$", trim(getUser.default_fuseaction))>
+    <cfset redirectFuseaction = trim(getUser.default_fuseaction)>
+</cfif>
+<cflocation url="index.cfm?fuseaction=#urlEncodedFormat(redirectFuseaction)#" addtoken="false">

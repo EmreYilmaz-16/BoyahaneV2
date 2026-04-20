@@ -7,6 +7,7 @@
         COALESCE(k.surname, '')     AS surname,
         COALESCE(k.username, '')    AS username,
         COALESCE(k.w3userid, '')    AS w3userid,
+        COALESCE(k.default_fuseaction, '') AS default_fuseaction,
         COALESCE(k.is_active, true) AS is_active,
         k.last_login,
         k.created_at,
@@ -33,6 +34,7 @@
         "fullname"    : trim(name & " " & surname),
         "username"    : username    ?: "",
         "w3userid"    : w3userid    ?: "",
+        "default_fuseaction" : default_fuseaction ?: "",
         "is_active"   : isBoolean(is_active) ? is_active : true,
         "last_login"  : isDate(last_login)   ? dateFormat(last_login,"dd/mm/yyyy") & " " & timeFormat(last_login,"HH:mm") : "",
         "created_at"  : isDate(created_at)   ? dateFormat(created_at,"dd/mm/yyyy") : "",
@@ -223,6 +225,7 @@
                         <th>Ad Soyad</th>
                         <th>Kullanıcı Adı</th>
                         <th>W3 User ID</th>
+                        <th>Giriş Sayfası</th>
                         <th class="text-center">Durum</th>
                         <th>Son Giriş</th>
                         <th>Kayıt Tarihi</th>
@@ -233,7 +236,7 @@
                     <cfif qUsers.recordCount gt 0>
                         <cfloop query="qUsers">
                         <cfset initials = uCase(left(trim(name),1)) & uCase(left(trim(surname),1))>
-                        <tr data-search="#lCase(name)# #lCase(surname)# #lCase(username)# #lCase(w3userid)#">
+                        <tr data-search="#lCase(name)# #lCase(surname)# #lCase(username)# #lCase(w3userid)# #lCase(default_fuseaction)#">
                             <td>
                                 <div class="usr-avatar">#htmlEditFormat(initials)#</div>
                             </td>
@@ -244,6 +247,9 @@
                                 <code style="font-size:0.78rem;background:##f1f5f9;padding:2px 7px;border-radius:5px;">#htmlEditFormat(username)#</code>
                             </td>
                             <td style="font-size:0.78rem;color:##64748b;">#len(trim(w3userid)) ? htmlEditFormat(w3userid) : "—"#</td>
+                            <td style="font-size:0.78rem;color:##475569;">
+                                #len(trim(default_fuseaction)) ? htmlEditFormat(default_fuseaction) : "myhome.welcome"#
+                            </td>
                             <td class="text-center">
                                 <cfif is_active>
                                     <span class="badge" style="background:##f0fdf4;color:##16a34a;font-weight:700;font-size:0.72rem;">
@@ -268,7 +274,7 @@
                             <td>
                                 <div class="d-flex gap-1">
                                     <button class="btn btn-sm" style="background:##eff6ff;color:##3b82f6;border:none;padding:4px 9px;border-radius:6px;font-size:0.75rem;"
-                                            onclick="openUserModal({id:#val(id)#,name:'#jsStringFormat(name)#',surname:'#jsStringFormat(surname)#',username:'#jsStringFormat(username)#',w3userid:'#jsStringFormat(w3userid)#',is_active:#is_active ? 'true' : 'false'#})">
+                                            onclick="openUserModal({id:#val(id)#,name:'#jsStringFormat(name)#',surname:'#jsStringFormat(surname)#',username:'#jsStringFormat(username)#',w3userid:'#jsStringFormat(w3userid)#',default_fuseaction:'#jsStringFormat(default_fuseaction)#',is_active:#is_active ? 'true' : 'false'#})">
                                         <i class="fas fa-pencil"></i>
                                     </button>
                                     <button class="btn btn-sm" style="background:##fef2f2;color:##dc2626;border:none;padding:4px 9px;border-radius:6px;font-size:0.75rem;"
@@ -322,6 +328,11 @@
                     <div class="col-6">
                         <label class="form-label fw-semibold">W3 User ID</label>
                         <input id="u_w3userid" class="form-control" placeholder="USR001" maxlength="100">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">Varsayılan Giriş Sayfası</label>
+                        <input id="u_default_fuseaction" class="form-control" placeholder="myhome.welcome" maxlength="255">
+                        <div class="form-text">Boş bırakılırsa varsayılan açılış sayfası <strong>myhome.welcome</strong> kullanılır.</div>
                     </div>
                     <div class="col-12" id="u_password_row">
                         <label class="form-label fw-semibold">Şifre <span class="text-danger" id="u_pass_required">*</span></label>
@@ -385,6 +396,7 @@ function openUserModal(row) {
     document.getElementById('u_surname').value  = isEdit ? row.surname : '';
     document.getElementById('u_username').value = isEdit ? row.username : '';
     document.getElementById('u_w3userid').value = isEdit ? row.w3userid : '';
+    document.getElementById('u_default_fuseaction').value = isEdit ? (row.default_fuseaction || '') : '';
     document.getElementById('u_password').value = '';
     document.getElementById('u_is_active').value = isEdit && row.is_active === false ? '0' : '1';
 
@@ -404,12 +416,17 @@ function saveUser() {
     var username = document.getElementById('u_username').value.trim();
     var password = document.getElementById('u_password').value;
     var w3userid = document.getElementById('u_w3userid').value.trim();
+    var defaultFuseaction = document.getElementById('u_default_fuseaction').value.trim();
     var isActive = document.getElementById('u_is_active').value;
 
     if (!name)     { usrNotify('Ad zorunludur.',           'warning'); return; }
     if (!surname)  { usrNotify('Soyad zorunludur.',        'warning'); return; }
     if (!username) { usrNotify('Kullanıcı adı zorunludur.','warning'); return; }
     if (id === 0 && !password) { usrNotify('Şifre zorunludur.', 'warning'); return; }
+    if (defaultFuseaction && !/^[a-z0-9_]+\.[a-z0-9_]+$/i.test(defaultFuseaction)) {
+        usrNotify('Varsayılan giriş sayfası formatı hatalı. Örnek: myhome.welcome', 'warning');
+        return;
+    }
 
     $.post('/kullanicilar/form/save_user.cfm', {
         user_id:   id,
@@ -418,6 +435,7 @@ function saveUser() {
         username:  username,
         password:  password,
         w3userid:  w3userid,
+        default_fuseaction: defaultFuseaction,
         is_active: isActive
     }, function(res) {
         if (res && res.success) {

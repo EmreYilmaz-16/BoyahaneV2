@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS kullanicilar (
     username VARCHAR(50) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
     w3userid VARCHAR(100),
+    default_fuseaction VARCHAR(255),
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
