@@ -107,7 +107,7 @@ Aşağıdaki action kayıtları tanımlıdır:
 - `asset.save_vehicle_service`
 - `asset.save_vehicle_accident`
 
-> Not: Bu aşamada SQL tarafı hazırlanmıştır. İlgili `.cfm` ekran/action dosyaları ayrıca geliştirilmelidir.
+> Not: Bu modül için temel `.cfm` ekran/action dosyaları oluşturulmuştur (`asset/display/*`, `asset/form/*`). İhtiyaca göre ek validasyon ve UI iyileştirmeleri yapılabilir.
 
 ---
 
