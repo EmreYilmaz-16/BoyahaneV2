@@ -428,7 +428,7 @@ function addDefectRow() {
 }
 
 function collectResults() {
-    return Array.from(document.querySelectorAll('#measBody tr')).map(function(tr){
+    return Array.from(document.querySelectorAll('##measBody tr')).map(function(tr){
         return {
             qc_param_id    : parseInt(tr.querySelector('.mr-param-id').value),
             measured_value : tr.querySelector('.mr-measured').value,
@@ -440,7 +440,7 @@ function collectResults() {
 }
 
 function collectDefects() {
-    return Array.from(document.querySelectorAll('#defectBody tr')).map(function(tr){
+    return Array.from(document.querySelectorAll('##defectBody tr')).map(function(tr){
         return {
             defect_type_id  : parseInt(tr.querySelector('.dr-defect-id').value),
             defect_count    : parseInt(tr.querySelector('.dr-count').value) || 1,
