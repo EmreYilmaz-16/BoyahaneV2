@@ -6,9 +6,11 @@
 
 <cfif editMode>
     <cfquery name="getRec" datasource="boyahane">
-        SELECT qp.*, COALESCE(p.product_name,'') AS product_name
+        SELECT qp.*, COALESCE(p.product_name,'') AS product_name,
+               COALESCE(pc.product_cat,'') AS product_cat_name
         FROM qc_plans qp
         LEFT JOIN product p ON qp.product_id = p.product_id
+        LEFT JOIN product_cat pc ON qp.product_catid = pc.product_catid
         WHERE qp.qc_plan_id = <cfqueryparam value="#currentId#" cfsqltype="cf_sql_integer">
     </cfquery>
     <cfif NOT getRec.recordCount>
@@ -17,8 +19,8 @@
     <!--- Mevcut kalemler --->
     <cfquery name="getPlanItems" datasource="boyahane">
         SELECT qi.qc_plan_item_id, qi.qc_param_id, qi.is_required,
-               COALESCE(qi.min_override,'') AS min_override,
-               COALESCE(qi.max_override,'') AS max_override,
+               COALESCE(qi.min_override::text,'') AS min_override,
+               COALESCE(qi.max_override::text,'') AS max_override,
                qi.sort_order,
                qp.param_name, qp.param_code, qp.unit_name, qp.min_value, qp.max_value
         FROM qc_plan_items qi
@@ -28,9 +30,38 @@
     </cfquery>
 <cfelse>
     <cfset getRec = { qc_plan_id:0, plan_code:"", plan_name:"", control_type:1,
-                      product_id:"", product_name:"", sample_method:1,
-                      sample_value:"", is_active:true, detail:"" }>
+                      product_id:"", product_name:"", product_catid:"", product_cat_name:"",
+                      sample_method:1, sample_value:"", is_active:true, detail:"" }>
 </cfif>
+
+<cfquery name="getProducts" datasource="boyahane">
+    SELECT product_id, product_name, product_code
+    FROM product
+    WHERE product_status = true
+    ORDER BY product_name
+</cfquery>
+<cfset productsArr = []>
+<cfloop query="getProducts">
+    <cfset arrayAppend(productsArr, {
+        "product_id"   : val(product_id),
+        "product_name" : product_name ?: "",
+        "product_code" : product_code ?: ""
+    })>
+</cfloop>
+
+<!--- Ürün kategorileri --->
+<cfquery name="getProductCats" datasource="boyahane">
+    SELECT product_catid, product_cat
+    FROM product_cat
+    ORDER BY product_cat
+</cfquery>
+<cfset productCatsArr = []>
+<cfloop query="getProductCats">
+    <cfset arrayAppend(productCatsArr, {
+        "product_catid" : val(product_catid),
+        "product_cat"   : product_cat ?: ""
+    })>
+</cfloop>
 
 <!--- Tüm aktif parametreler --->
 <cfquery name="getAllParams" datasource="boyahane">
@@ -110,8 +141,14 @@
                     </select>
                 </div>
                 <div class="col-md-3">
+                    <label class="form-label">Ürün Kategorisi (isteğe bağlı)</label>
+                    <div id="productCatSelect"></div>
+                    <small class="text-muted">Seçilirse o kategorideki tüm ürünlere uygulanır</small>
+                </div>
+                <div class="col-md-3">
                     <label class="form-label">Ürün (isteğe bağlı)</label>
                     <div id="productSelect"></div>
+                    <small class="text-muted">Tek ürün seçmek için kullanın</small>
                 </div>
                 <div class="col-md-2">
                     <label class="form-label">Numune Yöntemi</label>
@@ -169,6 +206,8 @@
         </div>
 
         <div class="d-flex gap-2">
+            <input type="hidden" id="productCatIdHidden" name="product_catid" value="#isNumeric(getRec.product_catid) ? val(getRec.product_catid) : ''#">
+            <input type="hidden" id="productIdHidden" name="product_id" value="#isNumeric(getRec.product_id) ? val(getRec.product_id) : ''#">
             <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>#editMode ? 'Güncelle' : 'Kaydet'#</button>
             <a href="index.cfm?fuseaction=quality.list_qc_plans" class="btn btn-secondary">İptal</a>
         </div>
@@ -176,26 +215,38 @@
 </div>
 
 <script>
-var allParams  = #serializeJSON(allParamsArr)#;
-var planItems  = #serializeJSON(planItemsArr)#;
-var selectedProductId = #isNumeric(getRec.product_id) ? val(getRec.product_id) : 0#;
+var allParams          = #serializeJSON(allParamsArr)#;
+var planItems          = #serializeJSON(planItemsArr)#;
+var productCats        = #serializeJSON(productCatsArr)#;
+var products           = #serializeJSON(productsArr)#;
+var selectedProductCatId = #isNumeric(getRec.product_catid) ? val(getRec.product_catid) : 0#;
+var selectedProductId    = #isNumeric(getRec.product_id) ? val(getRec.product_id) : 0#;
 
 $(function(){
+    // Ürün Kategorisi seçici
+    new DevExpress.ui.dxSelectBox(document.getElementById('productCatSelect'), {
+        dataSource: productCats,
+        displayExpr: 'product_cat',
+        valueExpr: 'product_catid',
+        searchEnabled: true,
+        showClearButton: true,
+        placeholder: 'Tüm kategoriler için boş bırakın...',
+        value: selectedProductCatId > 0 ? selectedProductCatId : null,
+        onValueChanged: function(e) {
+            selectedProductCatId = e.value || 0;
+            document.getElementById('productCatIdHidden').value = selectedProductCatId;
+        }
+    });
+
     // Ürün seçici
     new DevExpress.ui.dxSelectBox(document.getElementById('productSelect'), {
-        dataSource: { store: { type: 'odata', url: '' }, loadMode: 'raw' },
+        dataSource: products,
         displayExpr: 'product_name',
         valueExpr: 'product_id',
         searchEnabled: true,
         showClearButton: true,
         placeholder: 'Tüm ürünler için boş bırakın...',
-        onInitialized: function(e) {
-            // Ajax ile ürünleri yükle
-            $.getJSON('index.cfm?fuseaction=product.list_product_json', function(data){
-                e.component.option('dataSource', data || []);
-                if (selectedProductId > 0) e.component.option('value', selectedProductId);
-            });
-        },
+        value: selectedProductId > 0 ? selectedProductId : null,
         onValueChanged: function(e) {
             selectedProductId = e.value || 0;
             document.getElementById('productIdHidden').value = selectedProductId;
@@ -256,7 +307,7 @@ function renderItemRow(item) {
 function removeRow(btn) { btn.closest('tr').remove(); }
 
 function collectItems() {
-    var rows = document.querySelectorAll('#itemsBody tr');
+    var rows = document.querySelectorAll('##itemsBody tr');
     var items = [];
     rows.forEach(function(tr){
         items.push({
@@ -291,5 +342,4 @@ document.getElementById('planForm').addEventListener('submit', function(e){
     });
 });
 </script>
-<input type="hidden" id="productIdHidden">
 </cfoutput>

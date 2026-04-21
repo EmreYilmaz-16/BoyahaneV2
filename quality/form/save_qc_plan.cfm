@@ -8,6 +8,7 @@
     <cfparam name="form.plan_code"     default="">
     <cfparam name="form.plan_name"     default="">
     <cfparam name="form.control_type"  default="1">
+    <cfparam name="form.product_catid" default="">
     <cfparam name="form.product_id"    default="">
     <cfparam name="form.sample_method" default="1">
     <cfparam name="form.sample_value"  default="">
@@ -25,6 +26,8 @@
     </cfif>
 
     <cfset ctType    = isNumeric(form.control_type)  ? val(form.control_type)  : 1>
+    <cfset productCatId = (len(trim(form.product_catid)) AND isNumeric(form.product_catid) AND val(form.product_catid) gt 0)
+                       ? val(form.product_catid) : javaCast("null","")>
     <cfset productId = (len(trim(form.product_id)) AND isNumeric(form.product_id) AND val(form.product_id) gt 0)
                        ? val(form.product_id) : javaCast("null","")>
     <cfset sampMeth  = isNumeric(form.sample_method) ? val(form.sample_method) : 1>
@@ -46,6 +49,7 @@
                 plan_code     = <cfqueryparam value="#planCode#"   cfsqltype="cf_sql_varchar">,
                 plan_name     = <cfqueryparam value="#planName#"   cfsqltype="cf_sql_varchar">,
                 control_type  = <cfqueryparam value="#ctType#"     cfsqltype="cf_sql_smallint">,
+                product_catid = <cfqueryparam value="#isNull(productCatId)?'':productCatId#" cfsqltype="cf_sql_integer" null="#isNull(productCatId)#">,
                 product_id    = <cfqueryparam value="#isNull(productId)?'':productId#" cfsqltype="cf_sql_integer" null="#isNull(productId)#">,
                 sample_method = <cfqueryparam value="#sampMeth#"   cfsqltype="cf_sql_smallint">,
                 sample_value  = <cfqueryparam value="#isNull(sampVal)?'':sampVal#" cfsqltype="cf_sql_numeric" null="#isNull(sampVal)#">,
@@ -61,11 +65,12 @@
     <cfelse>
         <!--- Yeni plan --->
         <cfquery name="insplan" datasource="boyahane">
-            INSERT INTO qc_plans (plan_code,plan_name,control_type,product_id,sample_method,sample_value,is_active,detail,record_date,record_ip)
+            INSERT INTO qc_plans (plan_code,plan_name,control_type,product_catid,product_id,sample_method,sample_value,is_active,detail,record_date,record_ip)
             VALUES (
                 <cfqueryparam value="#planCode#"   cfsqltype="cf_sql_varchar">,
                 <cfqueryparam value="#planName#"   cfsqltype="cf_sql_varchar">,
                 <cfqueryparam value="#ctType#"     cfsqltype="cf_sql_smallint">,
+                <cfqueryparam value="#isNull(productCatId)?'':productCatId#" cfsqltype="cf_sql_integer" null="#isNull(productCatId)#">,
                 <cfqueryparam value="#isNull(productId)?'':productId#" cfsqltype="cf_sql_integer" null="#isNull(productId)#">,
                 <cfqueryparam value="#sampMeth#"   cfsqltype="cf_sql_smallint">,
                 <cfqueryparam value="#isNull(sampVal)?'':sampVal#" cfsqltype="cf_sql_numeric" null="#isNull(sampVal)#">,
@@ -109,3 +114,4 @@
     <cfcatch type="any"><cfset response.message = cfcatch.message></cfcatch>
 </cftry>
 <cfoutput>#serializeJSON(response)#</cfoutput>
+<cfabort>

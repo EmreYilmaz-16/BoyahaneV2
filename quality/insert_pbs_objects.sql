@@ -44,7 +44,7 @@ BEGIN
         ('quality.delete_qc_inspection', '/quality/form/delete_qc_inspection.cfm',    'Muayene Sil',               v_module_id, 125, true, false),
         ('quality.view_qc_inspection',   '/quality/display/view_qc_inspection.cfm',   'Muayene Detayı',            v_module_id, 126, true, false),
         -- AJAX Endpoint (menüde görünmez)
-        ('quality.get_plan_params',      '/quality/display/get_plan_params.cfm',      'KK Plan Parametreleri JSON', v_module_id, 127, true, false)
+        ('quality.get_plan_params',      '/quality/form/get_plan_params.cfm',         'KK Plan Parametreleri JSON', v_module_id, 127, true, false)
     ON CONFLICT (full_fuseaction) DO NOTHING;
 END $$;
 

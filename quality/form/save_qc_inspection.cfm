@@ -9,6 +9,7 @@
     <cfparam name="form.inspection_type"  default="1">
     <cfparam name="form.ship_id"          default="0">
     <cfparam name="form.p_order_id"       default="0">
+    <cfparam name="form.product_id"        default="">
     <cfparam name="form.qc_plan_id"       default="">
     <cfparam name="form.lot_no"           default="">
     <cfparam name="form.quantity"         default="0">
@@ -25,6 +26,7 @@
     <cfset shipId   = (len(trim(form.ship_id))    AND isNumeric(form.ship_id)    AND val(form.ship_id)    gt 0) ? val(form.ship_id)    : javaCast("null","")>
     <cfset pOrdId   = (len(trim(form.p_order_id)) AND isNumeric(form.p_order_id) AND val(form.p_order_id) gt 0) ? val(form.p_order_id) : javaCast("null","")>
     <cfset planId   = (len(trim(form.qc_plan_id)) AND isNumeric(form.qc_plan_id) AND val(form.qc_plan_id) gt 0) ? val(form.qc_plan_id) : javaCast("null","")>
+    <cfset productId = (len(trim(form.product_id)) AND isNumeric(form.product_id) AND val(form.product_id) gt 0) ? val(form.product_id) : javaCast("null","")>
     <cfset lotNo    = trim(form.lot_no)>
     <cfset qty      = isNumeric(form.quantity)        ? val(form.quantity)        : 0>
     <cfset sampleQty= isNumeric(form.sample_quantity) ? val(form.sample_quantity) : 0>
@@ -50,6 +52,7 @@
                 inspection_type = <cfqueryparam value="#inspType#"   cfsqltype="cf_sql_smallint">,
                 ship_id         = <cfqueryparam value="#isNull(shipId)?'':shipId#"   cfsqltype="cf_sql_integer" null="#isNull(shipId)#">,
                 p_order_id      = <cfqueryparam value="#isNull(pOrdId)?'':pOrdId#"  cfsqltype="cf_sql_integer" null="#isNull(pOrdId)#">,
+                product_id      = <cfqueryparam value="#isNull(productId)?'':productId#" cfsqltype="cf_sql_integer" null="#isNull(productId)#">,
                 qc_plan_id      = <cfqueryparam value="#isNull(planId)?'':planId#"  cfsqltype="cf_sql_integer" null="#isNull(planId)#">,
                 lot_no          = <cfqueryparam value="#lotNo#"       cfsqltype="cf_sql_varchar"  null="#NOT len(lotNo)#">,
                 quantity        = <cfqueryparam value="#qty#"         cfsqltype="cf_sql_numeric">,
@@ -72,7 +75,7 @@
         <!--- Yeni kayıt --->
         <cfquery name="insInsp" datasource="boyahane">
             INSERT INTO qc_inspections (
-                inspection_no, inspection_type, ship_id, p_order_id, qc_plan_id,
+                inspection_no, inspection_type, ship_id, p_order_id, product_id, qc_plan_id,
                 lot_no, quantity, sample_quantity, inspection_date,
                 inspector_name, result, notes, is_active,
                 record_date, record_ip
@@ -81,6 +84,7 @@
                 <cfqueryparam value="#inspType#"   cfsqltype="cf_sql_smallint">,
                 <cfqueryparam value="#isNull(shipId)?'':shipId#"   cfsqltype="cf_sql_integer" null="#isNull(shipId)#">,
                 <cfqueryparam value="#isNull(pOrdId)?'':pOrdId#"  cfsqltype="cf_sql_integer" null="#isNull(pOrdId)#">,
+                <cfqueryparam value="#isNull(productId)?'':productId#" cfsqltype="cf_sql_integer" null="#isNull(productId)#">,
                 <cfqueryparam value="#isNull(planId)?'':planId#"  cfsqltype="cf_sql_integer" null="#isNull(planId)#">,
                 <cfqueryparam value="#lotNo#"       cfsqltype="cf_sql_varchar"  null="#NOT len(lotNo)#">,
                 <cfqueryparam value="#qty#"         cfsqltype="cf_sql_numeric">,
@@ -100,6 +104,45 @@
     <!--- Ölçüm Sonuçları --->
     <cfset resultsArr = []>
     <cftry><cfset resultsArr = deserializeJSON(form.results)><cfcatch><cfset resultsArr = []></cfcatch></cftry>
+
+    <!--- Zorunlu parametre kontrolü (plan seçilmişse) --->
+    <cfif NOT isNull(planId)>
+        <cfquery name="qRequiredParams" datasource="boyahane">
+            SELECT pi.qc_param_id, p.param_name, p.param_code, p.param_type
+            FROM qc_plan_items pi
+            JOIN qc_parameters p ON pi.qc_param_id = p.qc_param_id
+            WHERE pi.qc_plan_id = <cfqueryparam value="#planId#" cfsqltype="cf_sql_integer">
+              AND pi.is_required = true
+              AND p.is_active = true
+        </cfquery>
+        <cfset missingList = []>
+        <cfloop query="qRequiredParams">
+            <!--- Bu parametre sonuçlar içinde dolu gelmiş mi? --->
+            <cfset found = false>
+            <cfif isArray(resultsArr)>
+                <cfloop array="#resultsArr#" index="r">
+                    <cfif isNumeric(r.qc_param_id ?: '') AND val(r.qc_param_id) EQ val(qRequiredParams.qc_param_id)>
+                        <cfset isNumericParam = (val(qRequiredParams.param_type) EQ 1)>
+                        <cfif isNumericParam>
+                            <cfset filled = (structKeyExists(r,'measured_value') AND len(trim(r.measured_value ?: '')) AND isNumeric(r.measured_value))>
+                        <cfelse>
+                            <cfset filled = (structKeyExists(r,'text_result') AND len(trim(r.text_result ?: '')))>
+                        </cfif>
+                        <cfif filled><cfset found = true></cfif>
+                        <cfbreak>
+                    </cfif>
+                </cfloop>
+            </cfif>
+            <cfif NOT found>
+                <cfset arrayAppend(missingList, param_code & " - " & param_name)>
+            </cfif>
+        </cfloop>
+        <cfif arrayLen(missingList) GT 0>
+            <cfset response.message = "Zorunlu parametreler eksik: " & arrayToList(missingList, ", ")>
+            <cfoutput>#serializeJSON(response)#</cfoutput><cfabort>
+        </cfif>
+    </cfif>
+
     <cfif isArray(resultsArr)>
         <cfloop array="#resultsArr#" index="r">
             <cfset rParamId = isNumeric(r.qc_param_id ?: '') ? val(r.qc_param_id) : 0>
@@ -151,3 +194,4 @@
     <cfcatch type="any"><cfset response.message = cfcatch.message></cfcatch>
 </cftry>
 <cfoutput>#serializeJSON(response)#</cfoutput>
+<cfabort>

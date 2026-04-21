@@ -20,3 +20,4 @@
     <cfcatch type="any"><cfset response.message = cfcatch.message></cfcatch>
 </cftry>
 <cfoutput>#serializeJSON(response)#</cfoutput>
+<cfabort>

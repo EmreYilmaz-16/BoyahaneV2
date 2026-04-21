@@ -37,9 +37,11 @@
     }>
 </cfif>
 
-<!--- KK Planları (filtrelenmiş) --->
+<!--- KK Planları --->
 <cfquery name="getPlans" datasource="boyahane">
-    SELECT qc_plan_id, plan_code, plan_name, control_type
+    SELECT qc_plan_id, plan_code, plan_name, control_type,
+           COALESCE(product_id, 0)   AS product_id,
+           COALESCE(product_catid,0) AS product_catid
     FROM qc_plans WHERE is_active = true ORDER BY plan_name
 </cfquery>
 <cfset plansArr = []>
@@ -49,6 +51,8 @@
         "plan_code"    : plan_code ?: "",
         "plan_name"    : plan_name ?: "",
         "control_type" : val(control_type),
+        "product_id"   : val(product_id),
+        "product_catid": val(product_catid),
         "display"      : plan_code & " - " & plan_name
     })>
 </cfloop>
@@ -73,12 +77,16 @@
 
 <!--- Üretim Emirleri --->
 <cfquery name="getOrders" datasource="boyahane">
-    SELECT po.p_order_id, po.p_order_no, po.status, po.lot_no,
+    SELECT po.p_order_id, po.p_order_no, po.status, po.lot_no, po.quantity,
            COALESCE(ci.color_code,'') AS color_code,
            COALESCE(ci.color_name,'') AS color_name,
-           COALESCE(c.nickname,c.fullname,'') AS company_name
+           COALESCE(c.nickname,c.fullname,'') AS company_name,
+           COALESCE(s.product_id, 0)         AS product_id,
+           COALESCE(p.product_name,'')        AS product_name,
+           COALESCE(p.product_catid, 0)       AS product_catid
     FROM production_orders po
     LEFT JOIN stocks       s   ON po.stock_id   = s.stock_id
+    LEFT JOIN product      p   ON s.product_id  = p.product_id
     LEFT JOIN color_info   ci  ON po.stock_id   = ci.stock_id
     LEFT JOIN company      c   ON ci.company_id = c.company_id
     WHERE po.status IN (1,2,5)
@@ -87,13 +95,18 @@
 <cfset ordersArr2 = []>
 <cfloop query="getOrders">
     <cfset arrayAppend(ordersArr2, {
-        "p_order_id"  : val(p_order_id),
-        "p_order_no"  : p_order_no  ?: "",
-        "status"      : val(status),
-        "lot_no"      : lot_no      ?: "",
-        "color_code"  : color_code  ?: "",
-        "company_name": company_name ?: "",
-        "display"     : p_order_no & " — " & color_code & (len(company_name) ? " / " & company_name : "")
+        "p_order_id"   : val(p_order_id),
+        "p_order_no"   : p_order_no   ?: "",
+        "status"       : val(status),
+        "lot_no"       : lot_no       ?: "",
+        "color_code"   : color_code   ?: "",
+        "color_name"   : color_name   ?: "",
+        "company_name" : company_name  ?: "",
+        "product_id"   : val(product_id),
+        "product_name" : product_name  ?: "",
+        "product_catid": val(product_catid),
+        "quantity"     : isNumeric(quantity) ? val(quantity) : 0,
+        "display"      : p_order_no & " — " & color_code & (len(company_name) ? " / " & company_name : "")
     })>
 </cfloop>
 
@@ -189,16 +202,30 @@
         <div class="card-body">
             <div class="row g-3">
                 <!--- Giriş Kontrol → İrsaliye --->
-                <div class="col-md-6" id="shipRefDiv">
-                    <label class="form-label">İrsaliye (Alış) — Giriş Kontrol için</label>
+                <div class="col-md-4" id="shipRefDiv">
+                    <label class="form-label">İrsaliye (Alış)</label>
                     <div id="shipSelectBox"></div>
                     <input type="hidden" id="ship_id" name="ship_id" value="#val(getRec.ship_id)#">
                 </div>
+                <!--- Giriş Kontrol → İrsaliye Ürünü --->
+                <div class="col-md-4" id="shipProductDiv" style="display:none">
+                    <label class="form-label">İrsaliyedeki Ürün <span class="text-danger">*</span></label>
+                    <div id="shipProductSelectBox"></div>
+                    <input type="hidden" id="insp_product_id" name="product_id" value="#isNumeric(getRec.product_id) ? val(getRec.product_id) : ''#">
+                    <input type="hidden" id="insp_product_catid" value="">
+                </div>
                 <!--- Operasyon / Final → Üretim Emri --->
-                <div class="col-md-6" id="orderRefDiv">
-                    <label class="form-label">Üretim Emri — Operasyon/Final Kontrol için</label>
+                <div class="col-md-4" id="orderRefDiv">
+                    <label class="form-label">Üretim Emri — Operasyon/Final için</label>
                     <div id="orderSelectBox"></div>
                     <input type="hidden" id="p_order_id" name="p_order_id" value="#val(getRec.p_order_id)#">
+                </div>
+                <!--- Üretim Emri bilgi kartı --->
+                <div class="col-12" id="orderInfoCard" style="display:none">
+                    <div class="alert alert-info py-2 mb-0 d-flex align-items-center gap-2">
+                        <i class="fas fa-info-circle"></i>
+                        <div id="orderInfoText"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -249,8 +276,8 @@
     <div class="card mb-3">
         <div class="card-header d-flex justify-content-between align-items-center fw-bold">
             <span><i class="fas fa-ruler me-1"></i>Ölçüm Sonuçları</span>
-            <button type="button" class="btn btn-sm btn-success" onclick="addMeasRow()">
-                <i class="fas fa-plus me-1"></i>Satır Ekle
+            <button type="button" class="btn btn-sm btn-success" onclick="openParamPickerModal()">
+                <i class="fas fa-plus me-1"></i>Parametre Ekle
             </button>
         </div>
         <div class="card-body p-0">
@@ -274,7 +301,7 @@
     <div class="card mb-3">
         <div class="card-header d-flex justify-content-between align-items-center fw-bold">
             <span><i class="fas fa-bug me-1"></i>Tespit Edilen Hatalar</span>
-            <button type="button" class="btn btn-sm btn-warning" onclick="addDefectRow()">
+            <button type="button" class="btn btn-sm btn-warning" onclick="openDefectPickerModal()">
                 <i class="fas fa-plus me-1"></i>Hata Ekle
             </button>
         </div>
@@ -303,6 +330,78 @@
 </form>
 </div>
 
+<!--- Parametre Seçim Modalı --->
+<div class="modal fade" id="paramPickerModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-ruler me-2"></i>Ölçüm Parametresi Seç</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="p-3 border-bottom">
+                    <input type="text" id="paramSearchInput" class="form-control"
+                           placeholder="Ara: kod, ad veya birim..." oninput="filterParamList()">
+                </div>
+                <div style="max-height:420px;overflow-y:auto">
+                    <table class="table table-hover table-sm mb-0" id="paramPickerTable">
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                <th>Kod</th>
+                                <th>Parametre Adı</th>
+                                <th>Tip</th>
+                                <th>Birim</th>
+                                <th>Min / Max</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="paramPickerBody"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <small class="text-muted me-auto" id="paramPickerCount"></small>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!--- Hata Tipi Seçim Modalı --->
+<div class="modal fade" id="defectPickerModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-bug me-2"></i>Hata Tipi Seç</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="p-3 border-bottom">
+                    <input type="text" id="defectSearchInput" class="form-control"
+                           placeholder="Ara: kod veya ad..." oninput="filterDefectList()">
+                </div>
+                <div style="max-height:420px;overflow-y:auto">
+                    <table class="table table-hover table-sm mb-0">
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                <th>Kod</th>
+                                <th>Hata Adı</th>
+                                <th>Önem</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="defectPickerBody"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <small class="text-muted me-auto" id="defectPickerCount"></small>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 var allParams2    = #serializeJSON(allParamsArr2)#;
 var defectTypes   = #serializeJSON(defectTypesArr)#;
@@ -313,7 +412,16 @@ var currentShipId  = #val(getRec.ship_id)#;
 var currentOrderId = #val(getRec.p_order_id)#;
 var currentPlanId  = #isNumeric(getRec.qc_plan_id) ? val(getRec.qc_plan_id) : 0#;
 
+var shipProductSB  = null; // irsaliye ürünleri selectbox instance
+var planSB         = null; // plan selectbox instance
+
 $(function(){
+    // Modal'ları body'e taşı — content-wrapper stacking context'inden kaç
+    var pm = document.getElementById('paramPickerModal');
+    if (pm) document.body.appendChild(pm);
+    var dm = document.getElementById('defectPickerModal');
+    if (dm) document.body.appendChild(dm);
+
     // İrsaliye SelectBox
     new DevExpress.ui.dxSelectBox(document.getElementById('shipSelectBox'), {
         dataSource: allShips,
@@ -323,7 +431,17 @@ $(function(){
         showClearButton: true,
         placeholder: 'İrsaliye seçin...',
         value: currentShipId > 0 ? currentShipId : null,
-        onValueChanged: function(e){ document.getElementById('ship_id').value = e.value || 0; }
+        onValueChanged: function(e){
+            document.getElementById('ship_id').value = e.value || 0;
+            if (e.value) {
+                loadShipProducts(e.value);
+            } else {
+                document.getElementById('shipProductDiv').style.display = 'none';
+                document.getElementById('insp_product_id').value = '';
+                document.getElementById('insp_product_catid').value = '';
+                resetPlanFilter();
+            }
+        }
     });
 
     // Üretim Emri SelectBox
@@ -335,11 +453,21 @@ $(function(){
         showClearButton: true,
         placeholder: 'Üretim emri seçin...',
         value: currentOrderId > 0 ? currentOrderId : null,
-        onValueChanged: function(e){ document.getElementById('p_order_id').value = e.value || 0; }
+        onValueChanged: function(e){
+            document.getElementById('p_order_id').value = e.value || 0;
+            if (e.value) {
+                showOrderInfo(e.value);
+            } else {
+                document.getElementById('orderInfoCard').style.display = 'none';
+                document.getElementById('insp_product_id').value = '';
+                document.getElementById('insp_product_catid').value = '';
+                resetPlanFilter();
+            }
+        }
     });
 
     // Plan SelectBox
-    new DevExpress.ui.dxSelectBox(document.getElementById('planSelectBox'), {
+    planSB = new DevExpress.ui.dxSelectBox(document.getElementById('planSelectBox'), {
         dataSource: allPlans,
         displayExpr: 'display',
         valueExpr: 'qc_plan_id',
@@ -354,79 +482,248 @@ $(function(){
     });
 
     onTypeChange();
+    renderParamPickerBody(allParams2);
+    renderDefectPickerBody(defectTypes);
 });
 
+/* =================== Kontrol Tipi =================== */
 function onTypeChange() {
     var t = parseInt(document.getElementById('inspectionType').value);
-    document.getElementById('shipRefDiv').style.display  = t === 1 ? '' : 'none';
-    document.getElementById('orderRefDiv').style.display = (t === 2 || t === 3) ? '' : 'none';
+    document.getElementById('shipRefDiv').style.display      = t === 1 ? '' : 'none';
+    document.getElementById('shipProductDiv').style.display  = 'none';
+    document.getElementById('orderRefDiv').style.display     = (t === 2 || t === 3) ? '' : 'none';
+    document.getElementById('orderInfoCard').style.display   = 'none';
+    resetPlanFilter();
 }
 
+/* =================== İrsaliye Ürünleri =================== */
+function loadShipProducts(shipId) {
+    $.getJSON('index.cfm?fuseaction=quality.get_ship_products&ship_id=' + shipId, function(data){
+        if (!data || !data.success) return;
+        document.getElementById('shipProductDiv').style.display = '';
+        // Önceki instance'ı temizle
+        if (shipProductSB) {
+            try { shipProductSB.dispose(); } catch(ex) {}
+            document.getElementById('shipProductSelectBox').innerHTML = '';
+        }
+        shipProductSB = new DevExpress.ui.dxSelectBox(document.getElementById('shipProductSelectBox'), {
+            dataSource: data.products,
+            displayExpr: 'display',
+            valueExpr: 'product_id',
+            searchEnabled: true,
+            showClearButton: true,
+            placeholder: 'Ürün seçin...',
+            onValueChanged: function(e){
+                var pid = e.value || 0;
+                document.getElementById('insp_product_id').value = pid;
+                if (pid) {
+                    var found = data.products.find(function(p){ return p.product_id == pid; });
+                    var catId = found ? (found.product_catid || 0) : 0;
+                    document.getElementById('insp_product_catid').value = catId;
+                    // Lot No otomatik doldur
+                    if (found && found.lot_no) {
+                        var lotInput = document.querySelector('[name="lot_no"]');
+                        if (lotInput && !lotInput.value) lotInput.value = found.lot_no;
+                    }
+                    filterPlansByProduct(pid, catId);
+                } else {
+                    document.getElementById('insp_product_catid').value = '';
+                    resetPlanFilter();
+                }
+            }
+        });
+    });
+}
+
+/* =================== Üretim Emri Bilgi Kartı =================== */
+function showOrderInfo(orderId) {
+    var ord = allOrders2.find(function(o){ return o.p_order_id == orderId; });
+    if (!ord) return;
+
+    var html = '<b>' + ord.p_order_no + '</b>';
+    if (ord.product_name) html += ' &nbsp;|&nbsp; <i class="fas fa-box fa-xs"></i> ' + ord.product_name;
+    if (ord.color_code)   html += ' &nbsp;|&nbsp; ' + ord.color_code + (ord.color_name ? ' ' + ord.color_name : '');
+    if (ord.company_name) html += ' &nbsp;|&nbsp; <i class="fas fa-building fa-xs"></i> ' + ord.company_name;
+    if (ord.lot_no)       html += ' &nbsp;|&nbsp; Lot: <b>' + ord.lot_no + '</b>';
+    if (ord.quantity)     html += ' &nbsp;|&nbsp; Miktar: ' + ord.quantity;
+
+    document.getElementById('orderInfoText').innerHTML = html;
+    document.getElementById('orderInfoCard').style.display = '';
+
+    // Lot No otomatik doldur
+    if (ord.lot_no) {
+        var lotInput = document.querySelector('[name="lot_no"]');
+        if (lotInput && !lotInput.value) lotInput.value = ord.lot_no;
+    }
+
+    // product_id ve plan filtrele
+    document.getElementById('insp_product_id').value    = ord.product_id || '';
+    document.getElementById('insp_product_catid').value = ord.product_catid || 0;
+    if (ord.product_id) filterPlansByProduct(ord.product_id, ord.product_catid || 0);
+    else resetPlanFilter();
+}
+
+/* =================== Plan Filtreleme =================== */
+function filterPlansByProduct(productId, productCatId) {
+    var inspType = parseInt(document.getElementById('inspectionType').value);
+    var filtered = allPlans.filter(function(p){
+        // Kontrol tipi eşleşmesi (0 = tüm tipler)
+        var typeMatch = !p.control_type || p.control_type === inspType;
+        // Ürün / Kategori eşleşmesi: plan ürün kısıtı yoksa herkese açık
+        var noRestrict = (!p.product_id && !p.product_catid);
+        var prodMatch  = (p.product_id  && p.product_id  == productId);
+        var catMatch   = (p.product_catid && productCatId && p.product_catid == productCatId);
+        return typeMatch && (noRestrict || prodMatch || catMatch);
+    });
+    if (planSB) planSB.option('dataSource', filtered);
+}
+
+function resetPlanFilter() {
+    if (planSB) planSB.option('dataSource', allPlans);
+}
+
+/* =================== Plan Parametreleri Yükle =================== */
 function loadPlanParams(planId) {
     $.getJSON('index.cfm?fuseaction=quality.get_plan_params&qc_plan_id=' + planId, function(data){
-        if (!data || !data.params) return;
-        // Tabloya ekle (mevcut satırları temizlemeden üstüne ekle istemiyoruz)
-        if (!confirm('Plan parametrelerini tabloya otomatik ekleyelim mi? (Mevcut satırlar silinecek)')) return;
+        if (!data || !data.success || !data.params || data.params.length === 0) return;
+        var existingRows = document.querySelectorAll('##measBody tr').length;
+        if (existingRows > 0) {
+            if (!confirm('Plan parametrelerini yüklemek için mevcut ' + existingRows + ' satır silinecek. Devam edilsin mi?')) return;
+        }
         document.getElementById('measBody').innerHTML = '';
         data.params.forEach(function(p){ addMeasRowWithParam(p); });
     });
 }
 
-function addMeasRow() {
-    var paramName = prompt(
-        'Parametre seçin (numara girin):\n' +
-        allParams2.map(function(p,i){ return (i+1)+'. '+p.param_code+' - '+p.param_name; }).join('\n')
-    );
-    if (!paramName) return;
-    var idx = parseInt(paramName) - 1;
-    if (isNaN(idx) || idx < 0 || idx >= allParams2.length) { alert('Geçersiz seçim'); return; }
-    addMeasRowWithParam(allParams2[idx]);
+/* =================== Parametre Picker Modal =================== */
+function renderParamPickerBody(list) {
+    var severityMap = {1:'Sayısal',2:'Metin',3:'Geçti/Kaldı'};
+    var html = '';
+    list.forEach(function(p){
+        html += '<tr>' +
+            '<td><span class="badge bg-secondary">' + (p.param_code||'') + '</span></td>' +
+            '<td>' + (p.param_name||'') + '</td>' +
+            '<td><small>' + (severityMap[p.param_type]||'') + '</small></td>' +
+            '<td>' + (p.unit_name||'') + '</td>' +
+            '<td><small>' +
+                (p.min_value !== '' && p.min_value !== null ? 'Min:' + p.min_value : '') +
+                (p.max_value !== '' && p.max_value !== null ? ' Max:' + p.max_value : '') +
+            '</small></td>' +
+            '<td><button type="button" class="btn btn-xs btn-primary btn-sm py-0 px-2" ' +
+                'onclick="pickParam(' + p.qc_param_id + ')"><i class="fas fa-plus"></i></button></td>' +
+            '</tr>';
+    });
+    document.getElementById('paramPickerBody').innerHTML = html;
+    document.getElementById('paramPickerCount').textContent = list.length + ' parametre';
 }
 
-function addMeasRowWithParam(p) {
-    var isNumType = p.param_type === 1;
-    var tr = document.createElement('tr');
-    tr.innerHTML =
-        '<td><span class="fw-semibold">' + (p.param_code||'') + '</span> — ' + (p.param_name||'') +
-        (p.unit_name ? ' <small class="text-muted">('+p.unit_name+')</small>' : '') +
-        '<br><small class="text-muted">Hedef: ' +
-        (p.min_value !== '' && p.min_value !== null ? 'Min:'+p.min_value : '') +
-        (p.max_value !== '' && p.max_value !== null ? ' Max:'+p.max_value : '') +
-        '</small>' +
-        '<input type="hidden" class="mr-param-id" value="'+p.qc_param_id+'"></td>' +
-        '<td><input type="number" step="any" class="form-control form-control-sm mr-measured" ' +
-        (isNumType ? '' : 'disabled') + ' placeholder="' + (isNumType ? '0.00' : '—') + '"></td>' +
-        '<td><input type="text" class="form-control form-control-sm mr-text" ' +
-        (!isNumType ? '' : 'disabled') + ' placeholder="' + (!isNumType ? 'Sonuç...' : '—') + '" maxlength="500"></td>' +
-        '<td><select class="form-select form-select-sm mr-pass">' +
-            '<option value="true">✅ Geçti</option>' +
-            '<option value="false">❌ Kaldı</option>' +
-        '</select></td>' +
-        '<td><input type="text" class="form-control form-control-sm mr-notes" maxlength="500" placeholder="Not..."></td>' +
-        '<td><button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest(\'tr\').remove()"><i class="fas fa-times"></i></button></td>';
-    document.getElementById('measBody').appendChild(tr);
+function filterParamList() {
+    var q = document.getElementById('paramSearchInput').value.toLowerCase();
+    var filtered = allParams2.filter(function(p){
+        return !q || (p.param_code||'').toLowerCase().includes(q) ||
+                     (p.param_name||'').toLowerCase().includes(q) ||
+                     (p.unit_name||'').toLowerCase().includes(q);
+    });
+    renderParamPickerBody(filtered);
 }
 
-function addDefectRow() {
-    var pick = prompt(
-        'Hata tipi seçin (numara):\n' +
-        defectTypes.map(function(d,i){ return (i+1)+'. '+d.defect_code+' - '+d.defect_name; }).join('\n')
-    );
-    if (!pick) return;
-    var idx = parseInt(pick) - 1;
-    if (isNaN(idx) || idx < 0 || idx >= defectTypes.length) { alert('Geçersiz seçim'); return; }
-    var d = defectTypes[idx];
+function openParamPickerModal() {
+    document.getElementById('paramSearchInput').value = '';
+    renderParamPickerBody(allParams2);
+    new bootstrap.Modal(document.getElementById('paramPickerModal')).show();
+}
+
+function pickParam(paramId) {
+    var p = allParams2.find(function(x){ return x.qc_param_id == paramId; });
+    if (!p) return;
+    addMeasRowWithParam(p);
+    bootstrap.Modal.getInstance(document.getElementById('paramPickerModal')).hide();
+}
+
+/* =================== Hata Picker Modal =================== */
+var severityLabels = {1:'<span class="badge bg-info text-dark">Düşük</span>',
+                      2:'<span class="badge bg-warning text-dark">Orta</span>',
+                      3:'<span class="badge bg-danger">Yüksek</span>'};
+
+function renderDefectPickerBody(list) {
+    var html = '';
+    list.forEach(function(d){
+        html += '<tr>' +
+            '<td><span class="badge bg-secondary">' + (d.defect_code||'') + '</span></td>' +
+            '<td>' + (d.defect_name||'') + '</td>' +
+            '<td>' + (severityLabels[d.severity]||'') + '</td>' +
+            '<td><button type="button" class="btn btn-xs btn-warning btn-sm py-0 px-2" ' +
+                'onclick="pickDefect(' + d.defect_type_id + ')"><i class="fas fa-plus"></i></button></td>' +
+            '</tr>';
+    });
+    document.getElementById('defectPickerBody').innerHTML = html;
+    document.getElementById('defectPickerCount').textContent = list.length + ' hata tipi';
+}
+
+function filterDefectList() {
+    var q = document.getElementById('defectSearchInput').value.toLowerCase();
+    var filtered = defectTypes.filter(function(d){
+        return !q || (d.defect_code||'').toLowerCase().includes(q) ||
+                     (d.defect_name||'').toLowerCase().includes(q);
+    });
+    renderDefectPickerBody(filtered);
+}
+
+function openDefectPickerModal() {
+    document.getElementById('defectSearchInput').value = '';
+    renderDefectPickerBody(defectTypes);
+    new bootstrap.Modal(document.getElementById('defectPickerModal')).show();
+}
+
+function pickDefect(defectTypeId) {
+    var d = defectTypes.find(function(x){ return x.defect_type_id == defectTypeId; });
+    if (!d) return;
     var tr = document.createElement('tr');
     tr.innerHTML =
-        '<td><span class="fw-semibold">' + d.defect_code + '</span> — ' + d.defect_name +
+        '<td><span class="fw-semibold">' + d.defect_code + '</span> \u2014 ' + d.defect_name +
         '<input type="hidden" class="dr-defect-id" value="'+d.defect_type_id+'"></td>' +
         '<td><input type="number" class="form-control form-control-sm dr-count" value="1" min="1"></td>' +
         '<td><input type="text" class="form-control form-control-sm dr-location" maxlength="200" placeholder="Konum..."></td>' +
         '<td><input type="text" class="form-control form-control-sm dr-notes" maxlength="500" placeholder="Not..."></td>' +
         '<td><button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest(\'tr\').remove()"><i class="fas fa-times"></i></button></td>';
     document.getElementById('defectBody').appendChild(tr);
+    bootstrap.Modal.getInstance(document.getElementById('defectPickerModal')).hide();
 }
 
+/* =================== Ölçüm Satırı =================== */
+function addMeasRow() { openParamPickerModal(); }
+
+function addMeasRowWithParam(p) {
+    var isNumType  = p.param_type === 1;
+    var isRequired = (p.is_required === true || p.is_required === 'true');
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+        '<td><span class="fw-semibold">' + (p.param_code||'') + '</span> \u2014 ' + (p.param_name||'') +
+        (p.unit_name ? ' <small class="text-muted">('+p.unit_name+')</small>' : '') +
+        (isRequired ? ' <span class="text-danger fw-bold" title="Zorunlu alan">*</span>' : '') +
+        '<br><small class="text-muted">' +
+        (p.min_value !== '' && p.min_value !== null ? 'Min:'+p.min_value : '') +
+        (p.max_value !== '' && p.max_value !== null ? ' Max:'+p.max_value : '') +
+        '</small>' +
+        '<input type="hidden" class="mr-param-id"    value="'+p.qc_param_id+'">' +
+        '<input type="hidden" class="mr-is-required" value="'+(isRequired?'true':'false')+'"></td>' +
+        '<td><input type="number" step="any" class="form-control form-control-sm mr-measured" ' +
+        (isNumType ? '' : 'disabled') + ' placeholder="' + (isNumType ? '0.00' : '\u2014') + '"></td>' +
+        '<td><input type="text" class="form-control form-control-sm mr-text" ' +
+        (!isNumType ? '' : 'disabled') + ' placeholder="' + (!isNumType ? 'Sonu\u00e7...' : '\u2014') + '" maxlength="500"></td>' +
+        '<td><select class="form-select form-select-sm mr-pass">' +
+            '<option value="true">\u2705 Ge\u00e7ti</option>' +
+            '<option value="false">\u274c Kald\u0131</option>' +
+        '</select></td>' +
+        '<td><input type="text" class="form-control form-control-sm mr-notes" maxlength="500" placeholder="Not..."></td>' +
+        '<td><button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest(\'tr\').remove()"><i class="fas fa-times"></i></button></td>';
+    document.getElementById('measBody').appendChild(tr);
+}
+
+/* =================== Hata Satırı (eski prompt — artık modal) =================== */
+function addDefectRow() { openDefectPickerModal(); }
+
+/* =================== Collect =================== */
 function collectResults() {
     return Array.from(document.querySelectorAll('##measBody tr')).map(function(tr){
         return {
@@ -450,8 +747,34 @@ function collectDefects() {
     });
 }
 
+/* =================== Form Submit =================== */
 document.getElementById('inspForm').addEventListener('submit', function(e){
     e.preventDefault();
+
+    // Zorunlu parametre validation
+    var missingParams = [];
+    document.querySelectorAll('##measBody tr').forEach(function(tr){
+        var isRequired = tr.querySelector('.mr-is-required') && tr.querySelector('.mr-is-required').value === 'true';
+        if (!isRequired) return;
+        var isNumType = !tr.querySelector('.mr-measured').disabled;
+        var valNum  = tr.querySelector('.mr-measured').value.trim();
+        var valText = tr.querySelector('.mr-text').value.trim();
+        var filled  = isNumType ? valNum !== '' : valText !== '';
+        if (!filled) {
+            var paramName = tr.querySelector('td:first-child').textContent.trim().split('\n')[0].trim();
+            missingParams.push(paramName);
+            var inp = isNumType ? tr.querySelector('.mr-measured') : tr.querySelector('.mr-text');
+            inp.classList.add('is-invalid');
+        } else {
+            var inp = isNumType ? tr.querySelector('.mr-measured') : tr.querySelector('.mr-text');
+            inp.classList.remove('is-invalid');
+        }
+    });
+    if (missingParams.length > 0) {
+        alert('Aşağıdaki zorunlu parametreler doldurulmamış:\n\n\u2022 ' + missingParams.join('\n\u2022 '));
+        return;
+    }
+
     document.getElementById('resultsJson').value = JSON.stringify(collectResults());
     document.getElementById('defectsJson').value = JSON.stringify(collectDefects());
 
