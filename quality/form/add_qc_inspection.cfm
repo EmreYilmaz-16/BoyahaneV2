@@ -57,7 +57,7 @@
 <cfquery name="getShips" datasource="boyahane">
     SELECT s.ship_id, s.ship_number, COALESCE(c.nickname,c.fullname,'') AS company_name, s.ship_date
     FROM ship s LEFT JOIN company c ON s.company_id = c.company_id
-    WHERE s.purchase_sales = 1 AND COALESCE(s.is_ship_iptal, false) = false
+    WHERE s.purchase_sales = true AND COALESCE(s.is_ship_iptal, false) = false
     ORDER BY s.ship_id DESC LIMIT 500
 </cfquery>
 <cfset shipsArr = []>
