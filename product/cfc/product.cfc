@@ -1304,4 +1304,210 @@
         <cfreturn serializeJSON(result)>
     </cffunction>
 
+    <!--- ==================== ÜRÜN RESİM FONKSİYONLARI ==================== --->
+
+    <!--- Ürüne Ait Resimleri Getir --->
+    <cffunction name="getProductImages" access="remote" returnformat="plain" output="false">
+        <cfargument name="product_id" type="numeric" required="true">
+
+        <cfset var result = {}>
+        <cfset var qImages = "">
+
+        <cfheader name="Content-Type" value="application/json; charset=utf-8">
+
+        <cftry>
+            <cfif val(arguments.product_id) eq 0>
+                <cfset result = {"success": false, "message": "Geçersiz ürün ID"}>
+                <cfreturn serializeJSON(result)>
+            </cfif>
+
+            <cfquery name="qImages" datasource="boyahane">
+                SELECT image_id, product_id, image_type, file_path, image_url,
+                       title, is_main, sort_order, created_at
+                FROM product_images
+                WHERE product_id = <cfqueryparam value="#arguments.product_id#" cfsqltype="cf_sql_integer">
+                ORDER BY is_main DESC, sort_order ASC, image_id ASC
+            </cfquery>
+
+            <cfset var imgArr = []>
+            <cfloop query="qImages">
+                <cfset var src = "">
+                <cfif image_type eq "url">
+                    <cfset src = image_url ?: "">
+                <cfelse>
+                    <cfset src = len(trim(file_path)) gt 0 ? "/assets/uploads/products/" & file_path : "">
+                </cfif>
+                <cfset arrayAppend(imgArr, {
+                    "image_id":   image_id,
+                    "image_type": image_type ?: "file",
+                    "file_path":  file_path ?: "",
+                    "image_url":  image_url ?: "",
+                    "src":        src,
+                    "title":      title ?: "",
+                    "is_main":    is_main,
+                    "sort_order": sort_order,
+                    "created_at": isDate(created_at) ? dateFormat(created_at,"dd/mm/yyyy") & " " & timeFormat(created_at,"HH:mm") : ""
+                })>
+            </cfloop>
+
+            <cfset result = {"success": true, "data": imgArr}>
+
+            <cfcatch type="any">
+                <cfset result = {"success": false, "message": "Resimler getirilirken hata: #cfcatch.message#"}>
+            </cfcatch>
+        </cftry>
+
+        <cfreturn serializeJSON(result)>
+    </cffunction>
+
+    <!--- URL ile Resim Ekle --->
+    <cffunction name="saveProductImageUrl" access="remote" returnformat="plain" output="false">
+        <cfargument name="product_id" type="numeric" required="true">
+        <cfargument name="image_url"  type="string"  required="true">
+        <cfargument name="title"      type="string"  required="false" default="">
+
+        <cfset var result = {}>
+
+        <cfheader name="Content-Type" value="application/json; charset=utf-8">
+
+        <cftry>
+            <cfif val(arguments.product_id) eq 0>
+                <cfset result = {"success": false, "message": "Geçersiz ürün ID"}>
+                <cfreturn serializeJSON(result)>
+            </cfif>
+            <cfif NOT len(trim(arguments.image_url))>
+                <cfset result = {"success": false, "message": "URL boş olamaz"}>
+                <cfreturn serializeJSON(result)>
+            </cfif>
+            <!--- Basit URL format kontrolü --->
+            <cfif NOT (left(lCase(trim(arguments.image_url)),7) eq "http://" OR left(lCase(trim(arguments.image_url)),8) eq "https://")>
+                <cfset result = {"success": false, "message": "Geçerli bir URL giriniz (http:// veya https://)"}>
+                <cfreturn serializeJSON(result)>
+            </cfif>
+
+            <!--- İlk resim ise ana resim yap --->
+            <cfquery name="qCount" datasource="boyahane">
+                SELECT COUNT(*) AS cnt FROM product_images
+                WHERE product_id = <cfqueryparam value="#arguments.product_id#" cfsqltype="cf_sql_integer">
+            </cfquery>
+            <cfset var isFirst = (qCount.cnt eq 0)>
+
+            <cfquery datasource="boyahane" name="qIns">
+                INSERT INTO product_images (product_id, image_type, image_url, title, is_main, sort_order)
+                VALUES (
+                    <cfqueryparam value="#arguments.product_id#" cfsqltype="cf_sql_integer">,
+                    'url',
+                    <cfqueryparam value="#trim(arguments.image_url)#" cfsqltype="cf_sql_varchar">,
+                    <cfqueryparam value="#trim(arguments.title)#" cfsqltype="cf_sql_varchar" null="#len(trim(arguments.title)) eq 0#">,
+                    <cfqueryparam value="#isFirst#" cfsqltype="cf_sql_bit">,
+                    <cfqueryparam value="#qCount.cnt#" cfsqltype="cf_sql_integer">
+                )
+                RETURNING image_id
+            </cfquery>
+
+            <cfset result = {"success": true, "message": "Resim eklendi", "image_id": qIns.image_id, "is_main": isFirst}>
+
+            <cfcatch type="any">
+                <cfset result = {"success": false, "message": "Resim eklenirken hata: #cfcatch.message#"}>
+            </cfcatch>
+        </cftry>
+
+        <cfreturn serializeJSON(result)>
+    </cffunction>
+
+    <!--- Resim Sil --->
+    <cffunction name="deleteProductImage" access="remote" returnformat="plain" output="false">
+        <cfargument name="image_id"   type="numeric" required="true">
+        <cfargument name="product_id" type="numeric" required="true">
+
+        <cfset var result = {}>
+
+        <cfheader name="Content-Type" value="application/json; charset=utf-8">
+
+        <cftry>
+            <!--- Silinecek resmi bul --->
+            <cfquery name="qImg" datasource="boyahane">
+                SELECT image_id, image_type, file_path, is_main
+                FROM product_images
+                WHERE image_id  = <cfqueryparam value="#arguments.image_id#"   cfsqltype="cf_sql_integer">
+                  AND product_id = <cfqueryparam value="#arguments.product_id#" cfsqltype="cf_sql_integer">
+                LIMIT 1
+            </cfquery>
+
+            <cfif qImg.recordCount eq 0>
+                <cfset result = {"success": false, "message": "Resim bulunamadı"}>
+                <cfreturn serializeJSON(result)>
+            </cfif>
+
+            <!--- Dosyayı diskten sil (file tipiyse) --->
+            <cfif qImg.image_type eq "file" AND len(trim(qImg.file_path)) gt 0>
+                <cftry>
+                    <cfset var diskPath = expandPath("/assets/uploads/products/") & qImg.file_path>
+                    <cfif fileExists(diskPath)>
+                        <cffile action="delete" file="#diskPath#">
+                    </cfif>
+                    <cfcatch></cfcatch>
+                </cftry>
+            </cfif>
+
+            <cfquery datasource="boyahane">
+                DELETE FROM product_images
+                WHERE image_id  = <cfqueryparam value="#arguments.image_id#"   cfsqltype="cf_sql_integer">
+                  AND product_id = <cfqueryparam value="#arguments.product_id#" cfsqltype="cf_sql_integer">
+            </cfquery>
+
+            <!--- Silinen ana resimse başka birine ana yap --->
+            <cfif qImg.is_main>
+                <cfquery datasource="boyahane">
+                    UPDATE product_images SET is_main = true
+                    WHERE product_id = <cfqueryparam value="#arguments.product_id#" cfsqltype="cf_sql_integer">
+                      AND image_id = (
+                          SELECT image_id FROM product_images
+                          WHERE product_id = <cfqueryparam value="#arguments.product_id#" cfsqltype="cf_sql_integer">
+                          ORDER BY sort_order ASC, image_id ASC
+                          LIMIT 1
+                      )
+                </cfquery>
+            </cfif>
+
+            <cfset result = {"success": true, "message": "Resim silindi"}>
+
+            <cfcatch type="any">
+                <cfset result = {"success": false, "message": "Resim silinirken hata: #cfcatch.message#"}>
+            </cfcatch>
+        </cftry>
+
+        <cfreturn serializeJSON(result)>
+    </cffunction>
+
+    <!--- Ana Resim Yap --->
+    <cffunction name="setMainProductImage" access="remote" returnformat="plain" output="false">
+        <cfargument name="image_id"   type="numeric" required="true">
+        <cfargument name="product_id" type="numeric" required="true">
+
+        <cfset var result = {}>
+
+        <cfheader name="Content-Type" value="application/json; charset=utf-8">
+
+        <cftry>
+            <cfquery datasource="boyahane">
+                UPDATE product_images SET is_main = false
+                WHERE product_id = <cfqueryparam value="#arguments.product_id#" cfsqltype="cf_sql_integer">
+            </cfquery>
+            <cfquery datasource="boyahane">
+                UPDATE product_images SET is_main = true
+                WHERE image_id  = <cfqueryparam value="#arguments.image_id#"   cfsqltype="cf_sql_integer">
+                  AND product_id = <cfqueryparam value="#arguments.product_id#" cfsqltype="cf_sql_integer">
+            </cfquery>
+
+            <cfset result = {"success": true, "message": "Ana resim güncellendi"}>
+
+            <cfcatch type="any">
+                <cfset result = {"success": false, "message": "Ana resim ayarlanırken hata: #cfcatch.message#"}>
+            </cfcatch>
+        </cftry>
+
+        <cfreturn serializeJSON(result)>
+    </cffunction>
+
 </cfcomponent>

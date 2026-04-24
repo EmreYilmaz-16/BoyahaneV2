@@ -14,6 +14,9 @@ COPY . /var/www/
 # Nginx config override: static file serving + security rules
 COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
 
+# Tomcat config override: increase maxPostSize to 20MB
+COPY docker/tomcat/server.xml /usr/local/tomcat/conf/server.xml
+
 # Entrypoint: fix permissions at runtime (volume mounts override build-time perms)
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh

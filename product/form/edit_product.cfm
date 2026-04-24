@@ -408,6 +408,114 @@
         </div>
     </div>
 
+    <!--- Resimler Kartı --->
+    <div class="grid-card mt-3" id="imagePanel">
+        <div class="grid-card-header">
+            <div class="grid-card-header-title"><i class="fas fa-images"></i>Ürün Resimleri</div>
+        </div>
+        <div class="card-body p-3">
+
+            <!--- Sekmeler: Dosya Yükle / URL Ekle --->
+            <ul class="nav nav-tabs nav-fill mb-3" id="imgTabNav">
+                <li class="nav-item">
+                    <button class="nav-link active py-1 px-2 small" data-bs-toggle="tab" data-bs-target="##imgTabFile">
+                        <i class="fas fa-upload me-1"></i>Dosya Yükle
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link py-1 px-2 small" data-bs-toggle="tab" data-bs-target="##imgTabUrl">
+                        <i class="fas fa-link me-1"></i>URL Ekle
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content">
+                <!--- Dosya Yükleme Sekmesi --->
+                <div class="tab-pane fade show active" id="imgTabFile">
+                    <div class="mb-2">
+                        <label class="form-label mb-1 small">Resim Başlığı</label>
+                        <input type="text" class="form-control form-control-sm" id="img_file_title" placeholder="Opsiyonel başlık">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label mb-1 small">Dosya Seç <span class="text-danger">*</span></label>
+                        <input type="file" class="form-control form-control-sm" id="img_file_input"
+                               accept="image/jpeg,image/jpg,image/png,image/gif,image/webp">
+                    </div>
+                    <div id="img_file_preview" class="mb-2" style="display:none">
+                        <img id="img_file_preview_img" src="" alt="Önizleme"
+                             style="max-width:100%;max-height:140px;border-radius:6px;border:1px solid ##dee2e6;object-fit:contain;">
+                    </div>
+                    <button class="btn btn-sm btn-primary w-100" onclick="uploadImageFile()">
+                        <i class="fas fa-upload me-1"></i>Yükle
+                    </button>
+                    <div id="img_file_msg" class="mt-2"></div>
+                </div>
+
+                <!--- URL Sekmesi --->
+                <div class="tab-pane fade" id="imgTabUrl">
+                    <div class="mb-2">
+                        <label class="form-label mb-1 small">Resim Başlığı</label>
+                        <input type="text" class="form-control form-control-sm" id="img_url_title" placeholder="Opsiyonel başlık">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label mb-1 small">Resim URL'si <span class="text-danger">*</span></label>
+                        <input type="url" class="form-control form-control-sm" id="img_url_input"
+                               placeholder="https://..." oninput="previewUrlImage()">
+                    </div>
+                    <div id="img_url_preview" class="mb-2" style="display:none">
+                        <img id="img_url_preview_img" src="" alt="Önizleme"
+                             style="max-width:100%;max-height:140px;border-radius:6px;border:1px solid ##dee2e6;object-fit:contain;"
+                             onerror="document.getElementById('img_url_preview').style.display='none'">
+                    </div>
+                    <button class="btn btn-sm btn-primary w-100" onclick="saveImageUrl()">
+                        <i class="fas fa-plus me-1"></i>Ekle
+                    </button>
+                    <div id="img_url_msg" class="mt-2"></div>
+                </div>
+            </div>
+
+            <!--- Resim Galerisi --->
+            <div class="border-top mt-3 pt-2" id="imgListWrap">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <small class="fw-semibold text-muted">Yüklü Resimler</small>
+                    <small id="imgCountBadge" class="badge text-bg-secondary">0</small>
+                </div>
+
+                <!--- Büyük Resim Alanı --->
+                <div id="imgMainView" style="display:none;margin-bottom:8px">
+                    <div style="position:relative">
+                        <a id="imgMainLink" href="##" target="_blank">
+                            <img id="imgMainImg" src="" alt=""
+                                 style="width:100%;height:200px;object-fit:contain;border-radius:8px;border:1px solid ##dee2e6;background:##f8f9fa;cursor:zoom-in;"
+                                 onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM5Y2EzYWYiPj88L3RleHQ+PC9zdmc+'">
+                        </a>
+                        <!--- Önceki/Sonraki butonları --->
+                        <button id="imgPrevBtn" onclick="galleryNav(-1)" style="display:none;position:absolute;left:4px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,.45);color:##fff;border:none;border-radius:50%;width:28px;height:28px;font-size:12px;cursor:pointer;line-height:1">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <button id="imgNextBtn" onclick="galleryNav(1)" style="display:none;position:absolute;right:4px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,.45);color:##fff;border:none;border-radius:50%;width:28px;height:28px;font-size:12px;cursor:pointer;line-height:1">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                    <!--- Ana Resim Bilgi Satırı --->
+                    <div class="d-flex justify-content-between align-items-center mt-1">
+                        <small id="imgMainTitle" class="text-muted text-truncate" style="max-width:70%"></small>
+                        <div class="d-flex gap-1">
+                            <span id="imgMainStarBadge" style="display:none" class="badge text-bg-warning" title="Ana Resim"><i class="fas fa-star"></i></span>
+                            <button id="imgMainStarBtn" style="display:none" class="btn btn-xs btn-outline-warning p-0" style="width:22px;height:22px;font-size:10px" title="Ana Yap" onclick="setMainImage(window._galCurrentId)"><i class="fas fa-star"></i></button>
+                            <button class="btn btn-xs btn-outline-danger p-0" style="width:22px;height:22px;font-size:10px" title="Sil" onclick="deleteProductImage(window._galCurrentId)"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <!--- Thumbnail Şeridi --->
+                <div id="imgList" style="display:flex;flex-wrap:wrap;gap:6px">
+                    <p class="text-muted text-center py-3 mb-0 small w-100" id="noImgMsg"><i class="fas fa-image me-1"></i>Henüz resim yok</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!--- Stok Ekleme / Düzenleme Formu --->
     <div class="grid-card mt-3" id="stockFormCard" style="display:none">
         <div class="grid-card-header">
@@ -460,6 +568,30 @@
 
 <!--- Marka Ekleme Modal Popup --->
 <div id="brandModal"></div>
+
+<style>
+.img-thumb {
+    width: 58px; height: 58px;
+    border: 2px solid ##dee2e6;
+    border-radius: 6px;
+    overflow: hidden;
+    cursor: pointer;
+    position: relative;
+    flex-shrink: 0;
+    transition: border-color .15s, transform .15s;
+    background: ##f8f9fa;
+}
+.img-thumb:hover  { border-color: ##1a3a5c; transform: scale(1.06); }
+.img-thumb-active { border-color: ##e67e22 !important; box-shadow: 0 0 0 2px rgba(230,126,34,.35); }
+.img-thumb-main   { border-color: ##fbbf24; }
+.img-thumb img    { width:100%; height:100%; object-fit:cover; display:block; }
+.img-thumb-star   {
+    position: absolute; top: 2px; right: 2px;
+    background: rgba(251,191,36,.9); border-radius: 50%;
+    width: 16px; height: 16px; display: flex; align-items: center; justify-content: center;
+    font-size: 8px; color: ##fff;
+}
+</style>
 
 <script>
 var PRODUCT_ID = #url.id#;
@@ -857,7 +989,219 @@ window.addEventListener('message', function(event) {
     }
 });
 
+// ==================== RESİM FONKSİYONLARI ====================
+
+function previewUrlImage() {
+    var url = $('##img_url_input').val().trim();
+    if (url) {
+        $('##img_url_preview_img').attr('src', url);
+        $('##img_url_preview').show();
+    } else {
+        $('##img_url_preview').hide();
+    }
+}
+
+document.getElementById('img_file_input').addEventListener('change', function() {
+    var file = this.files[0];
+    if (!file) { $('##img_file_preview').hide(); return; }
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        $('##img_file_preview_img').attr('src', e.target.result);
+        $('##img_file_preview').show();
+    };
+    reader.readAsDataURL(file);
+});
+
+function uploadImageFile() {
+    var fileInput = document.getElementById('img_file_input');
+    if (!fileInput.files || !fileInput.files[0]) {
+        showImgMsg('img_file_msg', 'Lütfen bir dosya seçin.', 'warning'); return;
+    }
+    var formData = new FormData();
+    formData.append('img_file',   fileInput.files[0]);
+    formData.append('product_id', PRODUCT_ID);
+    formData.append('title',      $('##img_file_title').val().trim());
+
+    var btn = event.currentTarget;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Yükleniyor...';
+
+    $.ajax({
+        url: '/product/form/upload_product_image.cfm',
+        method: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        dataType: 'json',
+        success: function(res) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-upload me-1"></i>Yükle';
+            if (res.success) {
+                showImgMsg('img_file_msg', 'Resim başarıyla yüklendi.', 'success');
+                document.getElementById('img_file_input').value = '';
+                document.getElementById('img_file_title').value = '';
+                $('##img_file_preview').hide();
+                refreshImageList();
+            } else {
+                showImgMsg('img_file_msg', res.message || 'Hata oluştu.', 'danger');
+            }
+        },
+        error: function() {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-upload me-1"></i>Yükle';
+            showImgMsg('img_file_msg', 'Sunucu hatası.', 'danger');
+        }
+    });
+}
+
+function saveImageUrl() {
+    var url = $('##img_url_input').val().trim();
+    if (!url) { showImgMsg('img_url_msg', 'URL boş olamaz.', 'warning'); return; }
+
+    var btn = event.currentTarget;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Ekleniyor...';
+
+    $.ajax({
+        url: '/product/cfc/product.cfc?method=saveProductImageUrl',
+        method: 'POST',
+        data: { product_id: PRODUCT_ID, image_url: url, title: $('##img_url_title').val().trim() },
+        dataType: 'json',
+        success: function(res) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-plus me-1"></i>Ekle';
+            if (res.success) {
+                showImgMsg('img_url_msg', 'Resim eklendi.', 'success');
+                document.getElementById('img_url_input').value = '';
+                document.getElementById('img_url_title').value = '';
+                $('##img_url_preview').hide();
+                refreshImageList();
+            } else {
+                showImgMsg('img_url_msg', res.message || 'Hata oluştu.', 'danger');
+            }
+        },
+        error: function() {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-plus me-1"></i>Ekle';
+            showImgMsg('img_url_msg', 'Sunucu hatası.', 'danger');
+        }
+    });
+}
+
+function deleteProductImage(imageId) {
+    if (!confirm('Bu resmi silmek istediğinizden emin misiniz?')) return;
+    $.ajax({
+        url: '/product/cfc/product.cfc?method=deleteProductImage',
+        method: 'POST',
+        data: { image_id: imageId, product_id: PRODUCT_ID },
+        dataType: 'json',
+        success: function(res) {
+            if (res.success) { refreshImageList(); }
+            else { alert(res.message || 'Silinemedi.'); }
+        }
+    });
+}
+
+function setMainImage(imageId) {
+    $.ajax({
+        url: '/product/cfc/product.cfc?method=setMainProductImage',
+        method: 'POST',
+        data: { image_id: imageId, product_id: PRODUCT_ID },
+        dataType: 'json',
+        success: function(res) {
+            if (res.success) { refreshImageList(); }
+        }
+    });
+}
+
+// Galeri state
+window._galImages  = [];
+window._galIndex   = 0;
+window._galCurrentId = 0;
+
+function gallerySelect(idx) {
+    var data = window._galImages;
+    if (!data.length) return;
+    idx = Math.max(0, Math.min(idx, data.length - 1));
+    window._galIndex = idx;
+    var img = data[idx];
+    window._galCurrentId = img.image_id;
+
+    // Büyük resim
+    var src = img.src || '';
+    document.getElementById('imgMainImg').src = src;
+    document.getElementById('imgMainLink').href = src;
+    document.getElementById('imgMainTitle').textContent = img.title || '';
+
+    // Ana resim badge/buton
+    document.getElementById('imgMainStarBadge').style.display = img.is_main ? '' : 'none';
+    document.getElementById('imgMainStarBtn').style.display  = img.is_main ? 'none' : '';
+
+    // Ok butonları
+    document.getElementById('imgPrevBtn').style.display = data.length > 1 ? '' : 'none';
+    document.getElementById('imgNextBtn').style.display = data.length > 1 ? '' : 'none';
+
+    // Thumbnail active highlight
+    $('##imgList .img-thumb').removeClass('img-thumb-active');
+    $('##imgThumb_' + img.image_id).addClass('img-thumb-active');
+}
+
+function galleryNav(dir) {
+    gallerySelect(window._galIndex + dir);
+}
+
+function refreshImageList() {
+    $.ajax({
+        url: '/product/cfc/product.cfc?method=getProductImages',
+        method: 'GET',
+        data: { product_id: PRODUCT_ID },
+        dataType: 'json',
+        success: function(res) {
+            if (!res || !res.success) return;
+            var data = res.data || [];
+            window._galImages = data;
+            $('##imgCountBadge').text(data.length);
+
+            if (data.length === 0) {
+                $('##imgMainView').hide();
+                $('##imgList').html('<p class="text-muted text-center py-3 mb-0 small w-100" id="noImgMsg"><i class="fas fa-image me-1"></i>Henüz resim yok</p>');
+                return;
+            }
+
+            $('##imgMainView').show();
+
+            // Thumbnails
+            var fallback = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0iI2YzZjRmNiIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LXNpemU9IjE0IiBmaWxsPSIjOWNhM2FmIj4/PC90ZXh0Pjwvc3ZnPg==';
+            var html = '';
+            $.each(data, function(i, img) {
+                var src = img.src || '';
+                var mainRing = img.is_main ? ' img-thumb-main' : '';
+                html += '<div class="img-thumb' + mainRing + '" id="imgThumb_' + img.image_id + '" onclick="gallerySelect(' + i + ')" title="' + $('<div>').text(img.title || '').html() + '">' +
+                    '<img src="' + src + '" onerror="this.src=\'' + fallback + '\'">' +
+                    (img.is_main ? '<span class="img-thumb-star"><i class="fas fa-star"></i></span>' : '') +
+                    '</div>';
+            });
+            $('##imgList').html(html);
+
+            // Ana resim varsa onu seç, yoksa ilkini
+            var mainIdx = 0;
+            $.each(data, function(i, img) { if (img.is_main) { mainIdx = i; return false; } });
+            gallerySelect(mainIdx);
+        }
+    });
+}
+
+function showImgMsg(elId, msg, type) {
+    document.getElementById(elId).innerHTML =
+        '<div class="alert alert-' + type + ' py-1 px-2 mb-0 small"><i class="fas fa-' + (type === 'success' ? 'check-circle' : type === 'warning' ? 'exclamation-triangle' : 'exclamation-circle') + ' me-1"></i>' + msg + '</div>';
+    setTimeout(function() { var el = document.getElementById(elId); if (el) el.innerHTML = ''; }, 4000);
+}
+
+// Sayfa yüklenince resimleri getir
+// ==================== FORM SUBMIT ====================
+
 $(document).ready(function() {
+    refreshImageList();
     $('##productForm').on('submit', function(e) {
         e.preventDefault();
         
