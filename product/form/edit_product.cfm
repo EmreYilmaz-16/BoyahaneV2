@@ -97,6 +97,62 @@
 
 <!--- SOL: Ürün Formu (col-9) --->
 <div class="col-lg-9">
+
+    <!--- Ürün Özeti / Hero Kartı --->
+    <div class="grid-card mb-3" style="overflow:hidden;">
+        <div class="card-body p-0">
+            <div class="d-flex">
+                <!--- Sol: Ana Resim --->
+                <div id="heroImgArea"
+                     onclick="document.getElementById('imagePanel').scrollIntoView({behavior:'smooth'})"
+                     style="width:180px;min-width:180px;background:##f8f9fa;border-right:1px solid ##e9ecef;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;overflow:hidden;">
+                    <img id="heroMainImg"
+                         src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI0NCUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtc2l6ZT0iNDgiIGZpbGw9IiNkMWQ1ZGIiPuKcoTwvdGV4dD48dGV4dCB4PSI1MCUiIHk9IjcwJSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1zaXplPSIxMyIgZmlsbD0iIzljYTNhZiI+UmVzaW0gWW9rPC90ZXh0Pjwvc3ZnPg=="
+                         alt="#encodeForHTMLAttribute(getProduct.product_name)#"
+                         style="width:180px;height:150px;object-fit:contain;transition:transform .2s;"
+                         onmouseover="this.style.transform='scale(1.06)'" onmouseout="this.style.transform='scale(1)'"
+                         onerror="this.onerror=null;this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM5Y2EzYWYiPj88L3RleHQ+PC9zdmc+'">
+                    <div title="Resimleri düzenle" style="position:absolute;bottom:6px;right:6px;background:rgba(26,58,92,.55);color:##fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:11px;">
+                        <i class="fas fa-camera"></i>
+                    </div>
+                </div>
+                <!--- Sağ: Ürün Bilgileri --->
+                <div class="p-3 flex-fill" style="min-width:0">
+                    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
+                        <div style="min-width:0">
+                            <h5 class="mb-0 fw-bold lh-sm text-truncate" style="color:##1a3a5c">#encodeForHTML(getProduct.product_name)#</h5>
+                            <cfif len(trim(getProduct.product_code))><small class="text-muted">#encodeForHTML(getProduct.product_code)#</small></cfif>
+                        </div>
+                        <cfif getProduct.product_status>
+                            <span class="badge bg-success"><i class="fas fa-circle me-1" style="font-size:8px"></i>Aktif</span>
+                        <cfelse>
+                            <span class="badge bg-secondary"><i class="fas fa-circle me-1" style="font-size:8px"></i>Pasif</span>
+                        </cfif>
+                    </div>
+                    <div class="row g-2 mb-2">
+                        <div class="col-sm-4">
+                            <div class="text-muted" style="font-size:10px;letter-spacing:.5px">KATEGORİ</div>
+                            <small class="fw-semibold">#encodeForHTML(getProduct.product_cat)#</small>
+                        </div>
+                        <div class="col-sm-4">
+                            <div class="text-muted" style="font-size:10px;letter-spacing:.5px">KDV</div>
+                            <small class="fw-semibold">%#getProduct.tax#</small>
+                        </div>
+                        <div class="col-sm-4">
+                            <div class="text-muted" style="font-size:10px;letter-spacing:.5px">RAF ÖMRÜ</div>
+                            <small class="fw-semibold">#encodeForHTML(getProduct.shelf_life)#<cfif not len(trim(getProduct.shelf_life))>&mdash;</cfif></small>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-1 flex-wrap">
+                        <cfif getProduct.is_sales><span class="badge bg-info text-dark"><i class="fas fa-shopping-cart me-1"></i>Satış</span></cfif>
+                        <cfif getProduct.is_purchase><span class="badge" style="background:##e67e22;color:##fff"><i class="fas fa-shopping-basket me-1"></i>Alış</span></cfif>
+                        <cfif len(trim(getProduct.barcod))><span class="badge bg-light text-dark border"><i class="fas fa-barcode me-1"></i>#encodeForHTML(getProduct.barcod)#</span></cfif>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="grid-card">
         <div class="card-body">
             <form id="productForm" method="post">
@@ -1132,6 +1188,9 @@ function gallerySelect(idx) {
     document.getElementById('imgMainImg').src = src;
     document.getElementById('imgMainLink').href = src;
     document.getElementById('imgMainTitle').textContent = img.title || '';
+    // Hero kartı da güncelle
+    var heroImg = document.getElementById('heroMainImg');
+    if (heroImg && src) heroImg.src = src;
 
     // Ana resim badge/buton
     document.getElementById('imgMainStarBadge').style.display = img.is_main ? '' : 'none';
@@ -1165,6 +1224,8 @@ function refreshImageList() {
             if (data.length === 0) {
                 $('##imgMainView').hide();
                 $('##imgList').html('<p class="text-muted text-center py-3 mb-0 small w-100" id="noImgMsg"><i class="fas fa-image me-1"></i>Henüz resim yok</p>');
+                var heroImg = document.getElementById('heroMainImg');
+                if (heroImg) heroImg.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI0NCUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtc2l6ZT0iNDgiIGZpbGw9IiNkMWQ1ZGIiPuKcoTwvdGV4dD48dGV4dCB4PSI1MCUiIHk9IjcwJSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1zaXplPSIxMyIgZmlsbD0iIzljYTNhZiI+UmVzaW0gWW9rPC90ZXh0Pjwvc3ZnPg==';
                 return;
             }
 

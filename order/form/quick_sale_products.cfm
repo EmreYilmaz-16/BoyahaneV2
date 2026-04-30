@@ -25,9 +25,14 @@
     <cfquery name="getProducts" datasource="boyahane">
         SELECT s.stock_id, s.stock_code, s.barcod,
                p.product_id, p.product_name, p.product_code,
-               COALESCE(pr.price, 0) AS list_price
+               COALESCE(pr.price, 0) AS list_price,
+               CASE WHEN pi.image_type = 'file' THEN '/assets/uploads/products/' || pi.file_path
+                    WHEN pi.image_type = 'url'  THEN pi.image_url
+                    ELSE ''
+               END AS main_image_src
         FROM stocks s
         LEFT JOIN product p ON p.product_id = s.product_id
+        LEFT JOIN product_images pi ON pi.product_id = p.product_id AND pi.is_main = true
         <cfif priceCat gt 0>
         LEFT JOIN price pr ON pr.product_id = p.product_id
                            AND pr.price_catid = <cfqueryparam value="#priceCat#" cfsqltype="cf_sql_integer">
@@ -59,7 +64,8 @@
                 "product_code":    product_code ?: "",
                 "stock_code":      stock_code ?: "",
                 "barcod":          barcod ?: "",
-                "list_price":      val(list_price)
+                "list_price":      val(list_price),
+                "main_image_src":  main_image_src ?: ""
             })>
         </cfif>
     </cfloop>

@@ -222,12 +222,18 @@ function loadProducts(reset) {
         var items = res.items || [];
         items.forEach(function(p){ productCache[p.stock_id] = p; });
 
+        var noImg = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtc2l6ZT0iMzIiIGZpbGw9IiNkMWQ1ZGIiPuKcoTwvdGV4dD48L3N2Zz4=';
         var html = items.map(function(p){
+            var imgSrc   = p.main_image_src || '';
+            var imgHtml  = '<div style="height:90px;background:##f8f9fa;border-radius:8px;overflow:hidden;margin-bottom:8px;display:flex;align-items:center;justify-content:center;">'
+                + '<img src="' + (imgSrc || noImg) + '" onerror="this.src=\'' + noImg + '\'" '
+                + 'style="max-height:90px;max-width:100%;object-fit:contain;"></div>';
             var priceHtml = (p.list_price > 0)
                 ? '<div class="product-meta mb-1" style="color:##e67e22;font-weight:600;">Fiyat: ' + fmt(p.list_price) + '</div>'
                 : '';
             return '<div class="col-xl-4 col-md-6">'
                 + '<div class="product-card">'
+                + imgHtml
                 + '<div class="product-name">' + esc(p.product_name) + '</div>'
                 + '<div class="product-meta">Stok: ' + esc(p.stock_code) + '</div>'
                 + '<div class="product-meta mb-2">Kod: ' + esc(p.product_code) + (p.barcod ? ' · Barkod: ' + esc(p.barcod) : '') + '</div>'
