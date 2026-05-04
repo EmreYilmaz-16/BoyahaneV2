@@ -38,41 +38,6 @@
     <cfset enterLocId = isNumeric(form.enter_loc_id)      AND val(form.enter_loc_id)      gt 0 ? val(form.enter_loc_id)      : javaCast("null","")>
     <cfset prodDepId  = isNumeric(form.production_dep_id) AND val(form.production_dep_id) gt 0 ? val(form.production_dep_id) : javaCast("null","")>
     <cfset prodLocId  = isNumeric(form.production_loc_id) AND val(form.production_loc_id) gt 0 ? val(form.production_loc_id) : javaCast("null","")>
-<cfoutput>
-   <!--- Debug output --->
-   <!----
-    debug: 
-   <table border="1" cellpadding="5" cellspacing="0">
-    <tr>
-        <td></td>
-        <td>station_id</td><td>station_name</td><td>active</td><td>department</td><td>capacity</td><td>cost</td><td>cost_money</td><td>employee_number</td><td>up_station</td><td>comment</td><td>exit_dep_id</td><td>exit_loc_id</td><td>enter_dep_id</td><td>enter_loc_id</td><td>production_dep_id</td><td>production_loc_id</td>
-        
-    </tr>
-    <tr>
-        <td>values:</td>
-        <td>#stId#</td><td>#stName#</td><td>#isActive#</td><td>#deptId#</td><td>#cap#</td><td>#cost#</td><td>#trim(form.cost_money)#</td><td>#empNum#</td><td>#upSt#</td><td>#trim(form.comment)#</td><td>#exitDepId#</td><td>#exitLocId#</td><td>#enterDepId#</td><td>#enterLocId#</td><td>#prodDepId#</td><td>#prodLocId#</td>
-    </tr>
-   </table>
-    station_id: #stId#,
-    station_name: #stName#,
-    active: #isActive#,
-    department: #deptId#,
-    capacity: #cap#,
-    cost: #cost#,
-    cost_money: #trim(form.cost_money)#,
-    employee_number: #empNum#,
-    up_station: #upSt#,
-    comment: #trim(form.comment)#,
-    exit_dep_id: #exitDepId#,
-    exit_loc_id: #exitLocId#,
-    enter_dep_id: #enterDepId#,
-    enter_loc_id: #enterLocId#,
-    production_dep_id: #prodDepId#,
-    production_loc_id: #prodLocId#
-
-</cfoutput>
-
----->
 
     <cfif NOT len(stName)>
         <cfset response.message = "İstasyon adı zorunludur.">
