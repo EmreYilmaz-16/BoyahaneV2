@@ -178,6 +178,7 @@
         <cfargument name="tax" type="numeric" required="false" default="0">
         <cfargument name="is_sales" type="boolean" required="false" default="false">
         <cfargument name="is_purchase" type="boolean" required="false" default="false">
+        <cfargument name="is_ek_islem" type="boolean" required="false" default="false">
         <cfargument name="brand_id" type="numeric" required="false" default="0">
         <cfargument name="shelf_life" type="string" required="false" default="">
         <cfargument name="manufact_code" type="string" required="false" default="">
@@ -221,6 +222,7 @@
                         tax = <cfqueryparam value="#arguments.tax#" cfsqltype="cf_sql_double">,
                         is_sales = <cfqueryparam value="#arguments.is_sales#" cfsqltype="cf_sql_bit">,
                         is_purchase = <cfqueryparam value="#arguments.is_purchase#" cfsqltype="cf_sql_bit">,
+                        is_ek_islem = <cfqueryparam value="#arguments.is_ek_islem#" cfsqltype="cf_sql_bit">,
                         brand_id = <cfqueryparam value="#arguments.brand_id#" cfsqltype="cf_sql_integer" null="#val(arguments.brand_id) eq 0#">,
                         shelf_life = <cfqueryparam value="#arguments.shelf_life#" cfsqltype="cf_sql_varchar" null="#len(trim(arguments.shelf_life)) eq 0#">,
                         manufact_code = <cfqueryparam value="#arguments.manufact_code#" cfsqltype="cf_sql_varchar" null="#len(trim(arguments.manufact_code)) eq 0#">,
@@ -243,7 +245,7 @@
                     INSERT INTO product (
                         product_code, product_name, product_catid, barcod,
                         product_detail, product_detail2, product_status, tax,
-                        is_sales, is_purchase, brand_id, shelf_life,
+                        is_sales, is_purchase, is_ek_islem, brand_id, shelf_life,
                         manufact_code, short_code, company_id, record_date, record_member
                     ) VALUES (
                         <cfqueryparam value="#arguments.product_code#" cfsqltype="cf_sql_varchar" null="#len(trim(arguments.product_code)) eq 0#">,
@@ -256,6 +258,7 @@
                         <cfqueryparam value="#arguments.tax#" cfsqltype="cf_sql_double">,
                         <cfqueryparam value="#arguments.is_sales#" cfsqltype="cf_sql_bit">,
                         <cfqueryparam value="#arguments.is_purchase#" cfsqltype="cf_sql_bit">,
+                        <cfqueryparam value="#arguments.is_ek_islem#" cfsqltype="cf_sql_bit">,
                         <cfqueryparam value="#arguments.brand_id#" cfsqltype="cf_sql_integer" null="#val(arguments.brand_id) eq 0#">,
                         <cfqueryparam value="#arguments.shelf_life#" cfsqltype="cf_sql_varchar" null="#len(trim(arguments.shelf_life)) eq 0#">,
                         <cfqueryparam value="#arguments.manufact_code#" cfsqltype="cf_sql_varchar" null="#len(trim(arguments.manufact_code)) eq 0#">,

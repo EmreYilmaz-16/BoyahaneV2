@@ -281,6 +281,15 @@
                                 </label>
                             </div>
                         </div>
+                        
+                        <div class="col-md-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="is_ek_islem" name="is_ek_islem" value="1" <cfif structKeyExists(getProduct, "is_ek_islem") AND getProduct.is_ek_islem>checked</cfif>>
+                                <label class="form-check-label" for="is_ek_islem">
+                                    <i class="fas fa-tools me-1"></i>Ek İşlem
+                                </label>
+                            </div>
+                        </div>
                     </div>
                     </div>
                 </div>
@@ -1282,6 +1291,7 @@ $(document).ready(function() {
             product_status: $('##product_status').is(':checked'),
             is_sales: $('##is_sales').is(':checked'),
             is_purchase: $('##is_purchase').is(':checked'),
+            is_ek_islem: $('##is_ek_islem').is(':checked'),
             company_id: $('##company_id').val() || 0
         };
         
@@ -1307,7 +1317,7 @@ $(document).ready(function() {
                     }
                     
                     setTimeout(function() {
-                        window.location.href = '/index.cfm?fuseaction=product.list_products&success=updated';
+                        window.location.href = '/index.cfm?fuseaction=product.list_product&success=updated';
                     }, 1000);
                 } else {
                     if (typeof DevExpress !== 'undefined' && DevExpress.ui) {

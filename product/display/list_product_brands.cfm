@@ -158,8 +158,22 @@ window.addEventListener('load', function() {
             // Excel Export
             export: {
                 enabled: true,
-                fileName: 'markalar_' + new Date().toISOString().slice(0,10),
                 allowExportSelectedData: false
+            },
+            onExporting: function (e) {
+                var workbook = new ExcelJS.Workbook();
+                var worksheet = workbook.addWorksheet('Markalar');
+                DevExpress.excelExporter.exportDataGrid({
+                    component: e.component,
+                    worksheet: worksheet,
+                    autoFilterEnabled: true
+                }).then(function () {
+                    workbook.xlsx.writeBuffer().then(function (buffer) {
+                        var fileName = 'markalar_' + new Date().toISOString().slice(0, 10) + '.xlsx';
+                        saveAs(new Blob([buffer], { type: 'application/octet-stream' }), fileName);
+                    });
+                });
+                e.cancel = true;
             },
             
             // Seçim
@@ -182,7 +196,10 @@ window.addEventListener('load', function() {
                     caption: 'Marka Adı',
                     minWidth: 200,
                     cellTemplate: function(container, options) {
-                        $('<strong>').text(options.value || '-').appendTo(container);
+                        $('<a>').attr('href', '##').addClass('fw-bold text-decoration-none')
+                            .text(options.value || '-')
+                            .on('click', function(e) { e.preventDefault(); e.stopPropagation(); editBrand(options.data.brand_id); })
+                            .appendTo(container);
                     }
                 },
                 {

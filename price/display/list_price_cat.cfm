@@ -148,7 +148,22 @@ window.addEventListener('load', function() {
             filterRow: { visible: true, applyFilter: 'auto' },
             headerFilter: { visible: true },
             searchPanel: { visible: true, width: 220, placeholder: 'Ara...' },
-            export: { enabled: true, fileName: 'fiyat_listeleri' },
+            export: { enabled: true },
+            onExporting: function (e) {
+                var workbook = new ExcelJS.Workbook();
+                var worksheet = workbook.addWorksheet('FiyatListeleri');
+                DevExpress.excelExporter.exportDataGrid({
+                    component: e.component,
+                    worksheet: worksheet,
+                    autoFilterEnabled: true
+                }).then(function () {
+                    workbook.xlsx.writeBuffer().then(function (buffer) {
+                        var fileName = 'fiyat_listeleri_' + new Date().toISOString().slice(0, 10) + '.xlsx';
+                        saveAs(new Blob([buffer], { type: 'application/octet-stream' }), fileName);
+                    });
+                });
+                e.cancel = true;
+            },
             onContentReady: function(e) {
                 document.getElementById('recordCount').textContent = e.component.totalCount() + ' kayıt';
             },
@@ -157,7 +172,13 @@ window.addEventListener('load', function() {
                 {
                     dataField: 'price_cat', caption: 'Liste Adı', minWidth: 180,
                     cellTemplate: function(c, o) {
-                        $('<strong>').text(o.value).appendTo(c);
+                        $('<a>').attr('href', '##').addClass('fw-semibold text-decoration-none')
+                            .text(o.value)
+                            .on('click', function(e) {
+                                e.preventDefault();
+                                managePrices(o.data.price_catid);
+                            })
+                            .appendTo(c);
                     }
                 },
                 {

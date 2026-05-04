@@ -256,18 +256,46 @@ function initGrid() {
         showBorders: true, showRowLines: true, showColumnLines: true,
         rowAlternationEnabled: true, columnAutoWidth: false,
         allowColumnReordering: true, allowColumnResizing: true, columnResizingMode: 'widget',
+        width: '100%', height: 'auto',
+        scrolling: { mode: 'virtual', rowRenderingMode: 'virtual' },
         paging:      { enabled: true, pageSize: 50 },
         filterRow:   { visible: true },
         headerFilter:{ visible: true },
         searchPanel: { visible: true, width: 240, placeholder: 'Ara...' },
         sorting:     { mode: 'multiple' },
         columnChooser: { enabled: true, mode: 'select', title: 'Sütun Seçimi' },
+        export: { enabled: true },
+        onExporting: function (e) {
+            var workbook = new ExcelJS.Workbook();
+            var worksheet = workbook.addWorksheet('RenkKartoteksi');
+            DevExpress.excelExporter.exportDataGrid({
+                component: e.component,
+                worksheet: worksheet,
+                autoFilterEnabled: true
+            }).then(function () {
+                workbook.xlsx.writeBuffer().then(function (buffer) {
+                    var fileName = 'renk_kartoteksi_' + new Date().toISOString().slice(0, 10) + '.xlsx';
+                    saveAs(new Blob([buffer], { type: 'application/octet-stream' }), fileName);
+                });
+            });
+            e.cancel = true;
+        },
         onContentReady: function(e) {
             document.getElementById('recordCount').textContent = e.component.totalCount() + ' kayıt';
         },
         columns: [
-            { dataField: 'color_code',    caption: 'Renk Kodu',   width: 120 },
-            { dataField: 'color_name',    caption: 'Renk Adı',    minWidth: 150 },
+            { dataField: 'color_code',    caption: 'Renk Kodu',   width: 120,
+              cellTemplate: function(c,o){
+                  $('<a>').attr('href','index.cfm?fuseaction=colors.add_color&color_id='+o.data.color_id)
+                      .css({fontWeight:'bold',cursor:'pointer'}).text(o.value||'-').appendTo(c);
+              }
+            },
+            { dataField: 'color_name',    caption: 'Renk Adı',    minWidth: 150,
+              cellTemplate: function(c,o){
+                  $('<a>').attr('href','index.cfm?fuseaction=colors.add_color&color_id='+o.data.color_id)
+                      .css({cursor:'pointer'}).text(o.value||'-').appendTo(c);
+              }
+            },
             { dataField: 'company_name',  caption: 'Müşteri',     minWidth: 160 },
             { dataField: 'product_name',  caption: 'Ürün',        minWidth: 150 },
             { dataField: 'kartela_no',    caption: 'Kartela',     width: 120 },

@@ -177,6 +177,88 @@ $(document).ready(function() {
                     }
                 }
             });
+
+            // ---- Sidebar Arama ----
+            var $sidebarSearch = $('#sidebarSearch');
+            var $sidebarSearchClear = $('#sidebarSearchClear');
+            var $noResult = $('#sidebarSearchNoResult');
+
+            $sidebarSearch.on('input', function() {
+                var q = $(this).val().trim().toLowerCase();
+                $sidebarSearchClear.toggle(q.length > 0);
+
+                if (q === '') {
+                    // Tüm öğeleri göster, sonra aktif olmayan alt menüleri kapat
+                    $('.menu-solution, .menu-family-item, .menu-module-item, .menu-object-item').show();
+                    $('.menu-module-item').each(function() {
+                        var moduleMenu = $('#module-' + $(this).data('module'));
+                        if (!moduleMenu.find('.menu-active').length) {
+                            moduleMenu.hide();
+                            $(this).find('.toggle-icon').removeClass('rotate');
+                        }
+                    });
+                    $('.menu-family-item').each(function() {
+                        var familyMenu = $('#family-' + $(this).data('family'));
+                        if (!familyMenu.find('.menu-active').length) {
+                            familyMenu.hide();
+                            $(this).find('.toggle-icon').removeClass('rotate');
+                        }
+                    });
+                    $('.menu-solution').each(function() {
+                        var solutionMenu = $('#solution-' + $(this).data('solution'));
+                        if (!solutionMenu.find('.menu-active').length) {
+                            solutionMenu.hide();
+                            $(this).find('.toggle-icon').removeClass('rotate');
+                        }
+                    });
+                    $noResult.hide();
+                    return;
+                }
+
+                // Tüm öğeleri gizle
+                $('.menu-solution').hide();
+                $('.menu-family-item').hide();
+                $('.menu-module-item').hide();
+                $('.menu-object-item').hide();
+                $('.menu-family').hide();
+                $('.menu-module').hide();
+                $('.menu-objects').hide();
+
+                var found = 0;
+                $('.menu-object-item').each(function() {
+                    var text = $(this).find('span').text().toLowerCase();
+                    if (text.indexOf(q) > -1) {
+                        $(this).show();
+                        found++;
+
+                        // Üst kapsayıcıları aç ve ilgili toggle öğelerini göster
+                        var $objsDiv = $(this).closest('.menu-objects');
+                        $objsDiv.show();
+
+                        var moduleId = $objsDiv.attr('id').replace('module-', '');
+                        var $modItem = $('.menu-module-item[data-module="' + moduleId + '"]');
+                        $modItem.show().find('.toggle-icon').addClass('rotate');
+                        var $modDiv = $modItem.closest('.menu-module');
+                        $modDiv.show();
+
+                        var familyId = $modDiv.attr('id').replace('family-', '');
+                        var $famItem = $('.menu-family-item[data-family="' + familyId + '"]');
+                        $famItem.show().find('.toggle-icon').addClass('rotate');
+                        var $famDiv = $famItem.closest('.menu-family');
+                        $famDiv.show();
+
+                        var solutionId = $famDiv.attr('id').replace('solution-', '');
+                        var $solItem = $('.menu-solution[data-solution="' + solutionId + '"]');
+                        $solItem.show().find('.toggle-icon').addClass('rotate');
+                    }
+                });
+
+                $noResult.toggle(found === 0);
+            });
+
+            $sidebarSearchClear.on('click', function() {
+                $sidebarSearch.val('').trigger('input').focus();
+            });
         });
 
 

@@ -491,7 +491,22 @@ window.addEventListener('load', function() {
             pager: { visible: true, showInfo: true, infoText: 'Sayfa {0} / {1} ({2} kayıt)', showNavigationButtons: true, showPageSizeSelector: true, allowedPageSizes: [25, 50, 100] },
             filterRow: { visible: true, applyFilter: 'auto' },
             searchPanel: { visible: true, width: 200, placeholder: 'Ara...' },
-            export: { enabled: true, fileName: 'fiyat_listesi_' + catId },
+            export: { enabled: true },
+            onExporting: function (e) {
+                var workbook = new ExcelJS.Workbook();
+                var worksheet = workbook.addWorksheet('FiyatListesi');
+                DevExpress.excelExporter.exportDataGrid({
+                    component: e.component,
+                    worksheet: worksheet,
+                    autoFilterEnabled: true
+                }).then(function () {
+                    workbook.xlsx.writeBuffer().then(function (buffer) {
+                        var fileName = 'fiyat_listesi_' + catId + '_' + new Date().toISOString().slice(0, 10) + '.xlsx';
+                        saveAs(new Blob([buffer], { type: 'application/octet-stream' }), fileName);
+                    });
+                });
+                e.cancel = true;
+            },
             editing: {
                 mode: 'cell',
                 allowUpdating: true,

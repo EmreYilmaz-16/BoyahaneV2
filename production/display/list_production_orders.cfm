@@ -132,17 +132,40 @@ function buildGrid() {
         rowAlternationEnabled: true,
         columnAutoWidth: false,
         wordWrapEnabled: false,
-        paging: { pageSize: 25 },
+        width: '100%', height: 'auto',
+        scrolling: { mode: 'virtual', rowRenderingMode: 'virtual' },
+        paging: { pageSize: 50 },
         pager: { showPageSizeSelector: true, allowedPageSizes: [15,25,50,100], showInfo: true },
         searchPanel: { visible: true, placeholder: 'Ara...' },
         filterRow: { visible: true },
+        export: { enabled: true },
+        onExporting: function (e) {
+            var workbook = new ExcelJS.Workbook();
+            var worksheet = workbook.addWorksheet('UretimEmirleri');
+            DevExpress.excelExporter.exportDataGrid({
+                component: e.component,
+                worksheet: worksheet,
+                autoFilterEnabled: true
+            }).then(function () {
+                workbook.xlsx.writeBuffer().then(function (buffer) {
+                    var fileName = 'uretim_emirleri_' + new Date().toISOString().slice(0, 10) + '.xlsx';
+                    saveAs(new Blob([buffer], { type: 'application/octet-stream' }), fileName);
+                });
+            });
+            e.cancel = true;
+        },
         onContentReady: function(e) {
             document.getElementById('recordCount').textContent = e.component.totalCount() + ' kayıt';
         },
         onRowDblClick: function(e) { viewOrder(e.data.p_order_id); },
         columns: [
             { dataField:'p_order_id',   caption:'ID',         width:65,  alignment:'center', dataType:'number', sortOrder:'desc' },
-            { dataField:'p_order_no',   caption:'Emir No',    width:130 },
+            { dataField:'p_order_no',   caption:'Emir No',    width:130,
+                cellTemplate: function(container, options) {
+                    $('<a>').attr('href','javascript:void(0)').css({fontWeight:'bold',cursor:'pointer'})
+                        .text(options.value||'-').on('click',function(){ viewOrder(options.data.p_order_id); }).appendTo(container);
+                }
+            },
             { dataField:'color_code',   caption:'Renk Kodu',  width:110 },
             { dataField:'color_name',   caption:'Renk Adı',   width:160 },
             { dataField:'company_name', caption:'Müşteri',    minWidth:140,

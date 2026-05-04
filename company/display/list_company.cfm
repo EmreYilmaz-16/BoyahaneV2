@@ -113,7 +113,22 @@ window.addEventListener('load', function() {
         sorting: { mode: 'multiple' },
         columnChooser: { enabled: true, mode: 'select', title: 'Sütun Seçimi' },
         groupPanel: { visible: true, emptyPanelText: 'Gruplamak için sütun başlığını buraya sürükleyin' },
-        export: { enabled: true, fileName: 'firmalar_' + new Date().toISOString().slice(0,10) },
+        export: { enabled: true },
+        onExporting: function (e) {
+            var workbook = new ExcelJS.Workbook();
+            var worksheet = workbook.addWorksheet('Firmalar');
+            DevExpress.excelExporter.exportDataGrid({
+                component: e.component,
+                worksheet: worksheet,
+                autoFilterEnabled: true
+            }).then(function () {
+                workbook.xlsx.writeBuffer().then(function (buffer) {
+                    var fileName = 'firmalar_' + new Date().toISOString().slice(0, 10) + '.xlsx';
+                    saveAs(new Blob([buffer], { type: 'application/octet-stream' }), fileName);
+                });
+            });
+            e.cancel = true;
+        },
         selection: { mode: 'multiple', showCheckBoxesMode: 'always' },
 
         columns: [
@@ -122,10 +137,16 @@ window.addEventListener('load', function() {
                 cellTemplate: function(c, o) { c.text(o.value || '-'); }
             },
             { dataField: 'nickname', caption: 'Kısa Ad', minWidth: 150,
-                cellTemplate: function(c, o) { $('<strong>').text(o.value || '-').appendTo(c); }
+                cellTemplate: function(c, o) {
+                    $('<a>').attr('href', 'javascript:void(0)').css({ fontWeight: 'bold', cursor: 'pointer' })
+                        .text(o.value || '-').on('click', function() { editCompany(o.data.company_id); }).appendTo(c);
+                }
             },
             { dataField: 'fullname', caption: 'Tam Ad / Unvan', minWidth: 200,
-                cellTemplate: function(c, o) { c.text(o.value || '-'); }
+                cellTemplate: function(c, o) {
+                    $('<a>').attr('href', 'javascript:void(0)').css({ cursor: 'pointer' })
+                        .text(o.value || '-').on('click', function() { editCompany(o.data.company_id); }).appendTo(c);
+                }
             },
             { dataField: 'companycat', caption: 'Kategori', width: 130,
                 cellTemplate: function(c, o) {

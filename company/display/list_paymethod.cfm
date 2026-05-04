@@ -82,10 +82,29 @@ window.addEventListener('load', function() {
             filterRow: { visible: true },
             searchPanel: { visible: true, width: 200, placeholder: 'Ara...' },
             export: { enabled: true, fileName: 'odeme_yontemleri' },
+            onExporting: function(e) {
+                var workbook = new ExcelJS.Workbook();
+                var worksheet = workbook.addWorksheet('Ödeme Yöntemleri');
+                DevExpress.excelExporter.exportDataGrid({
+                    component: e.component,
+                    worksheet: worksheet,
+                    autoFilterEnabled: true
+                }).then(function() {
+                    workbook.xlsx.writeBuffer().then(function(buffer) {
+                        saveAs(new Blob([buffer], { type: 'application/octet-stream' }), 'odeme_yontemleri.xlsx');
+                    });
+                });
+                e.cancel = true;
+            },
             columns: [
                 { dataField: 'paymethod_id', caption: 'ID', width: 70, alignment: 'center', dataType: 'number', sortOrder: 'asc' },
                 { dataField: 'paymethod', caption: 'Ödeme Yöntemi', minWidth: 180,
-                    cellTemplate: function(c, o) { $('<strong>').text(o.value || '-').appendTo(c); }
+                    cellTemplate: function(c, o) {
+                        $('<a>').attr('href', '##').addClass('fw-bold text-decoration-none')
+                            .text(o.value || '-')
+                            .on('click', function(e) { e.preventDefault(); e.stopPropagation(); editPaymethod(o.data.paymethod_id); })
+                            .appendTo(c);
+                    }
                 },
                 { dataField: 'detail', caption: 'Açıklama', minWidth: 160,
                     cellTemplate: function(c, o) { c.text(o.value || '-'); }

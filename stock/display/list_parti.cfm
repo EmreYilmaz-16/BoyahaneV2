@@ -304,11 +304,30 @@ window.addEventListener('load', function() {
             filterRow: { visible: true },
             sorting: { mode: 'multiple' },
             export: { enabled: true, fileName: 'partiler' },
+            onExporting: function(e) {
+                var workbook = new ExcelJS.Workbook();
+                var worksheet = workbook.addWorksheet('Partiler');
+                DevExpress.excelExporter.exportDataGrid({
+                    component: e.component,
+                    worksheet: worksheet,
+                    autoFilterEnabled: true
+                }).then(function() {
+                    workbook.xlsx.writeBuffer().then(function(buffer) {
+                        saveAs(new Blob([buffer], { type: 'application/octet-stream' }), 'partiler.xlsx');
+                    });
+                });
+                e.cancel = true;
+            },
             selection: { mode: 'none' },
             columns: [
                 { dataField:'order_id',     caption:'ID',         width:70, alignment:'center', dataType:'number' },
                 { dataField:'order_number', caption:'Parti Kodu', width:160,
-                    cellTemplate: function(c,o){ $('<strong>').text(o.value||'-').appendTo(c); }
+                    cellTemplate: function(c,o){
+                        $('<a>').attr('href','##').addClass('fw-bold text-decoration-none')
+                            .text(o.value||'-')
+                            .on('click', function(e){ e.preventDefault(); e.stopPropagation(); openRowModal(o.data); })
+                            .appendTo(c);
+                    }
                 },
                 { dataField:'company_name', caption:'Müşteri',    minWidth:160 },
                 { dataField:'ref_no',       caption:'İrsaliye No', width:150 },

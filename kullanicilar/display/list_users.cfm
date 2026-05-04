@@ -42,12 +42,16 @@
     })>
 </cfloop>
 
+<cfset totalUsers   = val(qSummary.total_users)>
+<cfset activeUsers  = val(qSummary.active_users)>
+<cfset passiveUsers = val(qSummary.passive_users)>
+<cfset recentLogins = val(qSummary.recent_logins)>
+
 <cfoutput>
 <style>
 /* ===== KULLANICILAR ===== */
 .usr-page { padding: 0 4px 32px; }
 
-/* Header */
 .usr-header {
     background: linear-gradient(135deg, ##1a3a5c 0%, ##0d2137 100%);
     border-radius: 14px;
@@ -85,7 +89,6 @@
 .usr-header-btn-accent { background: ##e67e22; border-color: ##e67e22; }
 .usr-header-btn-accent:hover { background: ##d35400; border-color: ##d35400; }
 
-/* Özet Kartlar */
 .usr-stats {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -113,54 +116,25 @@
 .usr-stat-label { font-size: 0.7rem; font-weight: 600; color: ##94a3b8; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 2px; }
 .usr-stat-val   { font-size: 1.65rem; font-weight: 800; line-height: 1.1; color: ##0f172a; }
 
-/* Tablo kartı */
-.usr-table-card {
+.usr-grid-card {
     background: ##fff;
     border-radius: 14px;
     box-shadow: 0 2px 10px rgba(0,0,0,.06);
     border: 1px solid ##e5e7eb;
     overflow: hidden;
 }
-.usr-table-card .table { margin: 0; }
-.usr-table-card thead th {
-    background: var(--primary, ##1a3a5c);
-    color: ##fff;
-    font-size: 0.75rem; font-weight: 600;
-    text-transform: uppercase; letter-spacing: .04em;
-    border: none; padding: 10px 12px; white-space: nowrap;
-}
-.usr-table-card tbody td { font-size: 0.82rem; padding: 10px 12px; vertical-align: middle; border-color: ##f1f5f9; }
-.usr-table-card tbody tr:last-child td { border-bottom: none; }
-.usr-table-card tbody tr:hover td { background: ##f8fafc; }
-
-/* Avatar */
 .usr-avatar {
-    width: 34px; height: 34px;
+    width: 32px; height: 32px;
     border-radius: 50%;
     background: linear-gradient(135deg, ##1a3a5c, ##e67e22);
     color: ##fff;
-    font-size: 0.78rem; font-weight: 700;
+    font-size: 0.72rem; font-weight: 700;
     display: inline-flex; align-items: center; justify-content: center;
-    flex-shrink: 0; text-transform: uppercase;
+    text-transform: uppercase; flex-shrink: 0;
+    vertical-align: middle;
 }
-
-/* Arama kutusu */
-.usr-search-bar {
-    padding: 14px 16px;
-    border-bottom: 1px solid ##f1f5f9;
-    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-}
-.usr-search-input {
-    border: 1px solid ##e5e7eb;
-    border-radius: 8px;
-    padding: 7px 12px 7px 34px;
-    font-size: 0.82rem;
-    outline: none;
-    min-width: 240px;
-    background: ##f8fafc url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='%2394a3b8' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.099zm-5.242 1.156a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11z'/%3E%3C/svg%3E") no-repeat 10px center;
-    transition: border-color .15s;
-}
-.usr-search-input:focus { border-color: ##1a3a5c; background-color: ##fff; }
+.usr-badge-active  { background: ##f0fdf4; color: ##16a34a; font-weight: 700; font-size: 0.72rem; padding: 3px 9px; border-radius: 20px; white-space: nowrap; }
+.usr-badge-passive { background: ##fef2f2; color: ##dc2626; font-weight: 700; font-size: 0.72rem; padding: 3px 9px; border-radius: 20px; white-space: nowrap; }
 </style>
 
 <div class="usr-page">
@@ -185,117 +159,35 @@
             <div class="usr-stat-icon total"><i class="fas fa-users"></i></div>
             <div>
                 <div class="usr-stat-label">Toplam</div>
-                <div class="usr-stat-val">#val(qSummary.total_users)#</div>
+                <div class="usr-stat-val">#totalUsers#</div>
             </div>
         </div>
         <div class="usr-stat">
             <div class="usr-stat-icon active"><i class="fas fa-user-check"></i></div>
             <div>
                 <div class="usr-stat-label">Aktif</div>
-                <div class="usr-stat-val">#val(qSummary.active_users)#</div>
+                <div class="usr-stat-val">#activeUsers#</div>
             </div>
         </div>
         <div class="usr-stat">
             <div class="usr-stat-icon passive"><i class="fas fa-user-xmark"></i></div>
             <div>
                 <div class="usr-stat-label">Pasif</div>
-                <div class="usr-stat-val">#val(qSummary.passive_users)#</div>
+                <div class="usr-stat-val">#passiveUsers#</div>
             </div>
         </div>
         <div class="usr-stat">
             <div class="usr-stat-icon recent"><i class="fas fa-clock-rotate-left"></i></div>
             <div>
                 <div class="usr-stat-label">Son 7 Gün</div>
-                <div class="usr-stat-val">#val(qSummary.recent_logins)#</div>
+                <div class="usr-stat-val">#recentLogins#</div>
             </div>
         </div>
     </div>
 
-    <!--- Tablo --->
-    <div class="usr-table-card">
-        <div class="usr-search-bar">
-            <input type="text" class="usr-search-input" id="usrSearch" placeholder="Ad, kullanıcı adı veya W3 ID ile ara..." oninput="filterUsers()">
-            <span class="text-muted" style="font-size:0.78rem;" id="usrCount">#val(qSummary.total_users)# kullanıcı</span>
-        </div>
-        <div class="table-responsive">
-            <table class="table table-hover table-sm align-middle" id="usrTable">
-                <thead>
-                    <tr>
-                        <th style="width:44px;"></th>
-                        <th>Ad Soyad</th>
-                        <th>Kullanıcı Adı</th>
-                        <th>W3 User ID</th>
-                        <th>Giriş Sayfası</th>
-                        <th class="text-center">Durum</th>
-                        <th>Son Giriş</th>
-                        <th>Kayıt Tarihi</th>
-                        <th style="width:100px;"></th>
-                    </tr>
-                </thead>
-                <tbody id="usrTableBody">
-                    <cfif qUsers.recordCount gt 0>
-                        <cfloop query="qUsers">
-                        <cfset initials = uCase(left(trim(name),1)) & uCase(left(trim(surname),1))>
-                        <tr data-search="#lCase(name)# #lCase(surname)# #lCase(username)# #lCase(w3userid)# #lCase(default_fuseaction)#">
-                            <td>
-                                <div class="usr-avatar">#htmlEditFormat(initials)#</div>
-                            </td>
-                            <td>
-                                <span class="fw-semibold">#htmlEditFormat(name)# #htmlEditFormat(surname)#</span>
-                            </td>
-                            <td>
-                                <code style="font-size:0.78rem;background:##f1f5f9;padding:2px 7px;border-radius:5px;">#htmlEditFormat(username)#</code>
-                            </td>
-                            <td style="font-size:0.78rem;color:##64748b;">#len(trim(w3userid)) ? htmlEditFormat(w3userid) : "—"#</td>
-                            <td style="font-size:0.78rem;color:##475569;">
-                                #len(trim(default_fuseaction)) ? htmlEditFormat(default_fuseaction) : "myhome.welcome"#
-                            </td>
-                            <td class="text-center">
-                                <cfif is_active>
-                                    <span class="badge" style="background:##f0fdf4;color:##16a34a;font-weight:700;font-size:0.72rem;">
-                                        <i class="fas fa-circle me-1" style="font-size:.45rem;"></i>Aktif
-                                    </span>
-                                <cfelse>
-                                    <span class="badge" style="background:##fef2f2;color:##dc2626;font-weight:700;font-size:0.72rem;">
-                                        <i class="fas fa-circle me-1" style="font-size:.45rem;"></i>Pasif
-                                    </span>
-                                </cfif>
-                            </td>
-                            <td style="font-size:0.78rem;color:##64748b;">
-                                <cfif isDate(last_login)>
-                                    <i class="fas fa-clock me-1"></i>#dateFormat(last_login,"dd/mm/yyyy")# #timeFormat(last_login,"HH:mm")#
-                                <cfelse>
-                                    <span class="text-muted">—</span>
-                                </cfif>
-                            </td>
-                            <td style="font-size:0.78rem;color:##94a3b8;">
-                                #isDate(created_at) ? dateFormat(created_at,"dd/mm/yyyy") : ""#
-                            </td>
-                            <td>
-                                <div class="d-flex gap-1">
-                                    <button class="btn btn-sm" style="background:##eff6ff;color:##3b82f6;border:none;padding:4px 9px;border-radius:6px;font-size:0.75rem;"
-                                            onclick="openUserModal({id:#val(id)#,name:'#jsStringFormat(name)#',surname:'#jsStringFormat(surname)#',username:'#jsStringFormat(username)#',w3userid:'#jsStringFormat(w3userid)#',default_fuseaction:'#jsStringFormat(default_fuseaction)#',is_active:#is_active ? 'true' : 'false'#})">
-                                        <i class="fas fa-pencil"></i>
-                                    </button>
-                                    <button class="btn btn-sm" style="background:##fef2f2;color:##dc2626;border:none;padding:4px 9px;border-radius:6px;font-size:0.75rem;"
-                                            onclick="confirmDelete(#val(id)#,'#jsStringFormat(name & ' ' & surname)#')">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                        </cfloop>
-                    <cfelse>
-                        <tr id="emptyRow">
-                            <td colspan="8" class="text-center py-5 text-muted">
-                                <i class="fas fa-users" style="font-size:2.5rem;display:block;margin-bottom:12px;color:##cbd5e1;"></i>
-                                Kayıtlı kullanıcı bulunamadı.
-                            </td>
-                        </tr>
-                    </cfif>
-                </tbody>
-            </table>
-        </div>
+    <!--- DevExtreme DataGrid --->
+    <div class="usr-grid-card">
+        <div id="userGrid"></div>
     </div>
 
 </div>
@@ -332,7 +224,7 @@
                     <div class="col-12">
                         <label class="form-label fw-semibold">Varsayılan Giriş Sayfası</label>
                         <input id="u_default_fuseaction" class="form-control" placeholder="myhome.welcome" maxlength="255">
-                        <div class="form-text">Boş bırakılırsa varsayılan açılış sayfası <strong>myhome.welcome</strong> kullanılır.</div>
+                        <div class="form-text">Boş bırakılırsa <strong>myhome.welcome</strong> kullanılır.</div>
                     </div>
                     <div class="col-12" id="u_password_row">
                         <label class="form-label fw-semibold">Şifre <span class="text-danger" id="u_pass_required">*</span></label>
@@ -382,8 +274,179 @@
 </div>
 
 <script>
-var usersData = #serializeJSON(usersArr)#;
+var usersData   = #serializeJSON(usersArr)#;
 var deleteUserId = 0;
+
+window.addEventListener('load', function () {
+    if (typeof DevExpress !== 'undefined') DevExpress.localization.locale('tr');
+
+    new DevExpress.ui.dxDataGrid(document.getElementById('userGrid'), {
+        dataSource: usersData,
+        keyExpr: 'id',
+        height: 'auto',
+        width: '100%',
+        showBorders: true,
+        showRowLines: true,
+        showColumnLines: true,
+        rowAlternationEnabled: true,
+        hoverStateEnabled: true,
+        columnAutoWidth: true,
+        allowColumnReordering: true,
+        allowColumnResizing: true,
+        columnResizingMode: 'widget',
+        wordWrapEnabled: false,
+
+        sorting:      { mode: 'multiple' },
+        filterRow:    { visible: true },
+        headerFilter: { visible: true },
+        searchPanel:  { visible: true, width: 240, placeholder: 'Ara...' },
+
+        export: {
+            enabled: true,
+            allowExportSelectedData: true
+        },
+        onExporting: function (e) {
+            var workbook = new ExcelJS.Workbook();
+            var worksheet = workbook.addWorksheet('Kullanicilar');
+            DevExpress.excelExporter.exportDataGrid({
+                component: e.component,
+                worksheet: worksheet,
+                autoFilterEnabled: true
+            }).then(function () {
+                workbook.xlsx.writeBuffer().then(function (buffer) {
+                    saveAs(new Blob([buffer], { type: 'application/octet-stream' }), 'Kullanicilar.xlsx');
+                });
+            });
+            e.cancel = true;
+        },
+
+        scrolling: { mode: 'virtual', rowRenderingMode: 'virtual' },
+        paging: { pageSize: 50 },
+
+        selection: { mode: 'multiple', showCheckBoxesMode: 'onClick' },
+
+        columns: [
+            {
+                dataField: 'fullname',
+                caption: 'Ad Soyad',
+                width: 220,
+                cellTemplate: function (container, options) {
+                    var row = options.data;
+                    var initials = ((row.name||'').charAt(0) + (row.surname||'').charAt(0)).toUpperCase();
+                    var $wrap = $('<div>').css({ display: 'flex', alignItems: 'center', gap: '10px' });
+                    $('<span>').addClass('usr-avatar').text(initials).appendTo($wrap);
+                    $('<a>').attr('href', '##').css({ fontWeight: '600', textDecoration: 'none' })
+                        .text(options.value)
+                        .on('click', function (e) {
+                            e.preventDefault();
+                            openUserModal(row);
+                        })
+                        .appendTo($wrap);
+                    container.append($wrap);
+                }
+            },
+            {
+                dataField: 'username',
+                caption: 'Kullanıcı Adı',
+                width: 160,
+                cellTemplate: function (container, options) {
+                    $('<code>').css({
+                        fontSize: '0.78rem',
+                        background: '##f1f5f9',
+                        padding: '2px 7px',
+                        borderRadius: '5px'
+                    }).text(options.value || '').appendTo(container);
+                }
+            },
+            {
+                dataField: 'w3userid',
+                caption: 'W3 User ID',
+                width: 120,
+                cellTemplate: function (container, options) {
+                    $('<span>').text(options.value || '—')
+                        .css({ fontSize: '0.8rem', color: '##64748b' })
+                        .appendTo(container);
+                }
+            },
+            {
+                dataField: 'default_fuseaction',
+                caption: 'Giriş Sayfası',
+                width: 180,
+                cellTemplate: function (container, options) {
+                    $('<span>').text(options.value || 'myhome.welcome')
+                        .css({ fontSize: '0.8rem', color: '##475569' })
+                        .appendTo(container);
+                }
+            },
+            {
+                dataField: 'is_active',
+                caption: 'Durum',
+                width: 90,
+                alignment: 'center',
+                dataType: 'boolean',
+                cellTemplate: function (container, options) {
+                    var label = options.value ? 'Aktif' : 'Pasif';
+                    var cls   = options.value ? 'usr-badge-active' : 'usr-badge-passive';
+                    $('<span>').addClass(cls).html(
+                        '<i class="fas fa-circle me-1" style="font-size:.4rem;vertical-align:middle;"></i>' + label
+                    ).appendTo(container);
+                }
+            },
+            {
+                dataField: 'last_login',
+                caption: 'Son Giriş',
+                width: 140,
+                dataType: 'string',
+                cellTemplate: function (container, options) {
+                    if (options.value) {
+                        $('<span>').html('<i class="fas fa-clock me-1" style="color:##94a3b8;"></i>' + options.value)
+                            .css({ fontSize: '0.8rem', color: '##64748b' })
+                            .appendTo(container);
+                    } else {
+                        $('<span>').text('—').css({ color: '##cbd5e1' }).appendTo(container);
+                    }
+                }
+            },
+            {
+                dataField: 'created_at',
+                caption: 'Kayıt Tarihi',
+                width: 110,
+                dataType: 'string',
+                cellTemplate: function (container, options) {
+                    $('<span>').text(options.value || '')
+                        .css({ fontSize: '0.8rem', color: '##94a3b8' })
+                        .appendTo(container);
+                }
+            },
+            {
+                caption: 'İşlemler',
+                width: 90,
+                alignment: 'center',
+                allowFiltering: false,
+                allowSorting: false,
+                allowExporting: false,
+                cellTemplate: function (container, options) {
+                    var row = options.data;
+                    var $wrap = $('<div>').css({ display: 'flex', gap: '4px', justifyContent: 'center' });
+
+                    $('<button>').attr('title', 'Düzenle')
+                        .css({ background: '##eff6ff', color: '##3b82f6', border: 'none', padding: '4px 9px', borderRadius: '6px', fontSize: '0.75rem', cursor: 'pointer' })
+                        .html('<i class="fas fa-pencil"></i>')
+                        .on('click', function () { openUserModal(row); })
+                        .appendTo($wrap);
+
+                    $('<button>').attr('title', 'Sil')
+                        .css({ background: '##fef2f2', color: '##dc2626', border: 'none', padding: '4px 9px', borderRadius: '6px', fontSize: '0.75rem', cursor: 'pointer' })
+                        .html('<i class="fas fa-trash"></i>')
+                        .on('click', function () { confirmDelete(row.id, row.fullname); })
+                        .appendTo($wrap);
+
+                    container.append($wrap);
+                }
+            }
+        ]
+    });
+});
 
 function openUserModal(row) {
     var isEdit = row && row.id > 0;
@@ -391,18 +454,17 @@ function openUserModal(row) {
         ? '<i class="fas fa-pencil me-2"></i>Kullanıcı Güncelle'
         : '<i class="fas fa-user-plus me-2"></i>Yeni Kullanıcı';
 
-    document.getElementById('u_id').value       = isEdit ? row.id : 0;
-    document.getElementById('u_name').value     = isEdit ? row.name : '';
-    document.getElementById('u_surname').value  = isEdit ? row.surname : '';
-    document.getElementById('u_username').value = isEdit ? row.username : '';
-    document.getElementById('u_w3userid').value = isEdit ? row.w3userid : '';
-    document.getElementById('u_default_fuseaction').value = isEdit ? (row.default_fuseaction || '') : '';
-    document.getElementById('u_password').value = '';
-    document.getElementById('u_is_active').value = isEdit && row.is_active === false ? '0' : '1';
+    document.getElementById('u_id').value                  = isEdit ? row.id : 0;
+    document.getElementById('u_name').value                = isEdit ? (row.name || '') : '';
+    document.getElementById('u_surname').value             = isEdit ? (row.surname || '') : '';
+    document.getElementById('u_username').value            = isEdit ? (row.username || '') : '';
+    document.getElementById('u_w3userid').value            = isEdit ? (row.w3userid || '') : '';
+    document.getElementById('u_default_fuseaction').value  = isEdit ? (row.default_fuseaction || '') : '';
+    document.getElementById('u_password').value            = '';
+    document.getElementById('u_is_active').value           = (isEdit && row.is_active === false) ? '0' : '1';
 
-    // Şifre alanı davranışı
     document.getElementById('u_pass_required').style.display = isEdit ? 'none' : '';
-    document.getElementById('u_pass_hint').style.display     = isEdit ? '' : 'none';
+    document.getElementById('u_pass_hint').style.display     = isEdit ? ''     : 'none';
 
     var el = document.getElementById('userModal');
     if (el.parentElement !== document.body) document.body.appendChild(el);
@@ -410,18 +472,18 @@ function openUserModal(row) {
 }
 
 function saveUser() {
-    var id       = parseInt(document.getElementById('u_id').value) || 0;
-    var name     = document.getElementById('u_name').value.trim();
-    var surname  = document.getElementById('u_surname').value.trim();
-    var username = document.getElementById('u_username').value.trim();
-    var password = document.getElementById('u_password').value;
-    var w3userid = document.getElementById('u_w3userid').value.trim();
+    var id               = parseInt(document.getElementById('u_id').value) || 0;
+    var name             = document.getElementById('u_name').value.trim();
+    var surname          = document.getElementById('u_surname').value.trim();
+    var username         = document.getElementById('u_username').value.trim();
+    var password         = document.getElementById('u_password').value;
+    var w3userid         = document.getElementById('u_w3userid').value.trim();
     var defaultFuseaction = document.getElementById('u_default_fuseaction').value.trim();
-    var isActive = document.getElementById('u_is_active').value;
+    var isActive         = document.getElementById('u_is_active').value;
 
-    if (!name)     { usrNotify('Ad zorunludur.',           'warning'); return; }
-    if (!surname)  { usrNotify('Soyad zorunludur.',        'warning'); return; }
-    if (!username) { usrNotify('Kullanıcı adı zorunludur.','warning'); return; }
+    if (!name)     { usrNotify('Ad zorunludur.',            'warning'); return; }
+    if (!surname)  { usrNotify('Soyad zorunludur.',         'warning'); return; }
+    if (!username) { usrNotify('Kullanıcı adı zorunludur.', 'warning'); return; }
     if (id === 0 && !password) { usrNotify('Şifre zorunludur.', 'warning'); return; }
     if (defaultFuseaction && !/^[a-z0-9_]+\.[a-z0-9_]+$/i.test(defaultFuseaction)) {
         usrNotify('Varsayılan giriş sayfası formatı hatalı. Örnek: myhome.welcome', 'warning');
@@ -429,25 +491,23 @@ function saveUser() {
     }
 
     $.post('/kullanicilar/form/save_user.cfm', {
-        user_id:   id,
-        name:      name,
-        surname:   surname,
-        username:  username,
-        password:  password,
-        w3userid:  w3userid,
+        user_id:            id,
+        name:               name,
+        surname:            surname,
+        username:           username,
+        password:           password,
+        w3userid:           w3userid,
         default_fuseaction: defaultFuseaction,
-        is_active: isActive
-    }, function(res) {
+        is_active:          isActive
+    }, function (res) {
         if (res && res.success) {
-            var mEl = document.getElementById('userModal');
-            var mInst = bootstrap.Modal.getInstance(mEl);
-            if (mInst) mInst.hide();
+            bootstrap.Modal.getInstance(document.getElementById('userModal')).hide();
             usrNotify('Kullanıcı kaydedildi.', 'success');
-            setTimeout(function(){ location.reload(); }, 1000);
+            setTimeout(function () { location.reload(); }, 1000);
         } else {
             usrNotify((res && res.message) || 'İşlem başarısız.', 'error');
         }
-    }, 'json').fail(function(){ usrNotify('Sunucu hatası.', 'error'); });
+    }, 'json').fail(function () { usrNotify('Sunucu hatası.', 'error'); });
 }
 
 function confirmDelete(id, fullname) {
@@ -460,20 +520,17 @@ function confirmDelete(id, fullname) {
 
 function deleteUser() {
     if (!deleteUserId) return;
-    $.post('/kullanicilar/form/delete_user.cfm', { user_id: deleteUserId }, function(res) {
+    $.post('/kullanicilar/form/delete_user.cfm', { user_id: deleteUserId }, function (res) {
         if (res && res.success) {
-            var mEl = document.getElementById('deleteModal');
-            var mInst = bootstrap.Modal.getInstance(mEl);
-            if (mInst) mInst.hide();
+            bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
             usrNotify('Kullanıcı silindi.', 'success');
-            setTimeout(function(){ location.reload(); }, 1000);
+            setTimeout(function () { location.reload(); }, 1000);
         } else {
             usrNotify((res && res.message) || 'İşlem başarısız.', 'error');
         }
-    }, 'json').fail(function(){ usrNotify('Sunucu hatası.', 'error'); });
+    }, 'json').fail(function () { usrNotify('Sunucu hatası.', 'error'); });
 }
 
-/* ---- Bildirim fonksiyonu ---- */
 function usrNotify(msg, type) {
     var colors = { success: '##16a34a', error: '##dc2626', warning: '##d97706', info: '##3b82f6' };
     var icons  = { success: 'fa-circle-check', error: 'fa-circle-xmark', warning: 'fa-triangle-exclamation', info: 'fa-circle-info' };
@@ -481,19 +538,10 @@ function usrNotify(msg, type) {
     t.style.cssText = 'position:fixed;top:18px;right:18px;z-index:99999;background:##fff;border-left:4px solid '+(colors[type]||colors.info)+';border-radius:8px;padding:12px 18px;box-shadow:0 4px 20px rgba(0,0,0,.15);display:flex;align-items:center;gap:10px;font-size:.85rem;max-width:340px;';
     t.innerHTML = '<i class="fas '+(icons[type]||icons.info)+'" style="color:'+(colors[type]||colors.info)+';font-size:1rem;flex-shrink:0;"></i><span>'+msg+'</span>';
     document.body.appendChild(t);
-    setTimeout(function(){ t.style.opacity='0'; t.style.transition='opacity .4s'; setTimeout(function(){ t.remove(); }, 400); }, 2800);
-}
-
-function filterUsers() {
-    var q = document.getElementById('usrSearch').value.toLowerCase().trim();
-    var rows = document.querySelectorAll('##usrTable tbody tr[data-search]');
-    var visible = 0;
-    rows.forEach(function(row) {
-        var match = !q || row.dataset.search.indexOf(q) !== -1;
-        row.style.display = match ? '' : 'none';
-        if (match) visible++;
-    });
-    document.getElementById('usrCount').textContent = visible + ' kullanıcı';
+    setTimeout(function () {
+        t.style.opacity = '0'; t.style.transition = 'opacity .4s';
+        setTimeout(function () { t.remove(); }, 400);
+    }, 2800);
 }
 </script>
 </cfoutput>

@@ -227,20 +227,34 @@ window.addEventListener('load', function() {
         rowAlternationEnabled: true,
         hoverStateEnabled: true,
         columnAutoWidth: true,
+        width: '100%',
+        height: 'auto',
         allowColumnReordering: true,
         allowColumnResizing: true,
         columnResizingMode: 'widget',
         wordWrapEnabled: false,
+        scrolling: { mode: 'virtual', rowRenderingMode: 'virtual' },
         
         sorting: { mode: 'multiple' },
         filterRow: { visible: true },
         headerFilter: { visible: true },
         searchPanel: { visible: true, width: 240, placeholder: 'Ara...' },
         groupPanel: { visible: true },
-        export: {
-            enabled: true,
-            fileName: 'Siparisler',
-            allowExportSelectedData: true
+        export: { enabled: true, allowExportSelectedData: true },
+        onExporting: function (e) {
+            var workbook = new ExcelJS.Workbook();
+            var worksheet = workbook.addWorksheet('Siparisler');
+            DevExpress.excelExporter.exportDataGrid({
+                component: e.component,
+                worksheet: worksheet,
+                autoFilterEnabled: true
+            }).then(function () {
+                workbook.xlsx.writeBuffer().then(function (buffer) {
+                    var fileName = 'siparisler_' + new Date().toISOString().slice(0, 10) + '.xlsx';
+                    saveAs(new Blob([buffer], { type: 'application/octet-stream' }), fileName);
+                });
+            });
+            e.cancel = true;
         },
         
         paging: { pageSize: 25 },
@@ -270,8 +284,11 @@ window.addEventListener('load', function() {
                 caption: 'Sipariş No', 
                 width: 150,
                 cellTemplate: function(container, options) {
-                    var html = '<div style="font-weight:600;color:##2563ab;">' + options.value + '</div>';
-                    container.innerHTML = html;
+                    $('<a>').attr('href', 'javascript:void(0)')
+                        .css({ fontWeight: '600', color: '##2563ab', cursor: 'pointer' })
+                        .text(options.value)
+                        .on('click', function() { editOrder(options.data.order_id); })
+                        .appendTo(container);
                 }
             },
             { 

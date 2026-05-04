@@ -91,7 +91,22 @@ window.addEventListener('load', function() {
             pager: { visible: true, allowedPageSizes: [10,25,50], showPageSizeSelector: true, showInfo: true, infoText: 'Sayfa {0}/{1} ({2} kayıt)' },
             filterRow: { visible: true },
             searchPanel: { visible: true, width: 200, placeholder: 'Ara...' },
-            export: { enabled: true, fileName: 'para_birimleri' },
+            export: { enabled: true },
+            onExporting: function (e) {
+                var workbook = new ExcelJS.Workbook();
+                var worksheet = workbook.addWorksheet('ParaBirimleri');
+                DevExpress.excelExporter.exportDataGrid({
+                    component: e.component,
+                    worksheet: worksheet,
+                    autoFilterEnabled: true
+                }).then(function () {
+                    workbook.xlsx.writeBuffer().then(function (buffer) {
+                        var fileName = 'para_birimleri_' + new Date().toISOString().slice(0, 10) + '.xlsx';
+                        saveAs(new Blob([buffer], { type: 'application/octet-stream' }), fileName);
+                    });
+                });
+                e.cancel = true;
+            },
             columns: [
                 { dataField: 'money_id', caption: 'ID', width: 60, alignment: 'center', dataType: 'number', sortOrder: 'asc' },
                 { dataField: 'money', caption: 'Kod', width: 80, alignment: 'center',
@@ -100,7 +115,17 @@ window.addEventListener('load', function() {
                     }
                 },
                 { dataField: 'money_symbol', caption: 'Sembol', width: 70, alignment: 'center' },
-                { dataField: 'money_name', caption: 'Para Birimi Adı', minWidth: 150 },
+                { dataField: 'money_name', caption: 'Para Birimi Adı', minWidth: 150,
+                    cellTemplate: function(c, o) {
+                        $('<a>').attr('href', '##').addClass('fw-semibold text-decoration-none')
+                            .text(o.value || '-')
+                            .on('click', function(e) {
+                                e.preventDefault();
+                                editMoney(o.data.money_id);
+                            })
+                            .appendTo(c);
+                    }
+                },
                 { dataField: 'rate1', caption: 'Alış', width: 120, alignment: 'right', dataType: 'number', format: { type: 'fixedPoint', precision: 4 } },
                 { dataField: 'rate2', caption: 'Satış', width: 120, alignment: 'right', dataType: 'number', format: { type: 'fixedPoint', precision: 4 } },
                 { dataField: 'rate3', caption: 'Ortalama', width: 120, alignment: 'right', dataType: 'number', format: { type: 'fixedPoint', precision: 4 } },

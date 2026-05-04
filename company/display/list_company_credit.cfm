@@ -89,11 +89,34 @@ window.addEventListener('load', function() {
             pager: { visible: true, allowedPageSizes: [10,25,50], showPageSizeSelector: true, showInfo: true, infoText: 'Sayfa {0}/{1} ({2} kayıt)' },
             filterRow: { visible: true },
             searchPanel: { visible: true, width: 200, placeholder: 'Ara...' },
-            export: { enabled: true, fileName: 'firma_kredi_limitleri' },
+            export: { enabled: true },
+            onExporting: function (e) {
+                var workbook = new ExcelJS.Workbook();
+                var worksheet = workbook.addWorksheet('FirmaKrediLimitleri');
+                DevExpress.excelExporter.exportDataGrid({
+                    component: e.component,
+                    worksheet: worksheet,
+                    autoFilterEnabled: true
+                }).then(function () {
+                    workbook.xlsx.writeBuffer().then(function (buffer) {
+                        var fileName = 'firma_kredi_limitleri_' + new Date().toISOString().slice(0, 10) + '.xlsx';
+                        saveAs(new Blob([buffer], { type: 'application/octet-stream' }), fileName);
+                    });
+                });
+                e.cancel = true;
+            },
             columns: [
                 { dataField: 'company_credit_id', caption: 'ID', width: 70, alignment: 'center', dataType: 'number' },
                 { dataField: 'company_name', caption: 'Firma', minWidth: 180,
-                    cellTemplate: function(c, o) { $('<strong>').text(o.value || '-').appendTo(c); }
+                    cellTemplate: function(c, o) {
+                        $('<a>').attr('href', '##').addClass('fw-semibold text-decoration-none')
+                            .text(o.value || '-')
+                            .on('click', function(e) {
+                                e.preventDefault();
+                                editCredit(o.data.company_credit_id);
+                            })
+                            .appendTo(c);
+                    }
                 },
                 { dataField: 'open_account_risk_limit', caption: 'Açık Hesap Limiti', width: 150, alignment: 'right', dataType: 'number', format: { type: 'fixedPoint', precision: 2 } },
                 { dataField: 'forward_sale_limit',       caption: 'Vadeli Satış Limiti', width: 150, alignment: 'right', dataType: 'number', format: { type: 'fixedPoint', precision: 2 } },

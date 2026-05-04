@@ -156,19 +156,39 @@ window.addEventListener('load', function() {
             showBorders: true, showRowLines: true, showColumnLines: true,
             rowAlternationEnabled: true, columnAutoWidth: true,
             allowColumnReordering: true, allowColumnResizing: true, columnResizingMode: 'widget',
-            paging: { pageSize: 25 },
+            width: '100%', height: 'auto',
+            scrolling: { mode: 'virtual', rowRenderingMode: 'virtual' },
+            paging: { pageSize: 50 },
             pager: { visible:true, allowedPageSizes:[10,25,50,100], showPageSizeSelector:true, showNavigationButtons:true, showInfo:true, infoText:'Sayfa {0}/{1} ({2} kayıt)' },
             filterRow: { visible:true }, headerFilter: { visible:true },
             searchPanel: { visible:true, width:240, placeholder:'Ara...' },
             sorting: { mode:'multiple' },
             columnChooser: { enabled:true, mode:'select', title:'Sütun Seçimi' },
-            export: { enabled:true, fileName:'irsaliyeler_' + new Date().toISOString().slice(0,10) },
+            export: { enabled: true },
+            onExporting: function (e) {
+                var workbook = new ExcelJS.Workbook();
+                var worksheet = workbook.addWorksheet('Irsaliyeler');
+                DevExpress.excelExporter.exportDataGrid({
+                    component: e.component,
+                    worksheet: worksheet,
+                    autoFilterEnabled: true
+                }).then(function () {
+                    workbook.xlsx.writeBuffer().then(function (buffer) {
+                        var fileName = 'irsaliyeler_' + new Date().toISOString().slice(0, 10) + '.xlsx';
+                        saveAs(new Blob([buffer], { type: 'application/octet-stream' }), fileName);
+                    });
+                });
+                e.cancel = true;
+            },
             onRowDblClick: function(e) { openShip(e.data.ship_id); },
             onContentReady: function(e) { document.getElementById('recordCount').textContent = e.component.totalCount() + ' kayıt'; },
             columns: [
                 { dataField:'ship_id', caption:'ID', width:80, alignment:'center', dataType:'number', sortOrder:'desc' },
                 { dataField:'ship_number', caption:'İrsaliye No', width:140,
-                    cellTemplate: function(c,o) { $('<strong>').text(o.value||'-').appendTo(c); }
+                    cellTemplate: function(c,o) {
+                        $('<a>').attr('href','javascript:void(0)').css({fontWeight:'bold',cursor:'pointer'})
+                            .text(o.value||'-').on('click',function(){ openShip(o.data.ship_id); }).appendTo(c);
+                    }
                 },
                 { dataField:'serial_number', caption:'Seri No', width:120,
                     cellTemplate: function(c,o) { $('<span>').addClass('font-monospace small').text(o.value||'-').appendTo(c); }

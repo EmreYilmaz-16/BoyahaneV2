@@ -99,21 +99,49 @@ window.addEventListener('load', function() {
         showBorders: true, showRowLines: true, rowAlternationEnabled: true,
         columnAutoWidth: true, allowColumnReordering: true,
         allowColumnResizing: true, columnResizingMode: 'widget',
-        paging: { pageSize: 25 },
+        width: '100%', height: 'auto',
+        scrolling: { mode: 'virtual', rowRenderingMode: 'virtual' },
+        paging: { pageSize: 50 },
         pager: { showPageSizeSelector: true, allowedPageSizes: [15, 25, 50, 100] },
         filterRow: { visible: true },
         headerFilter: { visible: true },
         searchPanel: { visible: true, width: 240, placeholder: 'Ara...' },
         sorting: { mode: 'multiple' },
         columnChooser: { enabled: true, mode: 'select', title: 'Sütun Seçimi' },
+        export: { enabled: true },
+        onExporting: function (e) {
+            var workbook = new ExcelJS.Workbook();
+            var worksheet = workbook.addWorksheet('UrunAgaclari');
+            DevExpress.excelExporter.exportDataGrid({
+                component: e.component,
+                worksheet: worksheet,
+                autoFilterEnabled: true
+            }).then(function () {
+                workbook.xlsx.writeBuffer().then(function (buffer) {
+                    var fileName = 'urun_agaclari_' + new Date().toISOString().slice(0, 10) + '.xlsx';
+                    saveAs(new Blob([buffer], { type: 'application/octet-stream' }), fileName);
+                });
+            });
+            e.cancel = true;
+        },
         onRowDblClick: function(e) { viewTree(e.data.stock_id); },
         onContentReady: function(e) {
             document.getElementById('recordCount').textContent = e.component.totalCount() + ' kayıt';
         },
         columns: [
             { dataField: 'stock_id',    caption: 'ID',         width: 65, alignment: 'center', dataType: 'number' },
-            { dataField: 'stock_code',  caption: 'Stok Kodu',  width: 160 },
-            { dataField: 'product_name',caption: 'Ürün Adı',   minWidth: 220 },
+            { dataField: 'stock_code',  caption: 'Stok Kodu',  width: 160,
+                cellTemplate: function(c, o) {
+                    $('<a>').attr('href', 'javascript:void(0)').css({ fontWeight: 'bold', cursor: 'pointer' })
+                        .text(o.value || '-').on('click', function() { viewTree(o.data.stock_id); }).appendTo(c);
+                }
+            },
+            { dataField: 'product_name',caption: 'Ürün Adı',   minWidth: 220,
+                cellTemplate: function(c, o) {
+                    $('<a>').attr('href', 'javascript:void(0)').css({ cursor: 'pointer' })
+                        .text(o.value || '-').on('click', function() { viewTree(o.data.stock_id); }).appendTo(c);
+                }
+            },
             { dataField: 'product_cat', caption: 'Kategori',   width: 180,
                 cellTemplate: function(c, o) { $('<span>').addClass('small text-muted').text(o.value || '-').appendTo(c); }
             },

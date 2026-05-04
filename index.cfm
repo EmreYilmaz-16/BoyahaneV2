@@ -355,6 +355,18 @@
         <div class="sidebar-header">
             <i class="fas fa-th-large"></i>Ana Menü
         </div>
+        <div class="sidebar-search">
+            <div class="sidebar-search-input-wrap">
+                <i class="fas fa-search sidebar-search-icon"></i>
+                <input type="text" id="sidebarSearch" class="sidebar-search-input" placeholder="Menüde ara..." autocomplete="off">
+                <button type="button" id="sidebarSearchClear" class="sidebar-search-clear" style="display:none;" title="Temizle">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+        <div class="sidebar-search-no-result" id="sidebarSearchNoResult">
+            <i class="fas fa-search me-1"></i>Sonuç bulunamadı.
+        </div>
         
         <cfoutput query="getSolutions">
             <div class="menu-solution" data-solution="#solution_id#">
@@ -488,6 +500,8 @@
     
     <!--- DevExtreme Türkçe Lokalizasyon --->
     <script src="https://cdn3.devexpress.com/jslib/23.2.5/js/localization/dx.messages.tr.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     
     <!--- Custom JavaScript --->
 

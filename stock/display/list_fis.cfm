@@ -215,8 +215,22 @@ window.addEventListener('load', function() {
             grouping: { autoExpandAll: false },
             export: {
                 enabled: true,
-                fileName: 'stok_fisleri_' + new Date().toISOString().slice(0,10),
                 allowExportSelectedData: false
+            },
+            onExporting: function (e) {
+                var workbook = new ExcelJS.Workbook();
+                var worksheet = workbook.addWorksheet('StokFisleri');
+                DevExpress.excelExporter.exportDataGrid({
+                    component: e.component,
+                    worksheet: worksheet,
+                    autoFilterEnabled: true
+                }).then(function () {
+                    workbook.xlsx.writeBuffer().then(function (buffer) {
+                        var fileName = 'stok_fisleri_' + new Date().toISOString().slice(0, 10) + '.xlsx';
+                        saveAs(new Blob([buffer], { type: 'application/octet-stream' }), fileName);
+                    });
+                });
+                e.cancel = true;
             },
 
             onRowDblClick: function(e) {
@@ -243,7 +257,13 @@ window.addEventListener('load', function() {
                     width: 140,
                     cellTemplate: function(con, opt) {
                         if (opt.value) {
-                            $('<span>').addClass('fw-bold').text(opt.value).appendTo(con);
+                            $('<a>').attr('href', '##').addClass('fw-bold text-decoration-none')
+                                .text(opt.value)
+                                .on('click', function(e) {
+                                    e.preventDefault();
+                                    openFis(opt.data.fis_id);
+                                })
+                                .appendTo(con);
                         } else {
                             $('<span>').addClass('text-muted').text('-').appendTo(con);
                         }

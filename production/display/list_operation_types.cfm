@@ -94,13 +94,30 @@ window.addEventListener('load', function() {
             showBorders: true, showRowLines: true, showColumnLines: true,
             rowAlternationEnabled: true, columnAutoWidth: true,
             allowColumnReordering: true, allowColumnResizing: true, columnResizingMode: 'widget',
-            paging: { pageSize: 25 },
+            width: '100%', height: 'auto',
+            scrolling: { mode: 'virtual', rowRenderingMode: 'virtual' },
+            paging: { pageSize: 50 },
             pager: { visible:true, allowedPageSizes:[10,25,50,100], showPageSizeSelector:true, showNavigationButtons:true, showInfo:true, infoText:'Sayfa {0}/{1} ({2} kayıt)' },
             filterRow: { visible:true }, headerFilter: { visible:true },
             searchPanel: { visible:true, width:240, placeholder:'Ara...' },
             sorting: { mode:'multiple' },
             columnChooser: { enabled:true, mode:'select', title:'Sütun Seçimi' },
-            export: { enabled:true, fileName:'operasyon_tipleri_' + new Date().toISOString().slice(0,10) },
+            export: { enabled: true },
+            onExporting: function (e) {
+                var workbook = new ExcelJS.Workbook();
+                var worksheet = workbook.addWorksheet('OperasyonTipleri');
+                DevExpress.excelExporter.exportDataGrid({
+                    component: e.component,
+                    worksheet: worksheet,
+                    autoFilterEnabled: true
+                }).then(function () {
+                    workbook.xlsx.writeBuffer().then(function (buffer) {
+                        var fileName = 'operasyon_tipleri_' + new Date().toISOString().slice(0, 10) + '.xlsx';
+                        saveAs(new Blob([buffer], { type: 'application/octet-stream' }), fileName);
+                    });
+                });
+                e.cancel = true;
+            },
             onRowDblClick: function(e) { editOperation(e.data.operation_type_id); },
             onContentReady: function(e) { document.getElementById('recordCount').textContent = e.component.totalCount() + ' kayıt'; },
             columns: [
@@ -108,7 +125,12 @@ window.addEventListener('load', function() {
                 { dataField:'operation_code',    caption:'Kod', width:110,
                     cellTemplate: function(c,o){ $('<span>').addClass('font-monospace small').text(o.value||'-').appendTo(c); }
                 },
-                { dataField:'operation_type',    caption:'Operasyon Adı', minWidth:200 },
+                { dataField:'operation_type',    caption:'Operasyon Adı', minWidth:200,
+                    cellTemplate: function(c,o){
+                        $('<a>').attr('href','javascript:void(0)').css({fontWeight:'bold',cursor:'pointer'})
+                            .text(o.value||'-').on('click',function(){ editOperation(o.data.operation_type_id); }).appendTo(c);
+                    }
+                },
                 { dataField:'operation_cost',    caption:'Maliyet', width:110, alignment:'right', dataType:'number', format:{type:'fixedPoint',precision:2} },
                 { dataField:'money',             caption:'Para Birimi', width:90 },
                 { dataField:'o_hour',            caption:'Saat', width:70, alignment:'center', dataType:'number' },

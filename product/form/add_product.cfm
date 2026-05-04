@@ -164,7 +164,15 @@
                                 </label>
                             </div>
                         </div>
-                    </div>
+                        
+                        <div class="col-md-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="is_ek_islem" name="is_ek_islem" value="1">
+                                <label class="form-check-label" for="is_ek_islem">
+                                    <i class="fas fa-tools me-1"></i>Ek İşlem
+                                </label>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -284,7 +292,8 @@ $(document).ready(function() {
             short_code: $('#short_code').val(),
             product_status: $('#product_status').is(':checked'),
             is_sales: $('#is_sales').is(':checked'),
-            is_purchase: $('#is_purchase').is(':checked')
+            is_purchase: $('#is_purchase').is(':checked'),
+            is_ek_islem: $('#is_ek_islem').is(':checked')
         };
         
         $.ajax({

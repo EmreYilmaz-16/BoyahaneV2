@@ -77,10 +77,29 @@ window.addEventListener('load', function() {
             filterRow: { visible: true },
             searchPanel: { visible: true, width: 200, placeholder: 'Ara...' },
             export: { enabled: true, fileName: 'sevkiyat_yontemleri' },
+            onExporting: function(e) {
+                var workbook = new ExcelJS.Workbook();
+                var worksheet = workbook.addWorksheet('Sevkiyat Yöntemleri');
+                DevExpress.excelExporter.exportDataGrid({
+                    component: e.component,
+                    worksheet: worksheet,
+                    autoFilterEnabled: true
+                }).then(function() {
+                    workbook.xlsx.writeBuffer().then(function(buffer) {
+                        saveAs(new Blob([buffer], { type: 'application/octet-stream' }), 'sevkiyat_yontemleri.xlsx');
+                    });
+                });
+                e.cancel = true;
+            },
             columns: [
                 { dataField: 'ship_method_id', caption: 'ID', width: 70, alignment: 'center', dataType: 'number', sortOrder: 'asc' },
                 { dataField: 'ship_method', caption: 'Sevkiyat Yöntemi', minWidth: 180,
-                    cellTemplate: function(c, o) { $('<strong>').text(o.value || '-').appendTo(c); }
+                    cellTemplate: function(c, o) {
+                        $('<a>').attr('href', '##').addClass('fw-bold text-decoration-none')
+                            .text(o.value || '-')
+                            .on('click', function(e) { e.preventDefault(); e.stopPropagation(); editShipMethod(o.data.ship_method_id); })
+                            .appendTo(c);
+                    }
                 },
                 { dataField: 'calculate', caption: 'Hesaplama', minWidth: 150,
                     cellTemplate: function(c, o) { c.text(o.value || '-'); }

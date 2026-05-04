@@ -194,12 +194,32 @@ window.addEventListener('load', function() {
             sorting: { mode:'multiple' },
             columnChooser: { enabled:true, mode:'select', title:'Sütun Seçimi' },
             export: { enabled:true, fileName:'giris_fisleri_' + new Date().toISOString().slice(0,10) },
+            onExporting: function(e) {
+                var workbook = new ExcelJS.Workbook();
+                var worksheet = workbook.addWorksheet('Giriş Fişleri');
+                DevExpress.excelExporter.exportDataGrid({
+                    component: e.component,
+                    worksheet: worksheet,
+                    autoFilterEnabled: true
+                }).then(function() {
+                    workbook.xlsx.writeBuffer().then(function(buffer) {
+                        saveAs(new Blob([buffer], { type: 'application/octet-stream' }),
+                            'giris_fisleri_' + new Date().toISOString().slice(0,10) + '.xlsx');
+                    });
+                });
+                e.cancel = true;
+            },
             onRowDblClick: function(e) { openGirisFis(e.data.ship_id); },
             onContentReady: function(e) { document.getElementById('recordCount').textContent = e.component.totalCount() + ' kayıt'; },
             columns: [
                 { dataField:'ship_id', caption:'ID', width:70, alignment:'center', dataType:'number', sortOrder:'desc' },
                 { dataField:'ship_number', caption:'Fiş No', width:130,
-                    cellTemplate: function(c,o) { $('<strong>').text(o.value||'-').appendTo(c); }
+                    cellTemplate: function(c,o) {
+                        $('<a>').attr('href','##').addClass('fw-bold text-decoration-none')
+                            .text(o.value||'-')
+                            .on('click', function(e){ e.preventDefault(); e.stopPropagation(); openGirisFis(o.data.ship_id); })
+                            .appendTo(c);
+                    }
                 },
                 { dataField:'company_name', caption:'Firma', minWidth:160 },
                 { dataField:'urun_adi', caption:'Ürün', minWidth:180,

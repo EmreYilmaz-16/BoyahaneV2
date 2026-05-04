@@ -92,6 +92,8 @@
     </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 <cfoutput>
 <script>
 // Veriyi hazırla
@@ -173,6 +175,21 @@ window.addEventListener('load', function() {
                 fileName: 'urun_kategorileri_' + new Date().toISOString().slice(0,10),
                 allowExportSelectedData: false
             },
+            onExporting: function(e) {
+                var workbook = new ExcelJS.Workbook();
+                var worksheet = workbook.addWorksheet('Kategoriler');
+                DevExpress.excelExporter.exportDataGrid({
+                    component: e.component,
+                    worksheet: worksheet,
+                    autoFilterEnabled: true
+                }).then(function() {
+                    workbook.xlsx.writeBuffer().then(function(buffer) {
+                        saveAs(new Blob([buffer], { type: 'application/octet-stream' }),
+                            'urun_kategorileri_' + new Date().toISOString().slice(0,10) + '.xlsx');
+                    });
+                });
+                e.cancel = true;
+            },
             
             // Seçim
             selection: {
@@ -208,7 +225,10 @@ window.addEventListener('load', function() {
                     caption: 'Kategori Adı',
                     minWidth: 200,
                     cellTemplate: function(container, options) {
-                        $('<strong>').text(options.value).appendTo(container);
+                        $('<a>').attr('href', '##').addClass('fw-bold text-decoration-none')
+                            .text(options.value || '-')
+                            .on('click', function(e) { e.preventDefault(); e.stopPropagation(); editCategory(options.data.product_catid); })
+                            .appendTo(container);
                     }
                 },
                 {

@@ -45,7 +45,7 @@
     FROM stocks s
     JOIN product p ON s.product_id = p.product_id
     WHERE p.company_id      = <cfqueryparam value="#getShip.company_id#" cfsqltype="cf_sql_integer">
-      AND p.product_detail2 = 'Ek İşlem'
+      AND p.is_ek_islem = true
       AND s.stock_status    = true
     ORDER BY p.product_name
 </cfquery>
