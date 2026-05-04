@@ -61,6 +61,7 @@
 <cfquery name="getDepts" datasource="boyahane">
     SELECT department_id, department_head
     FROM department
+    WHERE COALESCE(department_status, true) = true
     ORDER BY department_head
 </cfquery>
 <cfset deptsArr = []>
