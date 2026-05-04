@@ -7,6 +7,11 @@ echo "Fixing asset permissions..."
 find /var/www/assets -type d -exec chmod 755 {} \; 2>/dev/null || true
 find /var/www/assets -type f -exec chmod 644 {} \; 2>/dev/null || true
 
+# Ensure uploads directory exists and has correct permissions
+mkdir -p /var/www/assets/uploads/products
+chmod -R 755 /var/www/assets/uploads
+find /var/www/assets/uploads -type f -exec chmod 644 {} \; 2>/dev/null || true
+
 # Fix root-level files (index.cfm, Application.cfc etc.)
 find /var/www -maxdepth 1 -type f -exec chmod 644 {} \; 2>/dev/null || true
 

@@ -28,6 +28,12 @@
         <cfdirectory action="create" directory="#uploadDir#" mode="755">
     </cfif>
 
+    <!--- Linux'ta dizin izinlerini nginx için düzelt (www-data okuyabilsin) --->
+    <cftry>
+        <cfexecute name="chmod" arguments="-R 755 #expandPath('/assets/uploads/')#" timeout="5"></cfexecute>
+        <cfcatch></cfcatch>
+    </cftry>
+
     <!--- Dosyayı yükle --->
     <cffile action="upload"
             filefield="img_file"
