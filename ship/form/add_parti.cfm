@@ -505,12 +505,17 @@ var QUICK_UNIT       = '#jsStringFormat(mainUnit)#';
 var QUICK_UNIT_ID    = #mainUnitId#;
 
 function openQuickEkIslemModal() {
+    var modalEl = document.getElementById('quickEkIslemModal');
+    /* content-wrapper'ın overflow:hidden içinden kaçmak için body'e taşı */
+    if (modalEl.parentElement !== document.body) {
+        document.body.appendChild(modalEl);
+    }
     document.getElementById('qei_product_name').value = '';
     document.getElementById('qei_product_catid').value = '0';
     var errEl = document.getElementById('qei_error');
     errEl.textContent = '';
     errEl.classList.add('d-none');
-    new bootstrap.Modal(document.getElementById('quickEkIslemModal')).show();
+    new bootstrap.Modal(modalEl).show();
 }
 
 function quickAddEkIslem() {
