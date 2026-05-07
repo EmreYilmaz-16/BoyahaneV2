@@ -65,6 +65,13 @@
     ORDER BY p.product_name
 </cfquery>
 
+<!--- Ek işlem ürünleri için kategori listesi (hızlı ekleme modalı) --->
+<cfquery name="getProductCats" datasource="boyahane">
+    SELECT product_catid, product_cat, hierarchy
+    FROM product_cat
+    ORDER BY hierarchy, product_cat
+</cfquery>
+
 <!--- Ek işlemleri JSON dizisine çevir (JS için) --->
 <cfset ekIslemArray = []>
 <cfloop query="getEkIslem">
@@ -363,9 +370,16 @@
                         <i class="fas fa-cogs"></i>Ek İşlemler
                         <small class="text-muted ms-2">(sipariş satırı olarak eklenir)</small>
                     </div>
-                    <span class="badge bg-secondary" id="ekIslemCount">
-                        <cfoutput>#getEkIslem.recordCount#</cfoutput> adet
-                    </span>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-secondary" id="ekIslemCount">
+                            <cfoutput>#getEkIslem.recordCount#</cfoutput> adet
+                        </span>
+                        <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2"
+                                onclick="openQuickEkIslemModal()"
+                                title="Hızlı Ek İşlem Ekle">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="card-body p-3">
 
@@ -412,6 +426,62 @@
     </div><!--- /row --->
 </div>
 
+<!--- Hızlı Ek İşlem Ekleme Modalı --->
+<cfoutput>
+<div class="modal fade" id="quickEkIslemModal" tabindex="-1" aria-labelledby="quickEkIslemModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="quickEkIslemModalLabel">
+                    <i class="fas fa-plus-circle me-2 text-primary"></i>Hızlı Ek İşlem Ekle
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!--- Bilgi satırı: şirket ve birim ---> 
+                <div class="alert alert-info py-2 mb-3">
+                    <small>
+                        <i class="fas fa-building me-1"></i><strong>Şirket:</strong> #xmlFormat(getShip.company_name)#
+                        &nbsp;&nbsp;
+                        <i class="fas fa-ruler me-1"></i><strong>Birim:</strong> #xmlFormat(mainUnit)#
+                    </small>
+                </div>
+
+                <!--- Ek İşlem Adı --->
+                <div class="mb-3">
+                    <label for="qei_product_name" class="form-label fw-semibold">
+                        Ek İşlem Adı <span class="text-danger">*</span>
+                    </label>
+                    <input type="text" class="form-control" id="qei_product_name"
+                           placeholder="Örn: Boyama, Apre, Kasarlama...">
+                </div>
+
+                <!--- Kategori --->
+                <div class="mb-3">
+                    <label for="qei_product_catid" class="form-label fw-semibold">
+                        Kategori <span class="text-danger">*</span>
+                    </label>
+                    <select class="form-select" id="qei_product_catid">
+                        <option value="0">-- Kategori Seçin --</option>
+                        <cfloop query="getProductCats">
+                        <option value="#product_catid#">#xmlFormat(hierarchy & ' - ' & product_cat)#</option>
+                        </cfloop>
+                    </select>
+                </div>
+
+                <div id="qei_error" class="text-danger small d-none"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                <button type="button" class="btn btn-primary" id="qei_saveBtn" onclick="quickAddEkIslem()">
+                    <i class="fas fa-save me-2"></i>Kaydet
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+</cfoutput>
+
 <cfoutput>
 <style>
 .ek-islem-row { transition: background .15s; }
@@ -426,6 +496,110 @@ var companyPriceMap = {};
 priceListData.forEach(function(r) {
     if (r.STOCK_ID > 0) companyPriceMap[r.STOCK_ID] = { price: r.PRICE || 0, tax: r.TAX || 0 };
 });
+
+/* ─── Hızlı Ek İşlem Modal ─── */
+var QUICK_COMPANY_ID = #getShip.company_id#;
+var QUICK_UNIT       = '#jsStringFormat(mainUnit)#';
+var QUICK_UNIT_ID    = #mainUnitId#;
+
+function openQuickEkIslemModal() {
+    document.getElementById('qei_product_name').value = '';
+    document.getElementById('qei_product_catid').value = '0';
+    var errEl = document.getElementById('qei_error');
+    errEl.textContent = '';
+    errEl.classList.add('d-none');
+    new bootstrap.Modal(document.getElementById('quickEkIslemModal')).show();
+}
+
+function quickAddEkIslem() {
+    var name   = document.getElementById('qei_product_name').value.trim();
+    var catid  = parseInt(document.getElementById('qei_product_catid').value) || 0;
+    var errEl  = document.getElementById('qei_error');
+    var btn    = document.getElementById('qei_saveBtn');
+
+    errEl.classList.add('d-none');
+
+    if (!name) {
+        errEl.textContent = 'Ek işlem adı boş olamaz.';
+        errEl.classList.remove('d-none');
+        document.getElementById('qei_product_name').focus();
+        return;
+    }
+    if (!catid) {
+        errEl.textContent = 'Kategori seçmelisiniz.';
+        errEl.classList.remove('d-none');
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Kaydediliyor...';
+
+    $.ajax({
+        url: '/product/cfc/product.cfc?method=saveProduct',
+        method: 'POST',
+        data: {
+            product_name:   name,
+            product_catid:  catid,
+            company_id:     QUICK_COMPANY_ID,
+            is_ek_islem:    true,
+            is_purchase:    true,
+            product_status: true
+        },
+        dataType: 'json',
+        success: function(res) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-save me-2"></i>Kaydet';
+            if (res.success) {
+                bootstrap.Modal.getInstance(document.getElementById('quickEkIslemModal')).hide();
+                /* Yeni ürünü listeye ekle + checkbox ile seç */
+                var newStockId  = res.stock_id  || 0;
+                var newProdId   = res.product_id || 0;
+                var listEl = document.getElementById('ekIslemList');
+                if (!listEl) {
+                    /* Liste elementi yoksa (firma için ilk ek işlem) sayfa yenile */
+                    location.reload();
+                    return;
+                }
+                var rowId = 'ek_row_' + newStockId;
+                var html  = '<div class="ek-islem-row p-2 mb-2 rounded selected" id="' + rowId + '" style="border:1px solid #a5d6a7;background:#e8f5e9;">'
+                          + '<div class="d-flex align-items-center gap-3">'
+                          + '<div class="form-check mb-0">'
+                          + '<input class="form-check-input ek-chk" type="checkbox" id="ek_chk_' + newStockId + '" checked'
+                          + ' data-stock-id="' + newStockId + '"'
+                          + ' data-product-id="' + newProdId + '"'
+                          + ' data-product-name="' + name.replace(/"/g, '&quot;') + '"'
+                          + ' data-product-code=""'
+                          + ' data-stock-code="">'
+                          + '<label class="form-check-label fw-semibold" for="ek_chk_' + newStockId + '">'
+                          + name
+                          + ' <small class="badge bg-success ms-1">Yeni</small>'
+                          + '</label></div></div></div>';
+                listEl.insertAdjacentHTML('beforeend', html);
+                /* Checkbox toggle event'ını da bağla */
+                var newChk = document.getElementById('ek_chk_' + newStockId);
+                if (newChk) {
+                    newChk.addEventListener('change', function() {
+                        var r = document.getElementById('ek_row_' + this.dataset.stockId);
+                        if (this.checked) r.classList.add('selected');
+                        else              r.classList.remove('selected');
+                    });
+                }
+                /* Sayacı güncelle */
+                var cntEl = document.getElementById('ekIslemCount');
+                if (cntEl) cntEl.textContent = (parseInt(cntEl.textContent) || 0) + 1 + ' adet';
+            } else {
+                errEl.textContent = res.message || 'Kayıt hatası.';
+                errEl.classList.remove('d-none');
+            }
+        },
+        error: function() {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-save me-2"></i>Kaydet';
+            errEl.textContent = 'Sunucu hatası! Lütfen tekrar deneyin.';
+            errEl.classList.remove('d-none');
+        }
+    });
+}
 
 /* ─── Ek işlem checkbox toggle ─── */
 document.querySelectorAll('.ek-chk').forEach(function(chk) {
