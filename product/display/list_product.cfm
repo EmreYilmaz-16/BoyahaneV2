@@ -16,13 +16,16 @@
         p.is_purchase,
         p.record_date,
         p.update_date,
+        p.company_id,
         pc.product_cat,
         pc.hierarchy,
-        pb.brand_name
+        pb.brand_name,
+        COALESCE(c.nickname, c.fullname, c.member_code, CAST(c.company_id AS VARCHAR)) AS company_name
     FROM 
         product p
         LEFT JOIN product_cat pc ON p.product_catid = pc.product_catid
         LEFT JOIN product_brands pb ON p.brand_id = pb.brand_id
+        LEFT JOIN company c ON p.company_id = c.company_id
     ORDER BY 
         p.product_id DESC
 </cfquery>
@@ -52,6 +55,8 @@
         "tax" = tax,
         "is_sales" = is_sales,
         "is_purchase" = is_purchase,
+        "company_id" = company_id ?: 0,
+        "company_name" = company_name ?: "",
         "record_date" = isDate(record_date) ? dateFormat(record_date, "dd/mm/yyyy") & " " & timeFormat(record_date, "HH:mm") : "",
         "update_date" = isDate(update_date) ? dateFormat(update_date, "dd/mm/yyyy") & " " & timeFormat(update_date, "HH:mm") : ""
     }>
@@ -272,6 +277,18 @@ window.addEventListener('load', function() {
                     cellTemplate: function(container, options) {
                         if (options.value) {
                             $('<span>').addClass('badge bg-secondary').text(options.value).appendTo(container);
+                        } else {
+                            $('<span>').addClass('text-muted').text('-').appendTo(container);
+                        }
+                    }
+                },
+                {
+                    dataField: 'company_name',
+                    caption: 'Firma',
+                    width: 160,
+                    cellTemplate: function(container, options) {
+                        if (options.value) {
+                            $('<span>').addClass('badge bg-primary').text(options.value).appendTo(container);
                         } else {
                             $('<span>').addClass('text-muted').text('-').appendTo(container);
                         }
