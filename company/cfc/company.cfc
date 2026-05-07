@@ -562,6 +562,7 @@
                 <cfset cMobil    = structKeyExists(row, "mobiltel")          ? trim(row.mobiltel)          : "">
                 <cfset cAddress  = structKeyExists(row, "company_address")  ? trim(row.company_address)  : "">
                 <cfset cOzelKod  = structKeyExists(row, "ozel_kod")          ? trim(row.ozel_kod)          : "">
+                <cfset cOzelKod1 = structKeyExists(row, "ozel_kod_1")        ? trim(row.ozel_kod_1)        : "">
                 <cfset cIsBuyer  = structKeyExists(row, "is_buyer")    ? (row.is_buyer    eq true or row.is_buyer    eq 1) : true>
                 <cfset cIsSeller = structKeyExists(row, "is_seller")   ? (row.is_seller   eq true or row.is_seller   eq 1) : true>
                 <cfset cIsPot    = structKeyExists(row, "ispotantial")  ? (row.ispotantial eq true or row.ispotantial eq 1) : false>
@@ -577,7 +578,7 @@
                         INSERT INTO company (
                             company_status, nickname, fullname, companycat_id,
                             member_code, taxoffice, taxno, company_email, company_tel1,
-                            mobiltel, company_address, ozel_kod,
+                            mobiltel, company_address, ozel_kod, ozel_kod_1,
                             is_buyer, is_seller, ispotantial, is_person,
                             record_date, record_emp
                         ) VALUES (
@@ -593,6 +594,7 @@
                             <cfqueryparam value="#cMobil#"    cfsqltype="cf_sql_varchar" null="#len(cMobil) eq 0#">,
                             <cfqueryparam value="#cAddress#"  cfsqltype="cf_sql_varchar" null="#len(cAddress) eq 0#">,
                             <cfqueryparam value="#cOzelKod#"  cfsqltype="cf_sql_varchar" null="#len(cOzelKod) eq 0#">,
+                            <cfqueryparam value="#cOzelKod1#" cfsqltype="cf_sql_varchar" null="#len(cOzelKod1) eq 0#">,
                             <cfqueryparam value="#cIsBuyer#"  cfsqltype="cf_sql_bit">,
                             <cfqueryparam value="#cIsSeller#" cfsqltype="cf_sql_bit">,
                             <cfqueryparam value="#cIsPot#"    cfsqltype="cf_sql_bit">,

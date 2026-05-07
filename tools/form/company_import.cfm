@@ -250,6 +250,7 @@ const FIELDS = [
     { key: 'ispotantial',      label: 'Potansiyel (1/0)',  required: false },
     { key: 'is_person',        label: 'Şahıs (1/0)',       required: false },
     { key: 'ozel_kod',         label: 'Özel Kod',          required: false },
+    { key: 'ozel_kod_1',       label: 'Özel Kod 1',        required: false },
 ];
 
 const AUTO_HEADER_MAP = {
@@ -273,6 +274,7 @@ const AUTO_HEADER_MAP = {
     'potansiyel':'ispotantial', 'ispotantial':'ispotantial',
     'şahıs':'is_person', 'sahis':'is_person', 'is_person':'is_person', 'person':'is_person',
     'özel kod':'ozel_kod', 'ozel kod':'ozel_kod', 'ozel_kod':'ozel_kod',
+    'özel kod 1':'ozel_kod_1', 'ozel kod 1':'ozel_kod_1', 'ozel_kod_1':'ozel_kod_1', 'özelkod1':'ozel_kod_1',
 };
 
 let excelHeaders = [], excelRows = [], columnMapping = {};
@@ -441,6 +443,7 @@ function doImport() {
             mobiltel:        String(f2i.hasOwnProperty('mobiltel')         ? raw[f2i['mobiltel']]         : '').trim(),
             company_address: String(f2i.hasOwnProperty('company_address') ? raw[f2i['company_address']] : '').trim(),
             ozel_kod:        String(f2i.hasOwnProperty('ozel_kod')         ? raw[f2i['ozel_kod']]         : '').trim(),
+            ozel_kod_1:      String(f2i.hasOwnProperty('ozel_kod_1')       ? raw[f2i['ozel_kod_1']]       : '').trim(),
             is_buyer:        toBool(f2i.hasOwnProperty('is_buyer')    ? raw[f2i['is_buyer']]    : 1, true),
             is_seller:       toBool(f2i.hasOwnProperty('is_seller')   ? raw[f2i['is_seller']]   : 1, true),
             ispotantial:     toBool(f2i.hasOwnProperty('ispotantial') ? raw[f2i['ispotantial']] : 0, false),
@@ -491,7 +494,7 @@ function downloadTemplate() {
         'Kısa Ad', 'Firma Adı', 'Kategori ID', 'Üye Kodu',
         'Vergi Dairesi', 'Vergi No', 'E-posta', 'Telefon 1',
         'Cep Telefonu', 'Adres',
-        'Alıcı', 'Satıcı', 'Potansiyel', 'Şahıs', 'Özel Kod'
+        'Alıcı', 'Satıcı', 'Potansiyel', 'Şahıs', 'Özel Kod', 'Özel Kod 1'
     ];
     const example = [
         'ABC Ltd', 'ABC Ticaret Ltd. Şti.',
@@ -499,11 +502,11 @@ function downloadTemplate() {
         'MUS001', 'İstanbul VD', '1234567890',
         'info@abc.com', '02121234567', '05321234567',
         'Örnek Mah. Test Sk. No:1 İstanbul',
-        1, 1, 0, 0, ''
+        1, 1, 0, 0, '', ''
     ];
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet([headers, example]);
-    ws['!cols'] = [18,30,12,12,18,14,22,14,14,35,8,8,12,8,14].map(w => ({ wch: w }));
+    ws['!cols'] = [18,30,12,12,18,14,22,14,14,35,8,8,12,8,14,14].map(w => ({ wch: w }));
     XLSX.utils.book_append_sheet(wb, ws, 'Firmalar');
     XLSX.writeFile(wb, 'firma_import_sablonu.xlsx');
 }
