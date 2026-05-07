@@ -487,6 +487,8 @@
 .ek-islem-row { transition: background .15s; }
 .ek-islem-row.selected { background: ##e8f5e9 !important; border-color: ##a5d6a7 !important; }
 @media(min-width:992px){ .sticky-top-card { position:sticky; top:70px; z-index:1; } }
+##quickEkIslemModal { z-index: 99999 !important; }
+.modal-backdrop    { z-index: 99998 !important; }
 </style>
 
 <script>
