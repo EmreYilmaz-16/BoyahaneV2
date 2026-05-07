@@ -24,6 +24,7 @@
     <cfset ship_status  = isDefined("form.ship_status")  AND isNumeric(form.ship_status)  ? val(form.ship_status)  : 1>
     <cfset ref_no       = isDefined("form.ref_no")       ? trim(form.ref_no)       : "">
     <cfset ship_detail  = isDefined("form.ship_detail")  ? trim(form.ship_detail)  : "">
+    <cfset return_cat_id = isDefined("form.return_cat_id") AND isNumeric(form.return_cat_id) AND val(form.return_cat_id) gt 0 ? val(form.return_cat_id) : javaCast("null","")>
     <cfset rowsJson     = isDefined("form.rows")         ? form.rows               : "[]">
     <!--- Ham Kumaş alanları — yalnızca ship_type=5 (Ham Kumaş Alış) için --->
     <cfif ship_type eq 5>
@@ -87,7 +88,8 @@
                 hk_h_gramaj    = <cfqueryparam value="#val(hk_h_gramaj)#"  cfsqltype="cf_sql_double"  null="#NOT isNumeric(hk_h_gramaj)#">,
                 hk_gr_mtul     = <cfqueryparam value="#val(hk_gr_mtul)#"   cfsqltype="cf_sql_double"  null="#NOT isNumeric(hk_gr_mtul)#">,
                 hk_ucretli     = <cfqueryparam value="#hk_ucretli#"        cfsqltype="cf_sql_bit">,
-                hk_ham_boyali  = <cfqueryparam value="#hk_ham_boyali#"     cfsqltype="cf_sql_bit">
+                hk_ham_boyali  = <cfqueryparam value="#hk_ham_boyali#"     cfsqltype="cf_sql_bit">,
+                return_cat_id  = <cfif NOT isNull(return_cat_id)><cfqueryparam value="#return_cat_id#" cfsqltype="cf_sql_integer"><cfelse>NULL</cfif>
             WHERE ship_id = <cfqueryparam value="#ship_id#" cfsqltype="cf_sql_integer">
         </cfquery>
 
@@ -111,7 +113,7 @@
                 ship_date, deliver_date, company_id, paymethod_id, ship_method,
                 location_in, deliver_store_id, ship_status, ref_no, ship_detail,
                 grosstotal, discounttotal, nettotal, taxtotal,
-                hk_metre, hk_kg, hk_top_adedi, hk_h_gramaj, hk_gr_mtul, hk_ucretli, hk_ham_boyali
+                hk_metre, hk_kg, hk_top_adedi, hk_h_gramaj, hk_gr_mtul, hk_ucretli, hk_ham_boyali, return_cat_id
             ) VALUES (
                 <cfqueryparam value="#purchase_sales#" cfsqltype="cf_sql_bit">,
                 <cfqueryparam value="#ship_type#"      cfsqltype="cf_sql_integer">,
@@ -137,7 +139,8 @@
                 <cfqueryparam value="#val(hk_h_gramaj)#"  cfsqltype="cf_sql_double"  null="#NOT isNumeric(hk_h_gramaj)#">,
                 <cfqueryparam value="#val(hk_gr_mtul)#"   cfsqltype="cf_sql_double"  null="#NOT isNumeric(hk_gr_mtul)#">,
                 <cfqueryparam value="#hk_ucretli#"        cfsqltype="cf_sql_bit">,
-                <cfqueryparam value="#hk_ham_boyali#"     cfsqltype="cf_sql_bit">
+                <cfqueryparam value="#hk_ham_boyali#"     cfsqltype="cf_sql_bit">,
+                <cfif NOT isNull(return_cat_id)><cfqueryparam value="#return_cat_id#" cfsqltype="cf_sql_integer"><cfelse>NULL</cfif>
             )
         </cfquery>
 

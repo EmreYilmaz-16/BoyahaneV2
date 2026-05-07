@@ -77,6 +77,7 @@
         <cfset selStockId = 0><cfset selStockName = "">
         <cfset selUnit = ""><cfset selUnitId = 0><cfset selLotNo = ""><cfset selRafId = 0>
     </cfif>
+    <cfset selReturnCatId = val(s.return_cat_id ?: 0)>
 <cfelse>
     <cfset selCompanyId = 0><cfset selCompanyName = ""><cfset selShipNumber = "">
     <cfset selRefNo = ""><cfset selShipDetail = ""><cfset selShipStatus = 1>
@@ -86,7 +87,15 @@
     <cfset selHkUcretli = true><cfset selHkHamBoyali = true>
     <cfset selStockId = 0><cfset selStockName = "">
     <cfset selUnit = ""><cfset selUnitId = 0><cfset selLotNo = ""><cfset selRafId = 0>
+    <cfset selReturnCatId = 0>
 </cfif>
+
+<!--- İade Nedenleri --->
+<cfquery name="qReturnCats" datasource="boyahane">
+    SELECT return_cat_id, return_cat
+    FROM return_cats
+    ORDER BY return_cat
+</cfquery>
 
 <!--- Stoklar — edit modunda firma seçiliyse CF'de ön yükle; add modunda JS AJAX ile yüklenir --->
 <cfset stocksArray = []>
@@ -213,6 +222,23 @@
                             </label>
                             <textarea class="form-control" id="ship_detail" rows="2"
                                       placeholder="İrsaliye açıklaması..."><cfoutput>#xmlFormat(selShipDetail)#</cfoutput></textarea>
+                        </div>
+
+                        <!--- İade Nedeni --->
+                        <div class="mb-3">
+                            <label for="return_cat_id" class="form-label fw-semibold">
+                                <i class="fas fa-undo-alt me-1 text-primary"></i>İade Nedeni
+                            </label>
+                            <select class="form-select" id="return_cat_id">
+                                <option value="0">-- İade Nedeni Seçin --</option>
+                                <cfloop query="qReturnCats">
+                                <cfoutput>
+                                <option value="#return_cat_id#"
+                                    <cfif selReturnCatId eq return_cat_id>selected</cfif>
+                                >#htmlEditFormat(return_cat)#</option>
+                                </cfoutput>
+                                </cfloop>
+                            </select>
                         </div>
 
                         <!--- Giriş Rafı --->
@@ -740,6 +766,7 @@ function saveShip() {
         hk_gr_mtul:     document.getElementById('hk_gr_mtul').value   || '',
         hk_ucretli:     ucretliSel   ? ucretliSel.value   : 'true',
         hk_ham_boyali:  hamBoyaliSel ? hamBoyaliSel.value : 'true',
+        return_cat_id:  parseInt(document.getElementById('return_cat_id').value) || 0,
         rows:           JSON.stringify([row])
     };
 
