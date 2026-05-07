@@ -462,14 +462,22 @@ window.addEventListener('load', function() {
                 { dataField:'sarim_sekli_adi', caption:'Sarım Şekli', width:120 },
                 { dataField:'ambalaj_adi',     caption:'Ambalaj',      width:120 },
                 {
-                    caption:'İşlemler', width:90, alignment:'center', allowSorting:false, allowFiltering:false,
+                    caption:'İşlemler', width:120, alignment:'center', allowSorting:false, allowFiltering:false,
                     cellTemplate: function(c,o){
-                        var g = $('<div>').addClass('d-flex gap-1 justify-content-center');
-                        $('<button>').addClass('btn btn-sm btn-outline-primary').attr('title','Siparişi Düzenle')
+                        var oid = o.data.ORDER_ID || o.data.order_id;
+                        var g   = $('<div>').addClass('d-flex gap-1 justify-content-center');
+                        $('<button>').addClass('btn btn-sm btn-outline-info').attr('title','Parti Detay')
+                            .html('<i class="fas fa-eye"></i>')
+                            .on('click', function(e2){
+                                e2.stopPropagation();
+                                window.location.href='index.cfm?fuseaction=ship.detail_parti&order_id='+oid;
+                            })
+                            .appendTo(g);
+                        $('<button>').addClass('btn btn-sm btn-outline-primary').attr('title','Partiyi Düzenle')
                             .html('<i class="fas fa-edit"></i>')
                             .on('click', function(e2){
                                 e2.stopPropagation();
-                                window.location.href='index.cfm?fuseaction=order.add_order&order_id='+(o.data.ORDER_ID||o.data.order_id);
+                                window.location.href='index.cfm?fuseaction=order.add_order&order_id='+oid;
                             })
                             .appendTo(g);
                         g.appendTo(c);

@@ -15,7 +15,8 @@ VALUES
 ('ship.add_parti',      '/ship/form/add_parti.cfm',      'add_parti',      'Parti Oluştur',           'page', NULL, 15, true, false),
 ('ship.list_partiler',          '/ship/display/list_partiler.cfm',           'list_partiler',          'Parti Listesi',              'page', NULL, 16, true, false),
 ('ship.list_giris_fis',         '/ship/display/list_giris_fis.cfm',          'list_giris_fis',         'Ham Kumaş Girişleri',        'page', NULL, 17, true, true),
-('ship.update_order_row_stock', '/ship/form/update_order_row_stock.cfm',     'update_order_row_stock', 'Sipariş Satırı Stok Güncelle','page', NULL, 18, true, false)
+('ship.update_order_row_stock', '/ship/form/update_order_row_stock.cfm',     'update_order_row_stock', 'Sipariş Satırı Stok Güncelle','page', NULL, 18, true, false),
+('ship.detail_parti',          '/ship/display/detail_parti.cfm',            'detail_parti',           'Parti Detay',               'page', NULL, 19, true, false)
 ;
 
 -- Minimal (full_fuseaction + file_path yeterli ise):
