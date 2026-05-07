@@ -176,6 +176,12 @@
         DELETE FROM order_row WHERE order_id = <cfqueryparam value="#orderId#" cfsqltype="cf_sql_integer">
     </cfquery>
 
+    <!--- Geçerli unit_id listesi: FK ihlalini önlemek için satır başına NULL kullanılır --->
+    <cfquery name="validUnitIds" datasource="boyahane">
+        SELECT unit_id FROM setup_unit
+    </cfquery>
+    <cfset validUnitIdList = valueList(validUnitIds.unit_id)>
+
     <cfloop array="#rowsData#" item="row">
         <cfset rStockId   = isNumeric(row.stock_id)   ? val(row.stock_id)   : 0>
         <cfset rProductId = isNumeric(row.product_id) ? val(row.product_id) : 0>
@@ -186,7 +192,8 @@
         <cfset rTaxR      = isNumeric(row.tax)        ? row.tax        : 0>
         <cfset rDisc1     = isNumeric(row.discount_1) ? row.discount_1 : 0>
         <cfset rUnit      = isDefined("row.unit")     ? trim(row.unit)     : "">
-        <cfset rUnitId    = isNumeric(row.unit_id)    ? val(row.unit_id)   : 0>
+        <cfset rUnitIdRaw = isNumeric(row.unit_id)    ? val(row.unit_id)   : 0>
+        <cfset rUnitId    = (rUnitIdRaw gt 0 AND listFind(validUnitIdList, rUnitIdRaw)) ? rUnitIdRaw : 0>
         <cfset rLotNo     = isDefined("row.lot_no")   ? trim(row.lot_no)   : "">
 
         <cfset rGross   = rQty * rPrc>
