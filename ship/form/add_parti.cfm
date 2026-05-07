@@ -561,7 +561,7 @@ function quickAddEkIslem() {
                     return;
                 }
                 var rowId = 'ek_row_' + newStockId;
-                var html  = '<div class="ek-islem-row p-2 mb-2 rounded selected" id="' + rowId + '" style="border:1px solid #a5d6a7;background:#e8f5e9;">'
+                var html  = '<div class="ek-islem-row p-2 mb-2 rounded selected" id="' + rowId + '" style="border:1px solid ##a5d6a7;background:##e8f5e9;">'
                           + '<div class="d-flex align-items-center gap-3">'
                           + '<div class="form-check mb-0">'
                           + '<input class="form-check-input ek-chk" type="checkbox" id="ek_chk_' + newStockId + '" checked'
