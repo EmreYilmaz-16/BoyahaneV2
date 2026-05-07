@@ -304,9 +304,10 @@ const FIELDS = [
     { key: 'manufact_code',   label: 'Üretici Kodu',     required: false },
     { key: 'short_code',      label: 'Kısa Kod',         required: false },
     { key: 'shelf_life',      label: 'Raf Ömrü',         required: false },
-    { key: 'product_status',  label: 'Aktif (1/0)',      required: false },
-    { key: 'is_sales',        label: 'Satış (1/0)',      required: false },
-    { key: 'is_purchase',     label: 'Satın Alma (1/0)', required: false },
+    { key: 'product_status',     label: 'Aktif (1/0)',        required: false },
+    { key: 'is_sales',           label: 'Satış (1/0)',        required: false },
+    { key: 'is_purchase',        label: 'Satın Alma (1/0)',   required: false },
+    { key: 'customer_ozel_kod',  label: 'Müşteri Özel Kodu',  required: false },
 ];
 
 /* Otomatik başlık eşleştirme tablosu */
@@ -336,6 +337,9 @@ const AUTO_HEADER_MAP = {
     'satış':'is_sales', 'satis':'is_sales', 'is_sales':'is_sales', 'sales':'is_sales',
     'satın alma':'is_purchase', 'satin alma':'is_purchase', 'is_purchase':'is_purchase',
     'purchase':'is_purchase',
+    'müşteri özel kodu':'customer_ozel_kod', 'musteri ozel kodu':'customer_ozel_kod',
+    'customer_ozel_kod':'customer_ozel_kod', 'müşteri kodu':'customer_ozel_kod',
+    'musteri kodu':'customer_ozel_kod', 'customer ozel kod':'customer_ozel_kod',
 };
 
 /* ====================================================
@@ -646,9 +650,10 @@ function doImport() {
             manufact_code:  String(fieldToColIdx.hasOwnProperty('manufact_code')  ? raw[fieldToColIdx['manufact_code']]  : '').trim(),
             short_code:     String(fieldToColIdx.hasOwnProperty('short_code')     ? raw[fieldToColIdx['short_code']]     : '').trim(),
             shelf_life:     String(fieldToColIdx.hasOwnProperty('shelf_life')     ? raw[fieldToColIdx['shelf_life']]     : '').trim(),
-            product_status: toBool(fieldToColIdx.hasOwnProperty('product_status') ? raw[fieldToColIdx['product_status']] : 1, true),
-            is_sales:       toBool(fieldToColIdx.hasOwnProperty('is_sales')       ? raw[fieldToColIdx['is_sales']]       : 1, true),
-            is_purchase:    toBool(fieldToColIdx.hasOwnProperty('is_purchase')    ? raw[fieldToColIdx['is_purchase']]    : 1, true),
+            product_status:    toBool(fieldToColIdx.hasOwnProperty('product_status') ? raw[fieldToColIdx['product_status']] : 1, true),
+            is_sales:          toBool(fieldToColIdx.hasOwnProperty('is_sales')       ? raw[fieldToColIdx['is_sales']]       : 1, true),
+            is_purchase:       toBool(fieldToColIdx.hasOwnProperty('is_purchase')    ? raw[fieldToColIdx['is_purchase']]    : 1, true),
+            customer_ozel_kod: String(fieldToColIdx.hasOwnProperty('customer_ozel_kod') ? raw[fieldToColIdx['customer_ozel_kod']] : '').trim(),
         });
     });
 
@@ -712,7 +717,7 @@ function downloadTemplate() {
     const headers = [
         'Ürün Kodu', 'Ürün Adı', 'Hiyerarşi', 'Barkod', 'Marka ID',
         'Ürün Detayı', 'KDV (%)', 'Üretici Kodu', 'Kısa Kod', 'Raf Ömrü',
-        'Aktif', 'Satış', 'Satın Alma'
+        'Aktif', 'Satış', 'Satın Alma', 'Müşteri Özel Kodu'
     ];
     const exampleHierarchy = CATEGORIES.length ? CATEGORIES[0].hierarchy : 'Örnek Hiyerarşi';
     const example = [
@@ -720,13 +725,13 @@ function downloadTemplate() {
         exampleHierarchy,
         '1234567890123',
         BRANDS.length ? BRANDS[0].id : '',
-        'Örnek ürün açıklaması', 18, 'ÜR-001', 'KOD1', '12 ay', 1, 1, 1
+        'Örnek ürün açıklaması', 18, 'ÜR-001', 'KOD1', '12 ay', 1, 1, 1, ''
     ];
 
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet([headers, example]);
 
-    ws['!cols'] = [10, 25, 20, 18, 10, 30, 8, 15, 12, 12, 8, 8, 12].map(w => ({ wch: w }));
+    ws['!cols'] = [10, 25, 20, 18, 10, 30, 8, 15, 12, 12, 8, 8, 12, 18].map(w => ({ wch: w }));
 
     XLSX.utils.book_append_sheet(wb, ws, 'Ürünler');
     XLSX.writeFile(wb, 'urun_import_hiyerarsi_sablonu.xlsx');

@@ -998,8 +998,10 @@
         <cfset var products   = []>
         <cfset var inserted   = 0>
         <cfset var errList    = []>
-        <cfset var catMap     = {}>
-        <cfset var qAllCats   = "">
+        <cfset var catMap      = {}>
+        <cfset var companyMap  = {}>
+        <cfset var qAllCats    = "">
+        <cfset var qCompanies  = "">
 
         <cfheader name="Content-Type" value="application/json; charset=utf-8">
 
@@ -1027,6 +1029,16 @@
             </cfquery>
             <cfloop query="qAllCats">
                 <cfset catMap[product_catid] = true>
+            </cfloop>
+
+            <!--- Firma ozel_kod → company_id haritasını önbelleğe al --->
+            <cfquery name="qCompanies" datasource="boyahane">
+                SELECT company_id, ozel_kod
+                FROM company
+                WHERE ozel_kod IS NOT NULL AND ozel_kod <> ''
+            </cfquery>
+            <cfloop query="qCompanies">
+                <cfset companyMap[lCase(trim(ozel_kod))] = company_id>
             </cfloop>
 
             <cfloop array="#products#" index="row">
@@ -1058,7 +1070,13 @@
                 <cfset pTax       = structKeyExists(row, "tax")              ? val(row.tax)               : 18>
                 <cfset pManufact  = structKeyExists(row, "manufact_code")    ? trim(row.manufact_code)    : "">
                 <cfset pShortCode = structKeyExists(row, "short_code")       ? trim(row.short_code)       : "">
-                <cfset pShelfLife = structKeyExists(row, "shelf_life")       ? trim(row.shelf_life)       : "">
+                <cfset pShelfLife     = structKeyExists(row, "shelf_life")          ? trim(row.shelf_life)          : "">
+                <cfset pCustOzelKod   = structKeyExists(row, "customer_ozel_kod")   ? trim(row.customer_ozel_kod)   : "">
+                <!--- Müşteri özel kodundan company_id çözümle --->
+                <cfset pCompanyId = 0>
+                <cfif len(pCustOzelKod) gt 0 and structKeyExists(companyMap, lCase(pCustOzelKod))>
+                    <cfset pCompanyId = companyMap[lCase(pCustOzelKod)]>
+                </cfif>
 
                 <!--- Boolean dönüşümleri --->
                 <cfset pStatus = true>
@@ -1085,7 +1103,7 @@
                             product_code, product_name, product_catid, barcod,
                             product_detail, product_status, tax,
                             is_sales, is_purchase, brand_id, shelf_life,
-                            manufact_code, short_code, record_date, record_member
+                            manufact_code, short_code, company_id, record_date, record_member
                         ) VALUES (
                             <cfqueryparam value="#pCode#"      cfsqltype="cf_sql_varchar" null="#len(pCode) eq 0#">,
                             <cfqueryparam value="#pName#"      cfsqltype="cf_sql_varchar">,
@@ -1098,8 +1116,9 @@
                             <cfqueryparam value="#pIsPurchase#" cfsqltype="cf_sql_bit">,
                             <cfqueryparam value="#pBrandId#"   cfsqltype="cf_sql_integer" null="#pBrandId eq 0#">,
                             <cfqueryparam value="#pShelfLife#" cfsqltype="cf_sql_varchar" null="#len(pShelfLife) eq 0#">,
-                            <cfqueryparam value="#pManufact#"  cfsqltype="cf_sql_varchar" null="#len(pManufact) eq 0#">,
-                            <cfqueryparam value="#pShortCode#" cfsqltype="cf_sql_varchar" null="#len(pShortCode) eq 0#">,
+                            <cfqueryparam value="#pManufact#"   cfsqltype="cf_sql_varchar" null="#len(pManufact) eq 0#">,
+                            <cfqueryparam value="#pShortCode#"  cfsqltype="cf_sql_varchar" null="#len(pShortCode) eq 0#">,
+                            <cfqueryparam value="#pCompanyId#"  cfsqltype="cf_sql_integer" null="#pCompanyId eq 0#">,
                             CURRENT_TIMESTAMP,
                             1
                         )
