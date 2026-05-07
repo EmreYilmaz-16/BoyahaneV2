@@ -131,6 +131,53 @@
                     </div>
                 </div>
 
+                <!--- Tekstil / Kumaş Özellikleri --->
+                <div class="grid-card mb-3">
+                    <div class="grid-card-header">
+                        <div class="grid-card-header-title"><i class="fas fa-tshirt"></i>Tekstil / Kumaş Özellikleri</div>
+                    </div>
+                    <div class="card-body p-3">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label for="en" class="form-label">En (cm)</label>
+                            <input type="number" class="form-control" id="en" name="en" step="0.01" min="0" placeholder="Kumaş eni">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="gramaj" class="form-label">Gramaj (g/m²)</label>
+                            <input type="number" class="form-control" id="gramaj" name="gramaj" step="0.01" min="0" placeholder="Gramaj">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="isi" class="form-label">Isı (°C)</label>
+                            <input type="number" class="form-control" id="isi" name="isi" step="0.01" placeholder="Isı değeri">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="hiz" class="form-label">Hız (m/dak)</label>
+                            <input type="number" class="form-control" id="hiz" name="hiz" step="0.01" min="0" placeholder="Hız">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="besleme_avans" class="form-label">Besleme Avans</label>
+                            <input type="number" class="form-control" id="besleme_avans" name="besleme_avans" step="0.01" placeholder="Besleme avans">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="kumas_tipi" class="form-label">Kumaş Tipi</label>
+                            <input type="text" class="form-control" id="kumas_tipi" name="kumas_tipi" placeholder="Örn: Dokuma, Örme">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="tuse" class="form-label">Tuşe</label>
+                            <input type="text" class="form-control" id="tuse" name="tuse" placeholder="Tuşe">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="cekme" class="form-label">Çekme</label>
+                            <input type="text" class="form-control" id="cekme" name="cekme" placeholder="Çekme">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="kullanilan_kimyassal" class="form-label">Kullanılan Kimyasal (ID)</label>
+                            <input type="number" class="form-control" id="kullanilan_kimyassal" name="kullanilan_kimyassal" min="0" placeholder="Kimyasal ID">
+                        </div>
+                    </div>
+                    </div>
+                </div>
+
                 <!--- Durum ve Özellikler --->
                 <div class="grid-card mb-3">
                     <div class="grid-card-header">
@@ -293,7 +340,16 @@ $(document).ready(function() {
             product_status: $('#product_status').is(':checked'),
             is_sales: $('#is_sales').is(':checked'),
             is_purchase: $('#is_purchase').is(':checked'),
-            is_ek_islem: $('#is_ek_islem').is(':checked')
+            is_ek_islem: $('#is_ek_islem').is(':checked'),
+            en: $('#en').val() || 0,
+            tuse: $('#tuse').val(),
+            cekme: $('#cekme').val(),
+            isi: $('#isi').val() || 0,
+            hiz: $('#hiz').val() || 0,
+            gramaj: $('#gramaj').val() || 0,
+            besleme_avans: $('#besleme_avans').val() || 0,
+            kumas_tipi: $('#kumas_tipi').val(),
+            kullanilan_kimyassal: $('#kullanilan_kimyassal').val() || 0
         };
         
         $.ajax({

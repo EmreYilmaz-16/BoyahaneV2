@@ -184,6 +184,15 @@
         <cfargument name="manufact_code" type="string" required="false" default="">
         <cfargument name="short_code" type="string" required="false" default="">
         <cfargument name="company_id" type="numeric" required="false" default="0">
+        <cfargument name="en" type="numeric" required="false" default="0">
+        <cfargument name="tuse" type="string" required="false" default="">
+        <cfargument name="cekme" type="string" required="false" default="">
+        <cfargument name="isi" type="numeric" required="false" default="0">
+        <cfargument name="hiz" type="numeric" required="false" default="0">
+        <cfargument name="gramaj" type="numeric" required="false" default="0">
+        <cfargument name="besleme_avans" type="numeric" required="false" default="0">
+        <cfargument name="kumas_tipi" type="string" required="false" default="">
+        <cfargument name="kullanilan_kimyassal" type="numeric" required="false" default="0">
         
         <cfset var result = {}>
         
@@ -228,6 +237,15 @@
                         manufact_code = <cfqueryparam value="#arguments.manufact_code#" cfsqltype="cf_sql_varchar" null="#len(trim(arguments.manufact_code)) eq 0#">,
                         short_code = <cfqueryparam value="#arguments.short_code#" cfsqltype="cf_sql_varchar" null="#len(trim(arguments.short_code)) eq 0#">,
                         company_id = <cfqueryparam value="#arguments.company_id#" cfsqltype="cf_sql_integer" null="#val(arguments.company_id) eq 0#">,
+                        en = <cfqueryparam value="#arguments.en#" cfsqltype="cf_sql_double" null="#val(arguments.en) eq 0#">,
+                        tuse = <cfqueryparam value="#arguments.tuse#" cfsqltype="cf_sql_varchar" null="#len(trim(arguments.tuse)) eq 0#">,
+                        cekme = <cfqueryparam value="#arguments.cekme#" cfsqltype="cf_sql_varchar" null="#len(trim(arguments.cekme)) eq 0#">,
+                        isi = <cfqueryparam value="#arguments.isi#" cfsqltype="cf_sql_double" null="#val(arguments.isi) eq 0#">,
+                        hiz = <cfqueryparam value="#arguments.hiz#" cfsqltype="cf_sql_double" null="#val(arguments.hiz) eq 0#">,
+                        gramaj = <cfqueryparam value="#arguments.gramaj#" cfsqltype="cf_sql_double" null="#val(arguments.gramaj) eq 0#">,
+                        besleme_avans = <cfqueryparam value="#arguments.besleme_avans#" cfsqltype="cf_sql_double" null="#val(arguments.besleme_avans) eq 0#">,
+                        kumas_tipi = <cfqueryparam value="#arguments.kumas_tipi#" cfsqltype="cf_sql_varchar" null="#len(trim(arguments.kumas_tipi)) eq 0#">,
+                        kullanilan_kimyassal = <cfqueryparam value="#arguments.kullanilan_kimyassal#" cfsqltype="cf_sql_integer" null="#val(arguments.kullanilan_kimyassal) eq 0#">,
                         update_date = CURRENT_TIMESTAMP,
                         update_emp = 1
                     WHERE 
@@ -246,7 +264,9 @@
                         product_code, product_name, product_catid, barcod,
                         product_detail, product_detail2, product_status, tax,
                         is_sales, is_purchase, is_ek_islem, brand_id, shelf_life,
-                        manufact_code, short_code, company_id, record_date, record_member
+                        manufact_code, short_code, company_id,
+                        en, tuse, cekme, isi, hiz, gramaj, besleme_avans, kumas_tipi, kullanilan_kimyassal,
+                        record_date, record_member
                     ) VALUES (
                         <cfqueryparam value="#arguments.product_code#" cfsqltype="cf_sql_varchar" null="#len(trim(arguments.product_code)) eq 0#">,
                         <cfqueryparam value="#arguments.product_name#" cfsqltype="cf_sql_varchar">,
@@ -264,6 +284,15 @@
                         <cfqueryparam value="#arguments.manufact_code#" cfsqltype="cf_sql_varchar" null="#len(trim(arguments.manufact_code)) eq 0#">,
                         <cfqueryparam value="#arguments.short_code#" cfsqltype="cf_sql_varchar" null="#len(trim(arguments.short_code)) eq 0#">,
                         <cfqueryparam value="#arguments.company_id#" cfsqltype="cf_sql_integer" null="#val(arguments.company_id) eq 0#">,
+                        <cfqueryparam value="#arguments.en#" cfsqltype="cf_sql_double" null="#val(arguments.en) eq 0#">,
+                        <cfqueryparam value="#arguments.tuse#" cfsqltype="cf_sql_varchar" null="#len(trim(arguments.tuse)) eq 0#">,
+                        <cfqueryparam value="#arguments.cekme#" cfsqltype="cf_sql_varchar" null="#len(trim(arguments.cekme)) eq 0#">,
+                        <cfqueryparam value="#arguments.isi#" cfsqltype="cf_sql_double" null="#val(arguments.isi) eq 0#">,
+                        <cfqueryparam value="#arguments.hiz#" cfsqltype="cf_sql_double" null="#val(arguments.hiz) eq 0#">,
+                        <cfqueryparam value="#arguments.gramaj#" cfsqltype="cf_sql_double" null="#val(arguments.gramaj) eq 0#">,
+                        <cfqueryparam value="#arguments.besleme_avans#" cfsqltype="cf_sql_double" null="#val(arguments.besleme_avans) eq 0#">,
+                        <cfqueryparam value="#arguments.kumas_tipi#" cfsqltype="cf_sql_varchar" null="#len(trim(arguments.kumas_tipi)) eq 0#">,
+                        <cfqueryparam value="#arguments.kullanilan_kimyassal#" cfsqltype="cf_sql_integer" null="#val(arguments.kullanilan_kimyassal) eq 0#">,
                         CURRENT_TIMESTAMP,
                         1
                     )
