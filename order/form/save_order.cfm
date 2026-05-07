@@ -20,6 +20,8 @@
     <cfparam name="form.member_type"    default="0">
     <cfparam name="form.ref_company_id" default="0">
     <cfparam name="form.rows"           default="[]">
+    <cfparam name="form.sarim_sekli"    default="0">
+    <cfparam name="form.ambalaj"        default="0">
 
     <cfset orderId      = val(form.order_id)>
     <cfset companyId    = val(form.company_id)>
@@ -115,6 +117,8 @@
                 ship_method     = <cfqueryparam value="#shipMethodVal#" cfsqltype="cf_sql_integer" null="#shipMethodVal eq 0#">,
                 order_currency  = <cfqueryparam value="#currencyVal#" cfsqltype="cf_sql_integer" null="#currencyVal eq 0#">,
                 order_status    = <cfqueryparam value="#form.order_status eq '1' OR form.order_status eq true#" cfsqltype="cf_sql_boolean">,
+                sarim_sekli     = <cfqueryparam value="#val(form.sarim_sekli)#" cfsqltype="cf_sql_smallint" null="#val(form.sarim_sekli) eq 0#">,
+                ambalaj         = <cfqueryparam value="#val(form.ambalaj)#" cfsqltype="cf_sql_smallint" null="#val(form.ambalaj) eq 0#">,
                 grosstotal      = <cfqueryparam value="#totalGross#" cfsqltype="cf_sql_numeric">,
                 discounttotal   = <cfqueryparam value="#totalDiscount#" cfsqltype="cf_sql_numeric">,
                 taxtotal        = <cfqueryparam value="#totalTax#" cfsqltype="cf_sql_numeric">,
@@ -129,7 +133,7 @@
             INSERT INTO orders (
                 purchase_sales, order_stage, order_number, order_head, order_detail, ref_no,
                 order_date, deliverdate, company_id, member_type, ref_company_id, paymethod, ship_method, order_currency,
-                order_status, grosstotal, discounttotal, taxtotal, nettotal, record_date
+                order_status, sarim_sekli, ambalaj, grosstotal, discounttotal, taxtotal, nettotal, record_date
             ) VALUES (
                 <cfqueryparam value="#form.purchase_sales eq 'true' OR form.purchase_sales eq true#" cfsqltype="cf_sql_boolean">,
                 <cfqueryparam value="#orderStage#" cfsqltype="cf_sql_integer">,
@@ -146,6 +150,8 @@
                 <cfqueryparam value="#shipMethodVal#" cfsqltype="cf_sql_integer" null="#shipMethodVal eq 0#">,
                 <cfqueryparam value="#currencyVal#" cfsqltype="cf_sql_integer" null="#currencyVal eq 0#">,
                 <cfqueryparam value="#form.order_status eq '1' OR form.order_status eq true#" cfsqltype="cf_sql_boolean">,
+                <cfqueryparam value="#val(form.sarim_sekli)#" cfsqltype="cf_sql_smallint" null="#val(form.sarim_sekli) eq 0#">,
+                <cfqueryparam value="#val(form.ambalaj)#" cfsqltype="cf_sql_smallint" null="#val(form.ambalaj) eq 0#">,
                 <cfqueryparam value="#totalGross#" cfsqltype="cf_sql_numeric">,
                 <cfqueryparam value="#totalDiscount#" cfsqltype="cf_sql_numeric">,
                 <cfqueryparam value="#totalTax#" cfsqltype="cf_sql_numeric">,

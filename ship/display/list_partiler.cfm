@@ -32,10 +32,25 @@
 <!--- Bu irsaliyeye ait partiler (orders where ref_no = ship_number) --->
 <cfquery name="getPartiler" datasource="boyahane">
     SELECT o.order_id, o.order_number, o.order_stage, o.order_date, o.deliverdate,
-           o.nettotal, o.grosstotal, o.taxtotal, o.record_date
+           o.nettotal, o.grosstotal, o.taxtotal, o.record_date,
+           o.sarim_sekli, o.ambalaj,
+           ss.sarim_sekli_adi, ab.ambalaj_adi
     FROM orders o
+    LEFT JOIN setup_sarim_sekli ss ON o.sarim_sekli = ss.sarim_sekli_id
+    LEFT JOIN setup_ambalaj ab ON o.ambalaj = ab.ambalaj_id
     WHERE o.ref_no = <cfqueryparam value="#getShip.ship_number#" cfsqltype="cf_sql_varchar">
     ORDER BY o.order_id
+</cfquery>
+
+<!--- Ana ürünün tekstil bilgileri --->
+<cfquery name="getShipTekstil" datasource="boyahane">
+    SELECT p.en, p.tuse, p.cekme, p.isi, p.hiz, p.gramaj, p.besleme_avans, p.kumas_tipi
+    FROM ship_row sr
+    JOIN stocks st ON sr.stock_id = st.stock_id
+    JOIN product p ON st.product_id = p.product_id
+    WHERE sr.ship_id = <cfqueryparam value="#shipId#" cfsqltype="cf_sql_integer">
+    ORDER BY sr.ship_row_id
+    LIMIT 1
 </cfquery>
 
 <!--- Her partinin satırları (stok renk/varyant bilgisiyle) --->
@@ -107,7 +122,11 @@
         "nettotal":     isNumeric(nettotal)   ? val(nettotal)   : 0,
         "grosstotal":   isNumeric(grosstotal) ? val(grosstotal) : 0,
         "taxtotal":     isNumeric(taxtotal)   ? val(taxtotal)   : 0,
-        "record_date":  isDate(record_date)  ? dateFormat(record_date,  "dd/mm/yyyy") & " " & timeFormat(record_date,  "HH:mm") : ""
+        "record_date":  isDate(record_date)  ? dateFormat(record_date,  "dd/mm/yyyy") & " " & timeFormat(record_date,  "HH:mm") : "",
+        "sarim_sekli":     isNumeric(sarim_sekli) ? val(sarim_sekli) : 0,
+        "sarim_sekli_adi": len(sarim_sekli_adi ?: "") ? sarim_sekli_adi : "",
+        "ambalaj":         isNumeric(ambalaj) ? val(ambalaj) : 0,
+        "ambalaj_adi":     len(ambalaj_adi ?: "") ? ambalaj_adi : ""
     })>
 </cfloop>
 
@@ -216,6 +235,47 @@
             </div>
         </div>
     </div>
+
+    <!--- Tekstil Bilgileri --->
+    <cfif getShipTekstil.recordCount AND (
+        isNumeric(getShipTekstil.en) OR len(getShipTekstil.kumas_tipi ?: "") OR
+        isNumeric(getShipTekstil.gramaj) OR isNumeric(getShipTekstil.isi))>
+    <cfoutput>
+    <div class="grid-card mb-3">
+        <div class="grid-card-header">
+            <div class="grid-card-header-title"><i class="fas fa-tshirt"></i>Ürün Tekstil Özellikleri</div>
+        </div>
+        <div class="card-body px-3 py-2">
+            <div class="d-flex flex-wrap gap-4">
+                <cfif len(getShipTekstil.kumas_tipi ?: "")>
+                <div><small class="text-muted d-block">Kumaş Tipi</small><strong>#xmlFormat(getShipTekstil.kumas_tipi)#</strong></div>
+                </cfif>
+                <cfif isNumeric(getShipTekstil.en)>
+                <div><small class="text-muted d-block">En</small><strong>#getShipTekstil.en# cm</strong></div>
+                </cfif>
+                <cfif isNumeric(getShipTekstil.gramaj)>
+                <div><small class="text-muted d-block">Gramaj</small><strong>#getShipTekstil.gramaj# g/m²</strong></div>
+                </cfif>
+                <cfif isNumeric(getShipTekstil.isi)>
+                <div><small class="text-muted d-block">Isı</small><strong>#getShipTekstil.isi# °C</strong></div>
+                </cfif>
+                <cfif isNumeric(getShipTekstil.hiz)>
+                <div><small class="text-muted d-block">Hız</small><strong>#getShipTekstil.hiz# m/dak</strong></div>
+                </cfif>
+                <cfif isNumeric(getShipTekstil.besleme_avans)>
+                <div><small class="text-muted d-block">Besleme Avans</small><strong>#getShipTekstil.besleme_avans#</strong></div>
+                </cfif>
+                <cfif len(getShipTekstil.tuse ?: "")>
+                <div><small class="text-muted d-block">Tuşe</small><strong>#xmlFormat(getShipTekstil.tuse)#</strong></div>
+                </cfif>
+                <cfif len(getShipTekstil.cekme ?: "")>
+                <div><small class="text-muted d-block">Çekme</small><strong>#xmlFormat(getShipTekstil.cekme)#</strong></div>
+                </cfif>
+            </div>
+        </div>
+    </div>
+    </cfoutput>
+    </cfif>
 
     <!--- Parti Listesi --->
     <div class="grid-card mb-3">
@@ -399,6 +459,8 @@ window.addEventListener('load', function() {
                 { dataField:'taxtotal',     caption:'KDV',     width:100, alignment:'right', dataType:'number', format:{type:'fixedPoint',precision:2} },
                 { dataField:'nettotal',     caption:'Net',     width:110, alignment:'right', dataType:'number', format:{type:'fixedPoint',precision:2} },
                 { dataField:'record_date',  caption:'Kayıt Tarihi', width:140 },
+                { dataField:'sarim_sekli_adi', caption:'Sarım Şekli', width:120 },
+                { dataField:'ambalaj_adi',     caption:'Ambalaj',      width:120 },
                 {
                     caption:'İşlemler', width:90, alignment:'center', allowSorting:false, allowFiltering:false,
                     cellTemplate: function(c,o){

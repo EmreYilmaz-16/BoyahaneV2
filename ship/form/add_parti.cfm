@@ -21,6 +21,21 @@
     <cfabort>
 </cfif>
 
+<!--- Sarım şekli ve ambalaj tipleri --->
+<cfquery name="getSarimSekli" datasource="boyahane">
+    SELECT sarim_sekli_id, sarim_sekli_adi
+    FROM setup_sarim_sekli
+    WHERE is_active = true
+    ORDER BY sort_order, sarim_sekli_adi
+</cfquery>
+
+<cfquery name="getAmbalajTipleri" datasource="boyahane">
+    SELECT ambalaj_id, ambalaj_adi
+    FROM setup_ambalaj
+    WHERE is_active = true
+    ORDER BY sort_order, ambalaj_adi
+</cfquery>
+
 <!--- Ana ürün satırı (irsaliyenin ilk ship_row'u) --->
 <cfquery name="getShipRow" datasource="boyahane">
     SELECT sr.ship_row_id, sr.stock_id, sr.product_id,
@@ -71,7 +86,29 @@
 <cfset mainUnit      = getShipRow.recordCount ? (getShipRow.unit   ?: "mt") : "mt">
 <cfset mainUnitId    = getShipRow.recordCount ? val(getShipRow.unit_id ?: 0) : 0>
 
-<!--- Müşteri satış fiyat listesi --->
+<!--- Ana ürünün tekstil bilgileri --->
+<cfset tekstilBilgi = {}>
+<cfif mainProductId gt 0>
+    <cfquery name="getTekstilBilgi" datasource="boyahane">
+        SELECT en, tuse, cekme, isi, hiz, gramaj, besleme_avans, kumas_tipi
+        FROM product
+        WHERE product_id = <cfqueryparam value="#mainProductId#" cfsqltype="cf_sql_integer">
+    </cfquery>
+    <cfif getTekstilBilgi.recordCount>
+        <cfset tekstilBilgi = {
+            "en":            isNumeric(getTekstilBilgi.en) ? getTekstilBilgi.en : "",
+            "tuse":          len(getTekstilBilgi.tuse ?: "") ? getTekstilBilgi.tuse : "",
+            "cekme":         len(getTekstilBilgi.cekme ?: "") ? getTekstilBilgi.cekme : "",
+            "isi":           isNumeric(getTekstilBilgi.isi) ? getTekstilBilgi.isi : "",
+            "hiz":           isNumeric(getTekstilBilgi.hiz) ? getTekstilBilgi.hiz : "",
+            "gramaj":        isNumeric(getTekstilBilgi.gramaj) ? getTekstilBilgi.gramaj : "",
+            "besleme_avans": isNumeric(getTekstilBilgi.besleme_avans) ? getTekstilBilgi.besleme_avans : "",
+            "kumas_tipi":    len(getTekstilBilgi.kumas_tipi ?: "") ? getTekstilBilgi.kumas_tipi : ""
+        }>
+    </cfif>
+</cfif>
+
+<!--- Müşteri satış fiyat listesi ---> 
 <cfset companyPriceCat = 0>
 <cfquery name="getCompanyCat" datasource="boyahane">
     SELECT price_cat FROM company_credit
@@ -173,6 +210,32 @@
                                   placeholder="Parti açıklaması..."></textarea>
                     </div>
 
+                    <!--- Sarım ve Ambalaj --->
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-redo me-1 text-primary"></i>Sarım Şekli
+                            </label>
+                            <select class="form-select" id="sarim_sekli">
+                                <option value="0">-- Seçiniz --</option>
+                                <cfoutput query="getSarimSekli">
+                                <option value="#sarim_sekli_id#">#xmlFormat(sarim_sekli_adi)#</option>
+                                </cfoutput>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-box me-1 text-primary"></i>Ambalaj
+                            </label>
+                            <select class="form-select" id="ambalaj">
+                                <option value="0">-- Seçiniz --</option>
+                                <cfoutput query="getAmbalajTipleri">
+                                <option value="#ambalaj_id#">#xmlFormat(ambalaj_adi)#</option>
+                                </cfoutput>
+                            </select>
+                        </div>
+                    </div>
+
                     <!--- Kaydet --->
                     <div class="d-grid mt-3">
                         <button type="button" class="btn btn-primary" id="saveBtn" onclick="saveParti()">
@@ -252,7 +315,47 @@
 
                 </div>
             </div>
-
+            <!--- Tekstil Bilgileri Kartı --->
+            <cfif structCount(tekstilBilgi) gt 0>
+            <div class="grid-card mb-3">
+                <div class="grid-card-header">
+                    <div class="grid-card-header-title">
+                        <i class="fas fa-tshirt"></i>Tekstil Özellikleri
+                        <small class="text-muted ms-2">(ürün tanımından)</small>
+                    </div>
+                </div>
+                <div class="card-body p-3">
+                    <div class="row g-2">
+                        <cfoutput>
+                        <cfif len(tekstilBilgi.kumas_tipi)>
+                        <div class="col-6 col-sm-4"><small class="text-muted d-block">Kumaş Tipi</small><strong>#xmlFormat(tekstilBilgi.kumas_tipi)#</strong></div>
+                        </cfif>
+                        <cfif len(tekstilBilgi.en)>
+                        <div class="col-6 col-sm-4"><small class="text-muted d-block">En</small><strong>#tekstilBilgi.en# cm</strong></div>
+                        </cfif>
+                        <cfif len(tekstilBilgi.gramaj)>
+                        <div class="col-6 col-sm-4"><small class="text-muted d-block">Gramaj</small><strong>#tekstilBilgi.gramaj# g/m²</strong></div>
+                        </cfif>
+                        <cfif len(tekstilBilgi.isi)>
+                        <div class="col-6 col-sm-4"><small class="text-muted d-block">Isı</small><strong>#tekstilBilgi.isi# °C</strong></div>
+                        </cfif>
+                        <cfif len(tekstilBilgi.hiz)>
+                        <div class="col-6 col-sm-4"><small class="text-muted d-block">Hız</small><strong>#tekstilBilgi.hiz# m/dak</strong></div>
+                        </cfif>
+                        <cfif len(tekstilBilgi.besleme_avans)>
+                        <div class="col-6 col-sm-4"><small class="text-muted d-block">Besleme Avans</small><strong>#tekstilBilgi.besleme_avans#</strong></div>
+                        </cfif>
+                        <cfif len(tekstilBilgi.tuse)>
+                        <div class="col-6 col-sm-4"><small class="text-muted d-block">Tuşe</small><strong>#xmlFormat(tekstilBilgi.tuse)#</strong></div>
+                        </cfif>
+                        <cfif len(tekstilBilgi.cekme)>
+                        <div class="col-6 col-sm-4"><small class="text-muted d-block">Çekme</small><strong>#xmlFormat(tekstilBilgi.cekme)#</strong></div>
+                        </cfif>
+                        </cfoutput>
+                    </div>
+                </div>
+            </div>
+            </cfif>
             <!--- Ek İşlemler kartı --->
             <div class="grid-card">
                 <div class="grid-card-header">
@@ -405,6 +508,8 @@ function saveParti() {
         ship_method:    0,
         order_currency: 0,
         order_status:   '1',
+        sarim_sekli:    parseInt(document.getElementById('sarim_sekli').value) || 0,
+        ambalaj:        parseInt(document.getElementById('ambalaj').value) || 0,
         rows:           JSON.stringify(rows)
     };
 
