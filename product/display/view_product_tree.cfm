@@ -359,14 +359,18 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Bileşen Stok <span class="text-danger">*</span></label>
-                                <select class="form-select" id="f_component_stock_id">
-                                    <option value="0">Seçiniz...</option>
-                                    <cfoutput>
-                                    <cfloop array="#compStocksArr#" index="cs">
-                                        <option value="#cs.stock_id#">#htmlEditFormat(cs.stock_code)##len(trim(cs.product_name)) ? " — " & htmlEditFormat(cs.product_name) : ""#</option>
-                                    </cfloop>
-                                    </cfoutput>
-                                </select>
+                                <div class="position-relative">
+                                    <input type="text" class="form-control" id="f_component_stock_search"
+                                           placeholder="Stok kodu veya ürün adı ile arayın..."
+                                           autocomplete="off"
+                                           oninput="filterCompStock(this.value)"
+                                           onfocus="filterCompStock(this.value)">
+                                    <input type="hidden" id="f_component_stock_id" value="0">
+                                    <div id="f_component_stock_dropdown" class="search-dropdown d-none"></div>
+                                </div>
+                                <div id="f_comp_stock_selected" class="mt-1 d-none">
+                                    <small class="text-success"><i class="fas fa-check-circle me-1"></i><span id="f_comp_stock_label"></span></small>
+                                </div>
                             </div>
                         </div>
                         <div class="row g-3 mt-1">
@@ -488,8 +492,9 @@
 
 <cfoutput>
 <script>
-var treeData   = #serializeJSON(treeArr)#;
+var treeData    = #serializeJSON(treeArr)#;
 var rootStockId = #rootStockId#;
+var ALL_COMP_STOCKS = #serializeJSON(compStocksArr)#;
 
 /* ─── Satır tipi toggle ─── */
 document.querySelectorAll('input[name="f_row_type"]').forEach(function(r) {
@@ -643,11 +648,46 @@ function buildParentSelect(excludeId) {
     });
 }
 
+function filterCompStock(q) {
+    var dd = document.getElementById('f_component_stock_dropdown');
+    var results = q && q.length >= 1
+        ? ALL_COMP_STOCKS.filter(function(s) {
+            return ((s.stock_code || '') + ' ' + (s.product_name || '')).toLowerCase().includes(q.toLowerCase());
+          }).slice(0, 30)
+        : ALL_COMP_STOCKS.slice(0, 30);
+    if (!results.length) {
+        dd.innerHTML = '<div class="search-item text-muted">Sonuç yok</div>';
+        dd.classList.remove('d-none');
+        return;
+    }
+    dd.innerHTML = '';
+    results.forEach(function(s) {
+        var div = document.createElement('div');
+        div.className = 'search-item';
+        div.innerHTML = '<div class="fw-semibold">' + escHtml(s.stock_code) + '</div>' +
+                        (s.product_name ? '<div class="item-code">' + escHtml(s.product_name) + '</div>' : '');
+        div.addEventListener('click', function() {
+            dd.classList.add('d-none');
+            var label = s.stock_code + (s.product_name ? ' — ' + s.product_name : '');
+            document.getElementById('f_component_stock_search').value = label;
+            document.getElementById('f_component_stock_id').value     = s.stock_id;
+            document.getElementById('f_comp_stock_label').textContent = label;
+            document.getElementById('f_comp_stock_selected').classList.remove('d-none');
+        });
+        dd.appendChild(div);
+    });
+    dd.classList.remove('d-none');
+}
+
 function resetForm() {
     document.getElementById('rowForm').reset();
     document.getElementById('f_product_tree_id').value = 0;
     document.getElementById('f_amount').value = 1;
     document.getElementById('f_op_amount').value = 1;
+    document.getElementById('f_component_stock_search').value = '';
+    document.getElementById('f_component_stock_id').value = '0';
+    document.getElementById('f_comp_stock_selected').classList.add('d-none');
+    document.getElementById('f_component_stock_dropdown').classList.add('d-none');
     /* Malzeme seçili başlat */
     document.getElementById('rt_malzeme').checked = true;
     toggleRowType('malzeme');
@@ -679,7 +719,14 @@ function openEditModal(row) {
         toggleRowType('malzeme');
         buildParentSelect(row.product_tree_id);
         document.getElementById('f_parent_tree_id_select').value  = row.related_product_tree_id || 0;
-        document.getElementById('f_component_stock_id').value     = row.component_stock_id || 0;
+        /* Bileşen stok arama alanını doldur */
+        var stockLabel = (row.component_stock_code || '') + (row.component_name ? ' — ' + row.component_name : '');
+        document.getElementById('f_component_stock_search').value  = stockLabel;
+        document.getElementById('f_component_stock_id').value      = row.component_stock_id || 0;
+        if (row.component_stock_id > 0) {
+            document.getElementById('f_comp_stock_label').textContent = stockLabel;
+            document.getElementById('f_comp_stock_selected').classList.remove('d-none');
+        }
         document.getElementById('f_amount').value                 = row.amount || 1;
         document.getElementById('f_unit_id').value                = row.unit_id || 0;
         document.getElementById('f_fire_amount').value            = row.fire_amount || 0;
