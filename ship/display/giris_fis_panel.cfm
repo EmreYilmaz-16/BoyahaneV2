@@ -13,13 +13,16 @@
         s.record_date,
         COALESCE(c.nickname, c.fullname, '') AS company_name,
         COALESCE((
-            SELECT COUNT(*) FROM orders o WHERE o.ref_ship_id = s.ship_id
+            SELECT COUNT(*) FROM orders o
+            WHERE o.ref_ship_id = s.ship_id
+               OR (o.ref_ship_id IS NULL AND o.ref_no IS NOT NULL AND o.ref_no <> '' AND o.ref_no = s.ship_number)
         ), 0) AS parti_count,
         COALESCE((
             SELECT SUM(orw.quantity)
             FROM orders o
             JOIN order_row orw ON o.order_id = orw.order_id
-            WHERE o.ref_ship_id = s.ship_id
+            WHERE (o.ref_ship_id = s.ship_id
+               OR (o.ref_ship_id IS NULL AND o.ref_no IS NOT NULL AND o.ref_no <> '' AND o.ref_no = s.ship_number))
               AND orw.product_id = (
                   SELECT sr2.product_id FROM ship_row sr2
                   WHERE sr2.ship_id = s.ship_id
