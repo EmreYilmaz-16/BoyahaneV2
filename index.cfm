@@ -460,7 +460,7 @@
                             <p class="mb-0">Ana sayfaya dönmek için <a href="index.cfm?fuseaction=myhome.welcome" class="alert-link">buraya tıklayın</a>.</p>
                         </div>
                     <cfelse>
-                        <title>Boyahane - Rasih Çelik ##<cfoutput>#getObject.object_name#</cfoutput></title>
+                        <title>Boyahane - Rasih Çelik <cfoutput>#getObject.object_name#</cfoutput></title>
                         <cfinclude template="#getObject.file_path#">
                     </cfif>
                 <cfelse>
