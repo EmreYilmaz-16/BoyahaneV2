@@ -115,6 +115,7 @@
         <cfcase value="4"><cfset stageLabel = "Hazır"></cfcase>
         <cfcase value="5"><cfset stageLabel = "Sevk Edildi"></cfcase>
         <cfcase value="6"><cfset stageLabel = "Tamamlandı"></cfcase>
+        <cfcase value="7"><cfset stageLabel = "Renkli"></cfcase>
         <cfdefaultcase><cfset stageLabel = "Bilinmiyor"></cfdefaultcase>
     </cfswitch>
     <cfset oid = val(order_id)>
@@ -336,7 +337,8 @@ window.addEventListener('load', function() {
                         var cls = {
                             'Beklemede':'badge bg-secondary','Onaylandı':'badge bg-primary',
                             'Üretimde':'badge bg-warning text-dark','Hazır':'badge bg-info text-dark',
-                            'Sevk Edildi':'badge bg-success','Tamamlandı':'badge bg-dark'
+                            'Sevk Edildi':'badge bg-success','Tamamlandı':'badge bg-dark',
+                            'Renkli':'badge bg-danger'
                         }[o.value] || 'badge bg-secondary';
                         $('<span>').addClass(cls).text(o.value||'-').appendTo(c);
                     }
@@ -439,6 +441,9 @@ window.addEventListener('load', function() {
                     colorPickerPartiRow.FIRST_PROPERTY   = colorPickerPartiRow.first_property   = res.property   || '';
                     colorPickerPartiRow.FIRST_STOCK_ID   = colorPickerPartiRow.first_stock_id   = res.stock_id   || 0;
                     colorPickerPartiRow.FIRST_CODE2      = colorPickerPartiRow.first_code2      = res.stock_code_2 || '';
+                    /* Aşamayı Renkli (7) yap */
+                    colorPickerPartiRow.ORDER_STAGE  = colorPickerPartiRow.order_stage  = 7;
+                    colorPickerPartiRow.STAGE_LABEL  = colorPickerPartiRow.stage_label  = 'Renkli';
                     var _mg = DevExpress.ui.dxDataGrid.getInstance(document.getElementById('mainPartiGrid'));
                     if (_mg) _mg.repaint();
                 }

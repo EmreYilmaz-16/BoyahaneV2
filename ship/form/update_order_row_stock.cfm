@@ -60,6 +60,20 @@
         WHERE order_row_id = <cfqueryparam value="#orderRowId#" cfsqltype="cf_sql_integer">
     </cfquery>
 
+    <!--- Siparişin aşamasını "Renkli" (7) olarak güncelle --->
+    <cfquery name="getOrderId" datasource="boyahane">
+        SELECT order_id FROM order_row
+        WHERE order_row_id = <cfqueryparam value="#orderRowId#" cfsqltype="cf_sql_integer">
+        LIMIT 1
+    </cfquery>
+    <cfif getOrderId.recordCount>
+        <cfquery datasource="boyahane">
+            UPDATE orders
+            SET order_stage = 7
+            WHERE order_id = <cfqueryparam value="#getOrderId.order_id#" cfsqltype="cf_sql_integer">
+        </cfquery>
+    </cfif>
+
     <cfset response = {
         "success":      true,
         "stock_id":     val(getStock.stock_id),
@@ -67,7 +81,8 @@
         "stock_code_2": getStock.stock_code_2 ?: "",
         "property":     getStock.property ?: "",
         "product_name": newProductName,
-        "is_main_stock": getStock.is_main_stock
+        "is_main_stock": getStock.is_main_stock,
+        "new_order_stage": 7
     }>
 
     <cfcatch type="any">
