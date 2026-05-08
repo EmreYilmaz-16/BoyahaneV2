@@ -451,7 +451,7 @@
                                     <input type="radio" class="btn-check" name="hk_ucretli" id="hk_ucretli_e" value="true"  <cfif selHkUcretli>checked</cfif>>
                                     <label class="btn btn-outline-success btn-sm" for="hk_ucretli_e">Ücretli</label>
                                     <input type="radio" class="btn-check" name="hk_ucretli" id="hk_ucretli_h" value="false" <cfif NOT selHkUcretli>checked</cfif>>
-                                    <label class="btn btn-outline-secondary btn-sm" for="hk_ucretli_h">Ücretsiz</label>
+                                    <label class="btn btn-outline-success btn-sm" for="hk_ucretli_h">Ücretsiz</label>
                                 </div>
                             </div>
                             <div class="col-6">
