@@ -214,7 +214,7 @@ window.addEventListener('load', function() {
             onRowDblClick: function(e) { openGirisFis(e.data.ship_id); },
             onContentReady: function(e) { document.getElementById('recordCount').textContent = e.component.totalCount() + ' kayıt'; },
             columns: [
-                { dataField:'ship_id', caption:'ID', width:70, alignment:'center', dataType:'number', sortOrder:'desc' },
+                { dataField:'ship_id', caption:'ID', width:70, alignment:'center', dataType:'number', sortOrder:'desc', visible:false },
                 { dataField:'ship_number', caption:'Fiş No', width:130,
                     cellTemplate: function(c,o) {
                         $('<a>').attr('href','##').addClass('fw-bold text-decoration-none')
@@ -273,22 +273,22 @@ window.addEventListener('load', function() {
                         $('<span>').addClass(cls).text(label).appendTo(c);
                     }
                 },
-                { dataField:'parti_count', caption:'Parti Adedi', width:100, alignment:'center', dataType:'number' },
-                { dataField:'hk_h_gramaj', caption:'H.Gramaj', width:95, alignment:'right', dataType:'number', format:{type:'fixedPoint',precision:2} },
-                { dataField:'hk_gr_mtul', caption:'Gr/Mtul', width:90, alignment:'right', dataType:'number', format:{type:'fixedPoint',precision:2} },
-                { dataField:'hk_ucretli', caption:'Ücretli', width:80, alignment:'center', dataType:'boolean',
+                { dataField:'parti_count', caption:'Parti Adedi', width:100, alignment:'center', dataType:'number', visible:false },
+                { dataField:'hk_h_gramaj', caption:'H.Gramaj', width:95, alignment:'right', dataType:'number', format:{type:'fixedPoint',precision:2}, visible:false },
+                { dataField:'hk_gr_mtul', caption:'Gr/Mtul', width:90, alignment:'right', dataType:'number', format:{type:'fixedPoint',precision:2}, visible:false },
+                { dataField:'hk_ucretli', caption:'Ücretli', width:80, alignment:'center', dataType:'boolean', visible:false,
                     cellTemplate: function(c,o) {
                         $('<span>').addClass(o.value ? 'badge bg-success' : 'badge bg-secondary')
                             .text(o.value ? 'Evet' : 'Hayır').appendTo(c);
                     }
                 },
-                { dataField:'hk_ham_boyali', caption:'Ham/Boyalı', width:95, alignment:'center', dataType:'boolean',
+                { dataField:'hk_ham_boyali', caption:'Ham/Boyalı', width:95, alignment:'center', dataType:'boolean', visible:false,
                     cellTemplate: function(c,o) {
                         $('<span>').addClass(o.value ? 'badge bg-info text-dark' : 'badge bg-warning text-dark')
                             .text(o.value ? 'Ham' : 'Boyalı').appendTo(c);
                     }
                 },
-                { dataField:'ref_no', caption:'Ref No', width:120,
+                { dataField:'ref_no', caption:'Ref No', width:120, visible:false,
                     cellTemplate: function(c,o) { $('<span>').addClass('text-muted small').text(o.value||'-').appendTo(c); }
                 },
                 { dataField:'is_ship_iptal', caption:'Durum', width:90, alignment:'center',
@@ -297,7 +297,7 @@ window.addEventListener('load', function() {
                             .text(o.value ? 'İptal' : 'Aktif').appendTo(c);
                     }
                 },
-                { dataField:'record_date', caption:'Kayıt Tarihi', width:130 },
+                { dataField:'record_date', caption:'Kayıt Tarihi', width:130, visible:false },
                 {
                     caption:'İşlemler', width:130, alignment:'center', allowSorting:false, allowFiltering:false,
                     cellTemplate: function(c, o) {
