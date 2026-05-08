@@ -489,13 +489,14 @@
         <cfheader name="Content-Type" value="application/json; charset=utf-8">
         <cftry>
             <cfquery name="qry" datasource="boyahane">
-                SELECT company_id, COALESCE(nickname, fullname, member_code, CAST(company_id AS VARCHAR)) AS display_name
+                SELECT company_id, COALESCE(member_code, '') AS company_code,
+                       COALESCE(nickname, fullname, member_code, CAST(company_id AS VARCHAR)) AS display_name
                 FROM company
                 WHERE company_status = true
                 ORDER BY display_name
             </cfquery>
             <cfloop query="qry">
-                <cfset arrayAppend(arr, {"company_id": qry.company_id, "display_name": qry.display_name ?: ""})>
+                <cfset arrayAppend(arr, {"company_id": qry.company_id, "display_name": qry.display_name ?: "", "company_code": qry.company_code ?: ""})>
             </cfloop>
             <cfcatch type="any"><!---ignore---></cfcatch>
         </cftry>
