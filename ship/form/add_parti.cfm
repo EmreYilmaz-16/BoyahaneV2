@@ -464,7 +464,7 @@
                     <select class="form-select" id="qei_product_catid">
                         <option value="0">-- Kategori Seçin --</option>
                         <cfloop query="getProductCats">
-                        <option value="#product_catid#">#xmlFormat(hierarchy & ' - ' & product_cat)#</option>
+                        <option value="#product_catid#" data-cat-name="#xmlFormat(product_cat)#">#xmlFormat(hierarchy & ' - ' & product_cat)#</option>
                         </cfloop>
                     </select>
                 </div>
@@ -500,9 +500,10 @@ priceListData.forEach(function(r) {
 });
 
 /* ─── Hızlı Ek İşlem Modal ─── */
-var QUICK_COMPANY_ID = #getShip.company_id#;
-var QUICK_UNIT       = '#jsStringFormat(mainUnit)#';
-var QUICK_UNIT_ID    = #mainUnitId#;
+var QUICK_COMPANY_ID   = #getShip.company_id#;
+var QUICK_COMPANY_NAME = '#jsStringFormat(getShip.company_name)#';
+var QUICK_UNIT         = '#jsStringFormat(mainUnit)#';
+var QUICK_UNIT_ID      = #mainUnitId#;
 
 function openQuickEkIslemModal() {
     var modalEl = document.getElementById('quickEkIslemModal');
@@ -607,6 +608,15 @@ function quickAddEkIslem() {
         }
     });
 }
+
+/* ─── Kategori seçilince ürün adını otomatik doldur ─── */
+document.getElementById('qei_product_catid').addEventListener('change', function() {
+    var sel = this.options[this.selectedIndex];
+    var catName = (sel && this.value !== '0') ? sel.getAttribute('data-cat-name') : '';
+    if (catName) {
+        document.getElementById('qei_product_name').value = catName + '-' + QUICK_COMPANY_NAME;
+    }
+});
 
 /* ─── Ek işlem checkbox toggle ─── */
 document.querySelectorAll('.ek-chk').forEach(function(chk) {
