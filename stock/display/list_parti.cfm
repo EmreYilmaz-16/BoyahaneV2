@@ -445,7 +445,7 @@ window.addEventListener('load', function() {
                     colorPickerPartiRow.ORDER_STAGE  = colorPickerPartiRow.order_stage  = 7;
                     colorPickerPartiRow.STAGE_LABEL  = colorPickerPartiRow.stage_label  = 'Renkli';
                     var _mg = DevExpress.ui.dxDataGrid.getInstance(document.getElementById('mainPartiGrid'));
-                    if (_mg) _mg.repaint();
+                    if (_mg) _mg.refresh();
                 }
                 /* Açık modal grid'ini yenile (varsa) */
                 var g = DevExpress.ui.dxDataGrid.getInstance(document.getElementById('partiRowModalGrid'));
