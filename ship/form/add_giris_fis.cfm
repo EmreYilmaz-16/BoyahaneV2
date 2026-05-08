@@ -458,9 +458,9 @@
                                 <label class="form-label fw-semibold small d-block">Kumaş Durumu</label>
                                 <div class="btn-group w-100" role="group">
                                     <input type="radio" class="btn-check" name="hk_ham_boyali" id="hk_ham"    value="true"  <cfif selHkHamBoyali>checked</cfif>>
-                                    <label class="btn btn-outline-secondary btn-sm" for="hk_ham">Ham</label>
+                                    <label class="btn btn-outline-success btn-sm" for="hk_ham">Ham</label>
                                     <input type="radio" class="btn-check" name="hk_ham_boyali" id="hk_boyali" value="false" <cfif NOT selHkHamBoyali>checked</cfif>>
-                                    <label class="btn btn-outline-secondary btn-sm" for="hk_boyali">Boyalı</label>
+                                    <label class="btn btn-outline-success btn-sm" for="hk_boyali">Boyalı</label>
                                 </div>
                             </div>
                         </div>
