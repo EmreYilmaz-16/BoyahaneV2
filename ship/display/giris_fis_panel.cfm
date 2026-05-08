@@ -740,9 +740,9 @@ function mfis_filterCompany(q) {
             document.getElementById('mfis_stockSelected').classList.add('d-none');
             mfis_allStocks = [];
             $.ajax({
-                url: '/company/cfc/company.cfc',
+                url: '/product/cfc/product.cfc?method=getStocksByCompany',
                 method: 'GET',
-                data: { method: 'getStocksByCompany', company_id: c.company_id },
+                data: { company_id: c.company_id },
                 dataType: 'json',
                 success: function(res) {
                     mfis_allStocks = (res.success && Array.isArray(res.data)) ? res.data : [];
