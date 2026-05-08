@@ -105,7 +105,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>Boyahane - Rasih Çelik</title>
+    
     <link rel="icon" href="data:,">
     
     <cfif loadAssets>
@@ -460,6 +460,7 @@
                             <p class="mb-0">Ana sayfaya dönmek için <a href="index.cfm?fuseaction=myhome.welcome" class="alert-link">buraya tıklayın</a>.</p>
                         </div>
                     <cfelse>
+                        <title>Boyahane - Rasih Çelik ##<cfoutput>#getObject.object_name#</cfoutput></title>
                         <cfinclude template="#getObject.file_path#">
                     </cfif>
                 <cfelse>
