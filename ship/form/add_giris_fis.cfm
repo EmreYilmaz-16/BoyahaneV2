@@ -78,7 +78,15 @@
         <cfset selUnit = ""><cfset selUnitId = 0><cfset selLotNo = ""><cfset selRafId = 0>
     </cfif>
     <cfset selReturnCatId = val(s.return_cat_id ?: 0)>
+    <!--- Firma kodu (parti_no için) --->
+    <cfquery name="getCompanyCode" datasource="boyahane">
+        SELECT COALESCE(member_code, '') AS company_code
+        FROM company
+        WHERE company_id = <cfqueryparam value="#selCompanyId#" cfsqltype="cf_sql_integer">
+    </cfquery>
+    <cfset selCompanyCode = getCompanyCode.recordCount ? (getCompanyCode.company_code ?: "") : "">
 <cfelse>
+    <cfset selCompanyCode = "">
     <cfset selCompanyId = 0><cfset selCompanyName = ""><cfset selShipNumber = "">
     <cfset selRefNo = ""><cfset selShipDetail = ""><cfset selShipStatus = 1>
     <cfset selPaymethod = 0><cfset selShipMethod = 0><cfset selLocationIn = url.location_id>
@@ -147,6 +155,7 @@
 <div class="px-3 pb-5">
     <form id="shipForm">
         <input type="hidden" id="ship_id"       value="<cfoutput>#currentShipId#</cfoutput>">
+        <input type="hidden" id="company_code"    value="<cfoutput>#xmlFormat(selCompanyCode)#</cfoutput>">
         <input type="hidden" id="purchase_sales" value="false">
         <input type="hidden" id="ship_type_val"  value="5">
         <input type="hidden" id="location_in"    value="<cfoutput>#selLocationIn#</cfoutput>">
@@ -364,6 +373,16 @@
                     </div>
                     <div class="card-body p-3">
 
+                        <!--- Parti No (otomatik) --->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small">
+                                <i class="fas fa-barcode me-1 text-primary"></i>Parti No <span class="text-muted">(otomatik)</span>
+                            </label>
+                            <input type="text" class="form-control form-control-sm" id="parti_no"
+                                   readonly placeholder="Müşteri Kodu-Top-Miktar"
+                                   style="background:#f8f9fa;font-weight:600;letter-spacing:.04em;">
+                        </div>
+
                         <div class="row g-2 mb-2">
                             <div class="col-4">
                                 <label class="form-label fw-semibold small">Metre</label>
@@ -383,7 +402,8 @@
                                 <label class="form-label fw-semibold small">Top Adedi</label>
                                 <input type="number" class="form-control form-control-sm" id="hk_top_adedi"
                                        step="1" min="0" placeholder="0"
-                                       value="<cfoutput>#selHkTopAdedi#</cfoutput>">
+                                       value="<cfoutput>#selHkTopAdedi#</cfoutput>"
+                                       oninput="updatePartiNo()">
                             </div>
                         </div>
 
@@ -461,6 +481,23 @@ function calcGrMtul() {
     var m  = parseFloat(document.getElementById('hk_metre').value) || 0;
     var kg = parseFloat(document.getElementById('hk_kg').value)    || 0;
     document.getElementById('hk_gr_mtul').value = (m > 0 && kg > 0) ? ((kg / m) * 1000).toFixed(4) : '';
+    updatePartiNo();
+}
+
+/* ─── Parti No otomatik oluştur ─── */
+function updatePartiNo() {
+    var code  = (document.getElementById('company_code').value || '').trim();
+    var top   = (document.getElementById('hk_top_adedi').value || '').trim();
+    var metre = parseFloat(document.getElementById('hk_metre').value) || 0;
+    var kg    = parseFloat(document.getElementById('hk_kg').value)    || 0;
+    var miktar = metre > 0 ? metre : kg;
+    var el = document.getElementById('parti_no');
+    if (!code && !top && !miktar) { el.value = ''; return; }
+    var parts = [];
+    if (code)   parts.push(code);
+    if (top)    parts.push(top);
+    if (miktar) parts.push(miktar);
+    el.value = parts.join('-');
 }
 
 /* ─── Firma arama + risk bilgisi ─── */
@@ -477,6 +514,8 @@ function loadCompanies() {
 function selectCompany(c) {
     $('##companySearch').val(c.display_name || c.nickname || c.fullname || '');
     $('##company_id').val(c.company_id);
+    document.getElementById('company_code').value = c.company_code || c.nickname || '';
+    updatePartiNo();
     $('##companyDropdown').addClass('d-none');
     $('##companyInfo').removeClass('d-none');
     /* Stok seçimini sıfırla */
