@@ -234,7 +234,7 @@ function renderList(items) {
             (f.parti_count > 0
                 ? '<span class="badge rounded-pill bg-' + (full ? 'secondary' : 'success') +
                   '" style="font-size:.65rem">' + f.parti_count + ' parti</span>'
-                : '<span style="font-size:.68rem;color:#bbb">Parti yok</span>') +
+                : '<span style="font-size:.68rem;color:##bbb">Parti yok</span>') +
             '</div>';
         if (f.hk_metre > 0) {
             html += '<div class="fis-prog"><div class="fis-prog-bar' + (full ? ' full' : '') +
