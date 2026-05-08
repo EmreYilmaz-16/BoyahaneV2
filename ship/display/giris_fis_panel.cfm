@@ -480,12 +480,16 @@ function renderList(items) {
         var full = f.hk_metre > 0 && f.parti_metre >= f.hk_metre;
         var meta = [];
         if (f.hk_metre    > 0) meta.push(f.hk_metre.toFixed(1) + ' mt');
+        if (f.hk_kg       > 0) meta.push(f.hk_kg.toFixed(1) + ' kg');
         if (f.hk_top_adedi > 0) meta.push(f.hk_top_adedi + ' top');
         html += '<div class="fis-item' +
             (f.ship_id === selectedShipId ? ' active' : '') +
             (f.is_ship_iptal ? ' iptal' : '') +
             '" data-id="' + f.ship_id + '" onclick="selectFis(' + f.ship_id + ')">' +
+            '<div class="d-flex justify-content-between align-items-baseline">' +
             '<div class="fis-no">' + escHtml(f.ship_number) + '</div>' +
+            (f.hk_parti_no ? '<code class="text-primary" style="font-size:.7rem">' + escHtml(f.hk_parti_no) + '</code>' : '') +
+            '</div>' +
             '<div class="fis-firm">' + escHtml(f.company_name) + '</div>' +
             '<div class="fis-meta">' +
             '<span>' + f.record_date + (meta.length ? ' · ' + meta.join(' · ') : '') + '</span>' +
