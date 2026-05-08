@@ -10,6 +10,7 @@
 <!--- İrsaliye bilgisi --->
 <cfquery name="getShip" datasource="boyahane">
     SELECT s.ship_id, s.ship_number, s.company_id,
+           s.hk_metre, s.hk_kg,
            COALESCE(c.nickname, c.fullname, '') AS company_name
     FROM ship s
     LEFT JOIN company c ON s.company_id = c.company_id
@@ -145,6 +146,36 @@
             })>
         </cfif>
     </cfloop>
+</cfif>
+
+<!--- Tamamen partilendi kontrolü --->
+<cfset shipHkMetre = isNumeric(getShip.hk_metre) ? val(getShip.hk_metre) : 0>
+<cfif shipHkMetre gt 0 AND mainProductId gt 0 AND len(trim(getShip.ship_number))>
+    <cfquery name="getPartiToplamMiktar" datasource="boyahane">
+        SELECT COALESCE(SUM(orw.quantity), 0) AS toplam
+        FROM orders o
+        JOIN order_row orw ON o.order_id = orw.order_id
+        WHERE o.ref_no       = <cfqueryparam value="#getShip.ship_number#" cfsqltype="cf_sql_varchar">
+          AND orw.product_id = <cfqueryparam value="#mainProductId#" cfsqltype="cf_sql_integer">
+    </cfquery>
+    <cfif val(getPartiToplamMiktar.toplam) gte shipHkMetre>
+        <cfoutput>
+        <div class="alert alert-warning m-4 d-flex align-items-start gap-3">
+            <i class="fas fa-lock fs-3 mt-1 text-warning"></i>
+            <div>
+                <h5 class="mb-1">Bu giriş fişi tamamen partilendi!</h5>
+                <p class="mb-2">Toplam <strong>#numberFormat(shipHkMetre,'0.00')# mt</strong> girişin tamamı (<strong>#numberFormat(val(getPartiToplamMiktar.toplam),'0.00')# mt</strong>) sipariş/parti olarak işlenmiştir.</p>
+                <a href="index.cfm?fuseaction=ship.list_giris_fis" class="btn btn-sm btn-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Giriş Fişleri Listesi
+                </a>
+                <a href="index.cfm?fuseaction=ship.list_partiler&ship_id=#shipId#" class="btn btn-sm btn-outline-primary ms-2">
+                    <i class="fas fa-list-ol me-1"></i>Parti Listesi
+                </a>
+            </div>
+        </div>
+        </cfoutput>
+        <cfabort>
+    </cfif>
 </cfif>
 
 <div class="page-header">

@@ -306,8 +306,13 @@ window.addEventListener('load', function() {
                             .on('click', function(){ openGirisFis(o.data.ship_id); }).appendTo(g);
                         $('<button>').addClass('btn btn-sm btn-outline-info').attr('title','Parti Listesi').html('<i class="fas fa-list-ol"></i>')
                             .on('click', function(){ listPartiler(o.data.ship_id); }).appendTo(g);
-                        $('<button>').addClass('btn btn-sm btn-outline-success').attr('title','Parti Ekle').html('<i class="fas fa-cut"></i>')
-                            .on('click', function(){ addParti(o.data.ship_id); }).appendTo(g);
+                        var tamPart = parseFloat(o.data.hk_metre) > 0 && parseFloat(o.data.parti_metre) >= parseFloat(o.data.hk_metre);
+                        $('<button>')
+                            .addClass('btn btn-sm ' + (tamPart ? 'btn-secondary' : 'btn-outline-success'))
+                            .attr('title', tamPart ? 'Tamamen Partilendi — Yeni parti eklenemez' : 'Parti Ekle')
+                            .prop('disabled', tamPart)
+                            .html('<i class="fas fa-' + (tamPart ? 'lock' : 'cut') + '"></i>')
+                            .on('click', function(){ if (!tamPart) addParti(o.data.ship_id); }).appendTo(g);
                         $('<button>').addClass('btn btn-sm btn-outline-danger').attr('title','Sil').html('<i class="fas fa-trash"></i>')
                             .on('click', function(){ deleteGirisFis(o.data.ship_id, o.data.ship_number); }).appendTo(g);
                         g.appendTo(c);
