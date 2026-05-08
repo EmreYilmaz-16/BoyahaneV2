@@ -219,7 +219,8 @@
                            placeholder="Firma adı ile arayın..." autocomplete="off"
                            oninput="mfis_filterCompany(this.value)"
                            onfocus="mfis_filterCompany(this.value)">
-                    <input type="hidden" id="mfis_company_id" value="0">
+                    <input type="hidden" id="mfis_company_id"   value="0">
+                    <input type="hidden" id="mfis_company_code" value="">
                     <div id="mfis_companyDropdown" class="search-dropdown d-none"></div>
                 </div>
 
@@ -240,21 +241,43 @@
                 </div>
 
                 <!--- Metrik bilgiler --->
-                <div class="row g-2 mb-3">
+                <div class="row g-2 mb-2">
                     <div class="col-4">
                         <label class="form-label small mb-1 fw-semibold">Metre</label>
                         <input type="number" class="form-control form-control-sm" id="mfis_hk_metre"
-                               step="0.001" min="0" placeholder="0.000">
+                               step="0.001" min="0" placeholder="0.000"
+                               oninput="mfis_calcGrMtul()">
                     </div>
                     <div class="col-4">
                         <label class="form-label small mb-1 fw-semibold">Kg</label>
                         <input type="number" class="form-control form-control-sm" id="mfis_hk_kg"
-                               step="0.001" min="0" placeholder="0.000">
+                               step="0.001" min="0" placeholder="0.000"
+                               oninput="mfis_calcGrMtul()">
                     </div>
                     <div class="col-4">
                         <label class="form-label small mb-1 fw-semibold">Top Adedi</label>
                         <input type="number" class="form-control form-control-sm" id="mfis_hk_top_adedi"
-                               step="1" min="0" placeholder="0">
+                               step="1" min="0" placeholder="0"
+                               oninput="mfis_updatePartiNo()">
+                    </div>
+                </div>
+
+                <!--- Gramaj + Gr/Mtül + Parti No --->
+                <div class="row g-2 mb-3">
+                    <div class="col-4">
+                        <label class="form-label small mb-1 fw-semibold">Ham Gramaj</label>
+                        <input type="number" class="form-control form-control-sm" id="mfis_hk_h_gramaj"
+                               step="0.01" min="0" placeholder="0.00">
+                    </div>
+                    <div class="col-4">
+                        <label class="form-label small mb-1 fw-semibold">Gr/Mtül <span class="text-muted">(oto)</span></label>
+                        <input type="number" class="form-control form-control-sm" id="mfis_hk_gr_mtul"
+                               step="0.0001" placeholder="0.0000" readonly style="background:#f8f9fa">
+                    </div>
+                    <div class="col-4">
+                        <label class="form-label small mb-1 fw-semibold">Parti No <span class="text-muted">(oto)</span></label>
+                        <input type="text" class="form-control form-control-sm fw-semibold text-primary" id="mfis_parti_no"
+                               style="background:#f8f9fa;letter-spacing:.03em" placeholder="—">
                     </div>
                 </div>
 
@@ -695,6 +718,10 @@ function openYeniFisModal() {
     document.getElementById('mfis_hk_kg').value        = '';
     document.getElementById('mfis_hk_top_adedi').value = '';
     document.getElementById('mfis_ship_detail').value  = '';
+    document.getElementById('mfis_hk_h_gramaj').value   = '';
+    document.getElementById('mfis_hk_gr_mtul').value    = '';
+    document.getElementById('mfis_parti_no').value      = '';
+    document.getElementById('mfis_company_code').value  = '';
     document.getElementById('mfis_ham').checked         = true;
     document.getElementById('mfis_ucretli_e').checked   = true;
     document.getElementById('mfis_errorMsg').classList.add('d-none');
@@ -730,8 +757,10 @@ function mfis_filterCompany(q) {
                         '<div class="item-code">' + escHtml(c.member_code || '') + '</div>';
         div.addEventListener('click', function() {
             dd.classList.add('d-none');
-            document.getElementById('mfis_companySearch').value = c.display_name || c.nickname || c.fullname;
-            document.getElementById('mfis_company_id').value    = c.company_id;
+            document.getElementById('mfis_companySearch').value  = c.display_name || c.nickname || c.fullname;
+            document.getElementById('mfis_company_id').value     = c.company_id;
+            document.getElementById('mfis_company_code').value   = c.company_code || c.nickname || '';
+            mfis_updatePartiNo();
             /* Stokları yükle */
             var si = document.getElementById('mfis_stockSearch');
             si.disabled = false; si.value = ''; si.placeholder = 'Yükleniyor...';
@@ -783,6 +812,26 @@ function mfis_filterStock(q) {
     dd.classList.remove('d-none');
 }
 
+function mfis_calcGrMtul() {
+    var m  = parseFloat(document.getElementById('mfis_hk_metre').value) || 0;
+    var kg = parseFloat(document.getElementById('mfis_hk_kg').value)    || 0;
+    document.getElementById('mfis_hk_gr_mtul').value = (m > 0 && kg > 0) ? ((kg / m) * 1000).toFixed(4) : '';
+    mfis_updatePartiNo();
+}
+
+function mfis_updatePartiNo() {
+    var code   = (document.getElementById('mfis_company_code').value || '').trim();
+    var top    = (document.getElementById('mfis_hk_top_adedi').value || '').trim();
+    var metre  = parseFloat(document.getElementById('mfis_hk_metre').value) || 0;
+    var kg     = parseFloat(document.getElementById('mfis_hk_kg').value)    || 0;
+    var miktar = metre > 0 ? metre : kg;
+    var parts  = [];
+    if (code)   parts.push(code);
+    if (top)    parts.push(top);
+    if (miktar) parts.push(miktar);
+    document.getElementById('mfis_parti_no').value = parts.join('-');
+}
+
 function saveFisModal() {
     var companyId = parseInt(document.getElementById('mfis_company_id').value) || 0;
     var stockId   = parseInt(document.getElementById('mfis_stock_id').value)   || 0;
@@ -825,6 +874,9 @@ function saveFisModal() {
             hk_metre:      document.getElementById('mfis_hk_metre').value     || '',
             hk_kg:         document.getElementById('mfis_hk_kg').value        || '',
             hk_top_adedi:  document.getElementById('mfis_hk_top_adedi').value || '',
+            hk_h_gramaj:   document.getElementById('mfis_hk_h_gramaj').value  || '',
+            hk_gr_mtul:    document.getElementById('mfis_hk_gr_mtul').value   || '',
+            hk_parti_no:   document.getElementById('mfis_parti_no').value     || '',
             hk_ucretli:    ucretli   ? ucretli.value   : 'true',
             hk_ham_boyali: hamBoyali ? hamBoyali.value : 'true',
             rows:          JSON.stringify([rowObj])
