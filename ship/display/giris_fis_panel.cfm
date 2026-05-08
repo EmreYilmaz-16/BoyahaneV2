@@ -272,7 +272,7 @@
                     <div class="col-4">
                         <label class="form-label small mb-1 fw-semibold">Gr/Mtül <span class="text-muted">(oto)</span></label>
                         <input type="number" class="form-control form-control-sm" id="mfis_hk_gr_mtul"
-                               step="0.0001" placeholder="0.0000" readonly style="background:#f8f9fa">
+                               step="0.0001" placeholder="0.0000" readonly style="background:##f8f9fa">
                     </div>
                     <div class="col-4">
                         <label class="form-label small mb-1 fw-semibold">Parti No <span class="text-muted">(oto)</span></label>
