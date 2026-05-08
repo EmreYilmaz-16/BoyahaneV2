@@ -329,7 +329,7 @@
                     <div class="mb-3">
                         <label class="form-label small mb-1 fw-semibold">Parti Kodu</label>
                         <input type="text" class="form-control form-control-sm fw-bold text-primary"
-                               id="mprt_parti_kodu" readonly style="background:#f8f9fa;letter-spacing:.04em">
+                               id="mprt_parti_kodu" readonly style="background:##f8f9fa;letter-spacing:.04em">
                         <input type="hidden" id="mprt_ship_id"    value="0">
                         <input type="hidden" id="mprt_company_id" value="0">
                         <input type="hidden" id="mprt_stock_id"   value="0">
