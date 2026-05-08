@@ -18,7 +18,9 @@
                      AND st2.is_main_stock = true
                ), 0) AS ana_miktar
         FROM orders o
-        WHERE o.ref_ship_id = <cfqueryparam value="#shipId#" cfsqltype="cf_sql_integer">
+        JOIN ship s ON s.ship_id = <cfqueryparam value="#shipId#" cfsqltype="cf_sql_integer">
+        WHERE o.ref_ship_id = s.ship_id
+           OR (o.ref_ship_id IS NULL AND o.ref_no IS NOT NULL AND o.ref_no <> '' AND o.ref_no = s.ship_number)
         ORDER BY o.order_id
     </cfquery>
 

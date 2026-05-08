@@ -39,6 +39,7 @@
     LEFT JOIN setup_sarim_sekli ss ON o.sarim_sekli = ss.sarim_sekli_id
     LEFT JOIN setup_ambalaj ab ON o.ambalaj = ab.ambalaj_id
     WHERE o.ref_ship_id = <cfqueryparam value="#shipId#" cfsqltype="cf_sql_integer">
+       OR (o.ref_ship_id IS NULL AND o.ref_no IS NOT NULL AND o.ref_no <> '' AND o.ref_no = <cfqueryparam value="#getShip.ship_number#" cfsqltype="cf_sql_varchar">)
     ORDER BY o.order_id
 </cfquery>
 
@@ -67,6 +68,7 @@
     JOIN orders o ON orw.order_id = o.order_id
     LEFT JOIN stocks st ON orw.stock_id = st.stock_id
     WHERE o.ref_ship_id = <cfqueryparam value="#shipId#" cfsqltype="cf_sql_integer">
+       OR (o.ref_ship_id IS NULL AND o.ref_no IS NOT NULL AND o.ref_no <> '' AND o.ref_no = <cfqueryparam value="#getShip.ship_number#" cfsqltype="cf_sql_varchar">)
     ORDER BY orw.order_id, orw.order_row_id
 </cfquery>
 
