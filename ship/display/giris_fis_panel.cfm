@@ -277,7 +277,7 @@
                     <div class="col-4">
                         <label class="form-label small mb-1 fw-semibold">Parti No <span class="text-muted">(oto)</span></label>
                         <input type="text" class="form-control form-control-sm fw-semibold text-primary" id="mfis_parti_no"
-                               style="background:#f8f9fa;letter-spacing:.03em" placeholder="—">
+                               style="background:##f8f9fa;letter-spacing:.03em" placeholder="—">
                     </div>
                 </div>
 
