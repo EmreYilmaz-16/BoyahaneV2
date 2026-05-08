@@ -648,6 +648,10 @@ function buildParentSelect(excludeId) {
     });
 }
 
+function escHtml(str) {
+    return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 function filterCompStock(q) {
     var dd = document.getElementById('f_component_stock_dropdown');
     var results = q && q.length >= 1
