@@ -55,6 +55,12 @@
 
 <cfset fisArr = []>
 <cfloop query="getFisler">
+    <!--- Tamamı partilenen fişleri panelden hariç tut --->
+    <cfset m = isNumeric(hk_metre) ? val(hk_metre) : 0>
+    <cfset pm = isNumeric(parti_metre) ? val(parti_metre) : 0>
+    <cfif m GT 0 AND pm GTE m>
+        <cfcontinue>
+    </cfif>
     <cfset arrayAppend(fisArr, {
         "ship_id":      val(ship_id),
         "ship_number":  ship_number  ?: "",
