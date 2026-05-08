@@ -194,6 +194,8 @@ window.addEventListener('load', function() {
             filterRow: { visible:true }, headerFilter: { visible:true },
             searchPanel: { visible:true, width:240, placeholder:'Ara...' },
             sorting: { mode:'multiple' },
+            grouping: { autoExpandAll: true },
+            groupPanel: { visible: true, emptyPanelText: 'Gruplamak için sütun başlığını buraya sürükleyin' },
             columnChooser: { enabled:true, mode:'select', title:'Sütun Seçimi' },
             export: { enabled:true, fileName:'giris_fisleri_' + new Date().toISOString().slice(0,10) },
             onExporting: function(e) {
