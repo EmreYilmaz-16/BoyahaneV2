@@ -35,6 +35,24 @@
     ORDER BY s.ship_id DESC
 </cfquery>
 
+<!--- Sarım şekli ve ambalaj (parti modalı için) --->
+<cfquery name="getSarimSekli" datasource="boyahane">
+    SELECT sarim_sekli_id, sarim_sekli_adi FROM setup_sarim_sekli
+    WHERE is_active = true ORDER BY sort_order, sarim_sekli_adi
+</cfquery>
+<cfquery name="getAmbalaj" datasource="boyahane">
+    SELECT ambalaj_id, ambalaj_adi FROM setup_ambalaj
+    WHERE is_active = true ORDER BY sort_order, ambalaj_adi
+</cfquery>
+<cfset sarimArr = []>
+<cfloop query="getSarimSekli">
+    <cfset arrayAppend(sarimArr, {"id": val(sarim_sekli_id), "label": sarim_sekli_adi ?: ""})>
+</cfloop>
+<cfset ambalajArr = []>
+<cfloop query="getAmbalaj">
+    <cfset arrayAppend(ambalajArr, {"id": val(ambalaj_id), "label": ambalaj_adi ?: ""})>
+</cfloop>
+
 <cfset fisArr = []>
 <cfloop query="getFisler">
     <cfset arrayAppend(fisArr, {
@@ -71,9 +89,9 @@
             <div class="grid-card">
                 <div class="card-body p-2 d-flex flex-wrap gap-2 align-items-center">
 
-                    <a href="index.cfm?fuseaction=ship.add_giris_fis" class="btn btn-primary btn-sm">
+                    <button class="btn btn-primary btn-sm" onclick="openYeniFisModal()">
                         <i class="fas fa-plus me-1"></i>Yeni Giriş Fişi
-                    </a>
+                    </button>
                     <div class="vr mx-1"></div>
                     <button class="btn btn-outline-primary btn-sm" id="btnDuzenle" disabled onclick="editSelected()">
                         <i class="fas fa-edit me-1"></i>Düzenle
@@ -180,6 +198,203 @@
 
 </div>
 
+<!--- ══════════════ MODAL: YENİ GİRİŞ FİŞİ ══════════════ --->
+<div class="modal fade" id="modalYeniFis" tabindex="-1" aria-labelledby="modalYeniFisLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title fw-semibold" id="modalYeniFisLabel">
+                    <i class="fas fa-plus-circle me-2 text-primary"></i>Yeni Giriş Fişi
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-3">
+
+                <!--- Firma --->
+                <div class="mb-3 position-relative">
+                    <label class="form-label fw-semibold small mb-1">
+                        <i class="fas fa-building me-1 text-primary"></i>Firma <span class="text-danger">*</span>
+                    </label>
+                    <input type="text" class="form-control form-control-sm" id="mfis_companySearch"
+                           placeholder="Firma adı ile arayın..." autocomplete="off"
+                           oninput="mfis_filterCompany(this.value)"
+                           onfocus="mfis_filterCompany(this.value)">
+                    <input type="hidden" id="mfis_company_id" value="0">
+                    <div id="mfis_companyDropdown" class="search-dropdown d-none"></div>
+                </div>
+
+                <!--- Stok --->
+                <div class="mb-3 position-relative">
+                    <label class="form-label fw-semibold small mb-1">
+                        <i class="fas fa-box me-1 text-primary"></i>Stok / Ürün <span class="text-danger">*</span>
+                    </label>
+                    <input type="text" class="form-control form-control-sm" id="mfis_stockSearch"
+                           placeholder="Önce firma seçin..." autocomplete="off" disabled
+                           oninput="mfis_filterStock(this.value)">
+                    <input type="hidden" id="mfis_stock_id"   value="0">
+                    <input type="hidden" id="mfis_product_id" value="0">
+                    <div id="mfis_stockDropdown" class="search-dropdown d-none"></div>
+                    <div id="mfis_stockSelected" class="mt-1 d-none">
+                        <small class="text-success"><i class="fas fa-check-circle me-1"></i><span id="mfis_stockLabel"></span></small>
+                    </div>
+                </div>
+
+                <!--- Metrik bilgiler --->
+                <div class="row g-2 mb-3">
+                    <div class="col-4">
+                        <label class="form-label small mb-1 fw-semibold">Metre</label>
+                        <input type="number" class="form-control form-control-sm" id="mfis_hk_metre"
+                               step="0.001" min="0" placeholder="0.000">
+                    </div>
+                    <div class="col-4">
+                        <label class="form-label small mb-1 fw-semibold">Kg</label>
+                        <input type="number" class="form-control form-control-sm" id="mfis_hk_kg"
+                               step="0.001" min="0" placeholder="0.000">
+                    </div>
+                    <div class="col-4">
+                        <label class="form-label small mb-1 fw-semibold">Top Adedi</label>
+                        <input type="number" class="form-control form-control-sm" id="mfis_hk_top_adedi"
+                               step="1" min="0" placeholder="0">
+                    </div>
+                </div>
+
+                <!--- Toggle'lar --->
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="form-label small mb-1 fw-semibold d-block">Kumaş Durumu</label>
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="mfis_ham_boyali" id="mfis_ham"    value="true"  checked>
+                            <label class="btn btn-outline-success btn-sm" for="mfis_ham">Ham</label>
+                            <input type="radio" class="btn-check" name="mfis_ham_boyali" id="mfis_boyali" value="false">
+                            <label class="btn btn-outline-success btn-sm" for="mfis_boyali">Boyalı</label>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small mb-1 fw-semibold d-block">Ücret Durumu</label>
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="mfis_ucretli" id="mfis_ucretli_e" value="true"  checked>
+                            <label class="btn btn-outline-success btn-sm" for="mfis_ucretli_e">Ücretli</label>
+                            <input type="radio" class="btn-check" name="mfis_ucretli" id="mfis_ucretli_h" value="false">
+                            <label class="btn btn-outline-success btn-sm" for="mfis_ucretli_h">Ücretsiz</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!--- Açıklama --->
+                <div class="mb-0">
+                    <label class="form-label small mb-1 fw-semibold">Açıklama <span class="text-muted">(opsiyonel)</span></label>
+                    <textarea class="form-control form-control-sm" id="mfis_ship_detail" rows="2"
+                              placeholder="Giriş açıklaması..."></textarea>
+                </div>
+
+                <div id="mfis_errorMsg" class="alert alert-danger mt-2 py-2 d-none"></div>
+
+            </div>
+            <div class="modal-footer py-2">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">İptal</button>
+                <button type="button" class="btn btn-sm btn-primary" id="mfis_saveBtn" onclick="saveFisModal()">
+                    <i class="fas fa-save me-1"></i>Kaydet
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!--- ══════════════ MODAL: YENİ PARTİ ══════════════ --->
+<div class="modal fade" id="modalYeniParti" tabindex="-1" aria-labelledby="modalYeniPartiLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title fw-semibold" id="modalYeniPartiLabel">
+                    <i class="fas fa-cut me-2 text-success"></i>Yeni Parti
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-3">
+
+                <div id="mprt_loading" class="text-center text-muted py-3">
+                    <i class="fas fa-spinner fa-spin me-2"></i>Yükleniyor...
+                </div>
+
+                <div id="mprt_form" class="d-none">
+
+                    <!--- Giriş fişi bilgisi --->
+                    <div class="alert alert-info py-2 mb-3 small">
+                        <i class="fas fa-receipt me-1"></i>
+                        <strong id="mprt_fisLabel">—</strong>
+                        <span class="text-muted ms-2" id="mprt_companyLabel"></span>
+                    </div>
+
+                    <!--- Parti kodu --->
+                    <div class="mb-3">
+                        <label class="form-label small mb-1 fw-semibold">Parti Kodu</label>
+                        <input type="text" class="form-control form-control-sm fw-bold text-primary"
+                               id="mprt_parti_kodu" readonly style="background:#f8f9fa;letter-spacing:.04em">
+                        <input type="hidden" id="mprt_ship_id"    value="0">
+                        <input type="hidden" id="mprt_company_id" value="0">
+                        <input type="hidden" id="mprt_stock_id"   value="0">
+                        <input type="hidden" id="mprt_product_id" value="0">
+                        <input type="hidden" id="mprt_unit"       value="mt">
+                        <input type="hidden" id="mprt_unit_id"    value="0">
+                        <input type="hidden" id="mprt_product_name" value="">
+                        <input type="hidden" id="mprt_ref_no"     value="">
+                    </div>
+
+                    <!--- Miktar --->
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small mb-1 fw-semibold">
+                                Miktar (mt) <span class="text-danger">*</span>
+                            </label>
+                            <input type="number" class="form-control form-control-sm" id="mprt_miktar"
+                                   step="0.001" min="0.001" placeholder="0.000">
+                            <div class="form-text" id="mprt_kalanText"></div>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small mb-1 fw-semibold">Kg <span class="text-muted">(opsiyonel)</span></label>
+                            <input type="number" class="form-control form-control-sm" id="mprt_kg"
+                                   step="0.001" min="0" placeholder="0.000">
+                        </div>
+                    </div>
+
+                    <!--- Sarım Şekli + Ambalaj --->
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small mb-1 fw-semibold">Sarım Şekli</label>
+                            <select class="form-select form-select-sm" id="mprt_sarim_sekli">
+                                <option value="0">-- Seçin --</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small mb-1 fw-semibold">Ambalaj</label>
+                            <select class="form-select form-select-sm" id="mprt_ambalaj">
+                                <option value="0">-- Seçin --</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!--- Açıklama --->
+                    <div class="mb-0">
+                        <label class="form-label small mb-1 fw-semibold">Açıklama <span class="text-muted">(opsiyonel)</span></label>
+                        <input type="text" class="form-control form-control-sm" id="mprt_aciklama"
+                               placeholder="Parti notu...">
+                    </div>
+
+                </div>
+
+                <div id="mprt_errorMsg" class="alert alert-danger mt-2 py-2 d-none"></div>
+
+            </div>
+            <div class="modal-footer py-2">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">İptal</button>
+                <button type="button" class="btn btn-sm btn-success d-none" id="mprt_saveBtn" onclick="savePartiModal()">
+                    <i class="fas fa-cut me-1"></i>Parti Oluştur
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
 /* ─── Sol liste ─── */
 .fis-item {
@@ -207,7 +422,9 @@
 </style>
 
 <script>
-var ALL_FIS = #serializeJSON(fisArr)#;
+var ALL_FIS        = #serializeJSON(fisArr)#;
+var ALL_SARIM      = #serializeJSON(sarimArr)#;
+var ALL_AMBALAJ    = #serializeJSON(ambalajArr)#;
 var selectedShipId = 0;
 
 /* ════ Sol liste render ════ */
@@ -442,7 +659,7 @@ function renderPartiler(list) {
 
 /* ════ Toolbar buton işlemleri ════ */
 function editSelected()  { if (selectedShipId) window.location.href = 'index.cfm?fuseaction=ship.add_giris_fis&ship_id=' + selectedShipId; }
-function partiOlustur()  { if (selectedShipId) window.location.href = 'index.cfm?fuseaction=ship.add_parti&ship_id='     + selectedShipId; }
+function partiOlustur()  { if (selectedShipId) openYeniPartiModal(selectedShipId); }
 function partiListesi()  { if (selectedShipId) window.location.href = 'index.cfm?fuseaction=ship.list_partiler&ship_id=' + selectedShipId; }
 function silSelected()   {
     if (!selectedShipId || !confirm('Bu giriş fişini silmek istediğinizden emin misiniz?')) return;
@@ -458,6 +675,319 @@ function silSelected()   {
 
 function escHtml(str) {
     return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ════ Modal: Yeni Giriş Fişi ════ */
+var mfis_allCompanies = [], mfis_companiesLoaded = false;
+var mfis_allStocks = [];
+
+function openYeniFisModal() {
+    /* Formu temizle */
+    document.getElementById('mfis_companySearch').value = '';
+    document.getElementById('mfis_company_id').value = '0';
+    document.getElementById('mfis_stockSearch').value = '';
+    document.getElementById('mfis_stockSearch').disabled = true;
+    document.getElementById('mfis_stock_id').value   = '0';
+    document.getElementById('mfis_product_id').value = '0';
+    document.getElementById('mfis_stockSelected').classList.add('d-none');
+    document.getElementById('mfis_stockDropdown').classList.add('d-none');
+    document.getElementById('mfis_hk_metre').value     = '';
+    document.getElementById('mfis_hk_kg').value        = '';
+    document.getElementById('mfis_hk_top_adedi').value = '';
+    document.getElementById('mfis_ship_detail').value  = '';
+    document.getElementById('mfis_ham').checked         = true;
+    document.getElementById('mfis_ucretli_e').checked   = true;
+    document.getElementById('mfis_errorMsg').classList.add('d-none');
+    mfis_allStocks = [];
+    /* Firmalar cache'lenmemişse yükle */
+    if (!mfis_companiesLoaded) {
+        $.ajax({
+            url: '/company/cfc/company.cfc?method=getCompaniesForDropdown',
+            method: 'GET', dataType: 'json',
+            success: function(data) {
+                mfis_allCompanies = Array.isArray(data) ? data : [];
+                mfis_companiesLoaded = true;
+            }
+        });
+    }
+    var modal = new bootstrap.Modal(document.getElementById('modalYeniFis'));
+    modal.show();
+}
+
+function mfis_filterCompany(q) {
+    var dd = document.getElementById('mfis_companyDropdown');
+    if (!q || q.length < 1) { dd.classList.add('d-none'); return; }
+    q = q.toLowerCase();
+    var results = mfis_allCompanies.filter(function(c) {
+        return ((c.display_name || c.fullname || '') + ' ' + (c.nickname || '') + ' ' + (c.member_code || '')).toLowerCase().includes(q);
+    }).slice(0, 20);
+    if (!results.length) { dd.innerHTML = '<div class="search-item text-muted">Sonuç yok</div>'; dd.classList.remove('d-none'); return; }
+    dd.innerHTML = '';
+    results.forEach(function(c) {
+        var div = document.createElement('div');
+        div.className = 'search-item';
+        div.innerHTML = '<div>' + escHtml(c.display_name || c.nickname || c.fullname) + '</div>' +
+                        '<div class="item-code">' + escHtml(c.member_code || '') + '</div>';
+        div.addEventListener('click', function() {
+            dd.classList.add('d-none');
+            document.getElementById('mfis_companySearch').value = c.display_name || c.nickname || c.fullname;
+            document.getElementById('mfis_company_id').value    = c.company_id;
+            /* Stokları yükle */
+            var si = document.getElementById('mfis_stockSearch');
+            si.disabled = false; si.value = ''; si.placeholder = 'Yükleniyor...';
+            document.getElementById('mfis_stock_id').value   = '0';
+            document.getElementById('mfis_product_id').value = '0';
+            document.getElementById('mfis_stockSelected').classList.add('d-none');
+            mfis_allStocks = [];
+            $.ajax({
+                url: '/company/cfc/company.cfc',
+                method: 'GET',
+                data: { method: 'getStocksByCompany', company_id: c.company_id },
+                dataType: 'json',
+                success: function(res) {
+                    mfis_allStocks = (res.success && Array.isArray(res.data)) ? res.data : [];
+                    si.placeholder = mfis_allStocks.length ? 'Stok adı veya kodu...' : 'Bu firmaya ait stok yok';
+                },
+                error: function() { si.placeholder = 'Stok yüklenemedi'; }
+            });
+        });
+        dd.appendChild(div);
+    });
+    dd.classList.remove('d-none');
+}
+
+function mfis_filterStock(q) {
+    var dd = document.getElementById('mfis_stockDropdown');
+    if (!q || q.length < 2) { dd.classList.add('d-none'); return; }
+    q = q.toLowerCase();
+    var results = mfis_allStocks.filter(function(s) {
+        return ((s.product_name || '') + ' ' + (s.stock_code || '') + ' ' + (s.barcod || '')).toLowerCase().includes(q);
+    }).slice(0, 20);
+    if (!results.length) { dd.innerHTML = '<div class="search-item text-muted">Sonuç yok</div>'; dd.classList.remove('d-none'); return; }
+    dd.innerHTML = '';
+    results.forEach(function(s) {
+        var div = document.createElement('div');
+        div.className = 'search-item';
+        div.innerHTML = '<div>' + escHtml(s.product_name) + '</div>' +
+                        '<div class="item-code">' + escHtml(s.stock_code || '') + (s.property ? ' · ' + escHtml(s.property) : '') + '</div>';
+        div.addEventListener('click', function() {
+            dd.classList.add('d-none');
+            document.getElementById('mfis_stockSearch').value = s.product_name + (s.stock_code ? ' — ' + s.stock_code : '');
+            document.getElementById('mfis_stock_id').value    = s.stock_id;
+            document.getElementById('mfis_product_id').value  = s.product_id || 0;
+            document.getElementById('mfis_stockLabel').textContent = s.product_name + (s.stock_code ? ' — ' + s.stock_code : '');
+            document.getElementById('mfis_stockSelected').classList.remove('d-none');
+        });
+        dd.appendChild(div);
+    });
+    dd.classList.remove('d-none');
+}
+
+function saveFisModal() {
+    var companyId = parseInt(document.getElementById('mfis_company_id').value) || 0;
+    var stockId   = parseInt(document.getElementById('mfis_stock_id').value)   || 0;
+    var productId = parseInt(document.getElementById('mfis_product_id').value) || 0;
+    var errEl = document.getElementById('mfis_errorMsg');
+    errEl.classList.add('d-none');
+    if (!companyId) { errEl.textContent = 'Lütfen firma seçin.'; errEl.classList.remove('d-none'); return; }
+    if (!stockId)   { errEl.textContent = 'Lütfen stok seçin.';  errEl.classList.remove('d-none'); return; }
+
+    var hamBoyali = document.querySelector('input[name="mfis_ham_boyali"]:checked');
+    var ucretli   = document.querySelector('input[name="mfis_ucretli"]:checked');
+    var today     = new Date().toISOString().slice(0, 10);
+
+    var rowObj = {
+        stock_id:      stockId,
+        product_id:    productId,
+        name_product:  document.getElementById('mfis_stockLabel').textContent,
+        price:  0, amount: parseFloat(document.getElementById('mfis_hk_metre').value) || 0,
+        amount2: parseFloat(document.getElementById('mfis_hk_kg').value) || 0,
+        unit: 'mt', unit_id: 0, tax: 0, discount: 0,
+        discounttotal: 0, grosstotal: 0, nettotal: 0, taxtotal: 0,
+        lot_no: '', giris_raf_id: 0, giris_raf_code: '', cikis_raf_id: 0, cikis_raf_code: ''
+    };
+
+    var btn = document.getElementById('mfis_saveBtn');
+    btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Kaydediliyor...';
+
+    $.ajax({
+        url: '/ship/form/save_ship.cfm', method: 'POST', dataType: 'json',
+        data: {
+            ship_id:       0,
+            purchase_sales: 'false',
+            ship_type:     '5',
+            ship_number:   '',
+            ship_date:     today,
+            deliver_date:  today,
+            company_id:    companyId,
+            ship_status:   '1',
+            ship_detail:   document.getElementById('mfis_ship_detail').value,
+            hk_metre:      document.getElementById('mfis_hk_metre').value     || '',
+            hk_kg:         document.getElementById('mfis_hk_kg').value        || '',
+            hk_top_adedi:  document.getElementById('mfis_hk_top_adedi').value || '',
+            hk_ucretli:    ucretli   ? ucretli.value   : 'true',
+            hk_ham_boyali: hamBoyali ? hamBoyali.value : 'true',
+            rows:          JSON.stringify([rowObj])
+        },
+        success: function(res) {
+            btn.disabled = false; btn.innerHTML = '<i class="fas fa-save me-1"></i>Kaydet';
+            if (res.success) {
+                bootstrap.Modal.getInstance(document.getElementById('modalYeniFis')).hide();
+                location.reload();
+            } else {
+                errEl.textContent = res.message || 'Kayıt hatası'; errEl.classList.remove('d-none');
+            }
+        },
+        error: function() {
+            btn.disabled = false; btn.innerHTML = '<i class="fas fa-save me-1"></i>Kaydet';
+            errEl.textContent = 'Sunucu hatası'; errEl.classList.remove('d-none');
+        }
+    });
+}
+
+/* ════ Modal: Yeni Parti ════ */
+function openYeniPartiModal(shipId) {
+    /* Formu sıfırla */
+    document.getElementById('mprt_loading').classList.remove('d-none');
+    document.getElementById('mprt_form').classList.add('d-none');
+    document.getElementById('mprt_saveBtn').classList.add('d-none');
+    document.getElementById('mprt_errorMsg').classList.add('d-none');
+    document.getElementById('mprt_miktar').value    = '';
+    document.getElementById('mprt_kg').value        = '';
+    document.getElementById('mprt_aciklama').value  = '';
+
+    /* Sarım şekli + ambalaj dolduruluyor mu kontrol */
+    var ss = document.getElementById('mprt_sarim_sekli');
+    if (ss.options.length <= 1) {
+        ALL_SARIM.forEach(function(s) {
+            var opt = document.createElement('option');
+            opt.value = s.id; opt.textContent = s.label; ss.appendChild(opt);
+        });
+    }
+    var ab = document.getElementById('mprt_ambalaj');
+    if (ab.options.length <= 1) {
+        ALL_AMBALAJ.forEach(function(a) {
+            var opt = document.createElement('option');
+            opt.value = a.id; opt.textContent = a.label; ab.appendChild(opt);
+        });
+    }
+    ss.value = '0'; ab.value = '0';
+
+    var modal = new bootstrap.Modal(document.getElementById('modalYeniParti'));
+    modal.show();
+
+    /* Endpoint'ten ship_row + parti kodu al */
+    $.ajax({
+        url: '/ship/form/get_parti_form_data.cfm',
+        method: 'GET', data: { ship_id: shipId }, dataType: 'json',
+        success: function(res) {
+            document.getElementById('mprt_loading').classList.add('d-none');
+            if (!res.success) {
+                document.getElementById('mprt_errorMsg').textContent = res.message || 'Veri alınamadı';
+                document.getElementById('mprt_errorMsg').classList.remove('d-none');
+                return;
+            }
+            var fis = ALL_FIS.find(function(f) { return f.ship_id === shipId; });
+            document.getElementById('mprt_ship_id').value      = shipId;
+            document.getElementById('mprt_company_id').value   = res.company_id;
+            document.getElementById('mprt_stock_id').value     = res.stock_id;
+            document.getElementById('mprt_product_id').value   = res.product_id;
+            document.getElementById('mprt_unit').value         = res.unit;
+            document.getElementById('mprt_unit_id').value      = res.unit_id;
+            document.getElementById('mprt_product_name').value = res.product_name;
+            document.getElementById('mprt_ref_no').value       = res.ship_number;
+            document.getElementById('mprt_parti_kodu').value   = res.parti_kodu;
+            document.getElementById('mprt_fisLabel').textContent    = res.ship_number;
+            document.getElementById('mprt_companyLabel').textContent = fis ? fis.company_name : '';
+            /* Kalan metre --->  */
+            if (fis && fis.hk_metre > 0) {
+                var kalan = Math.max(0, fis.hk_metre - fis.parti_metre);
+                document.getElementById('mprt_kalanText').textContent =
+                    'Toplam: ' + fis.hk_metre.toFixed(2) + ' mt · Kalan: ' + kalan.toFixed(2) + ' mt';
+                document.getElementById('mprt_miktar').value = kalan > 0 ? kalan.toFixed(3) : '';
+            }
+            document.getElementById('mprt_form').classList.remove('d-none');
+            document.getElementById('mprt_saveBtn').classList.remove('d-none');
+        },
+        error: function() {
+            document.getElementById('mprt_loading').classList.add('d-none');
+            document.getElementById('mprt_errorMsg').textContent = 'Veri yüklenemedi';
+            document.getElementById('mprt_errorMsg').classList.remove('d-none');
+        }
+    });
+}
+
+function savePartiModal() {
+    var shipId    = parseInt(document.getElementById('mprt_ship_id').value)    || 0;
+    var companyId = parseInt(document.getElementById('mprt_company_id').value) || 0;
+    var stockId   = parseInt(document.getElementById('mprt_stock_id').value)   || 0;
+    var productId = parseInt(document.getElementById('mprt_product_id').value) || 0;
+    var miktar    = parseFloat(document.getElementById('mprt_miktar').value)   || 0;
+    var errEl = document.getElementById('mprt_errorMsg');
+    errEl.classList.add('d-none');
+    if (miktar <= 0) {
+        errEl.textContent = 'Miktar sıfırdan büyük olmalı.'; errEl.classList.remove('d-none'); return;
+    }
+    if (!productId || !stockId) {
+        errEl.textContent = 'Giriş fişine ait ürün bilgisi bulunamadı.'; errEl.classList.remove('d-none'); return;
+    }
+
+    var rowObj = {
+        stock_id:      stockId,
+        product_id:    productId,
+        product_name:  document.getElementById('mprt_product_name').value,
+        quantity:      miktar,
+        unit:          document.getElementById('mprt_unit').value || 'mt',
+        unit_id:       parseInt(document.getElementById('mprt_unit_id').value) || 0,
+        price:         0, tax: 0, discount_1: 0,
+        grosstotal:    0, nettotal: 0, taxtotal: 0
+    };
+
+    var btn = document.getElementById('mprt_saveBtn');
+    btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Kaydediliyor...';
+
+    $.ajax({
+        url: '/order/form/save_order.cfm', method: 'POST', dataType: 'json',
+        data: {
+            order_id:       0,
+            purchase_sales: 'false',
+            order_stage:    1,
+            order_number:   document.getElementById('mprt_parti_kodu').value,
+            order_head:     document.getElementById('mprt_aciklama').value,
+            ref_no:         document.getElementById('mprt_ref_no').value,
+            ref_ship_id:    shipId,
+            company_id:     companyId,
+            order_date:     new Date().toISOString().slice(0, 10),
+            sarim_sekli:    document.getElementById('mprt_sarim_sekli').value || 0,
+            ambalaj:        document.getElementById('mprt_ambalaj').value     || 0,
+            rows:           JSON.stringify([rowObj])
+        },
+        success: function(res) {
+            btn.disabled = false; btn.innerHTML = '<i class="fas fa-cut me-1"></i>Parti Oluştur';
+            if (res.success) {
+                bootstrap.Modal.getInstance(document.getElementById('modalYeniParti')).hide();
+                /* Sadece seçili fişin partilerini ve listeyi yenile */
+                loadPartiler(shipId);
+                /* ALL_FIS parti_count ve parti_metre güncelle */
+                var fis = ALL_FIS.find(function(f) { return f.ship_id === shipId; });
+                if (fis) {
+                    fis.parti_count++;
+                    fis.parti_metre += miktar;
+                    renderList(ALL_FIS);
+                    /* Toolbar butonunu duruma göre güncelle */
+                    var full = fis.hk_metre > 0 && fis.parti_metre >= fis.hk_metre;
+                    document.getElementById('btnPartiOlustur').disabled = !!full;
+                    document.getElementById('btnPartiOlusturInline').style.display = full ? 'none' : '';
+                }
+            } else {
+                errEl.textContent = res.message || 'Kayıt hatası'; errEl.classList.remove('d-none');
+            }
+        },
+        error: function() {
+            btn.disabled = false; btn.innerHTML = '<i class="fas fa-cut me-1"></i>Parti Oluştur';
+            errEl.textContent = 'Sunucu hatası'; errEl.classList.remove('d-none');
+        }
+    });
 }
 
 /* ════ Init ════ */
