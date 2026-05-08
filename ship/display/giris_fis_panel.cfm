@@ -487,8 +487,8 @@ function renderList(items) {
             (f.is_ship_iptal ? ' iptal' : '') +
             '" data-id="' + f.ship_id + '" onclick="selectFis(' + f.ship_id + ')">' +
             '<div class="d-flex justify-content-between align-items-baseline">' +
+            (f.hk_parti_no ? '<code class="text-primary" style="font-size:.82rem">' + escHtml(f.hk_parti_no) + '</code>' : '<span></span>') +
             '<div class="fis-no">' + escHtml(f.ship_number) + '</div>' +
-            (f.hk_parti_no ? '<code class="text-primary" style="font-size:.7rem">' + escHtml(f.hk_parti_no) + '</code>' : '') +
             '</div>' +
             '<div class="fis-firm">' + escHtml(f.company_name) + '</div>' +
             '<div class="fis-meta">' +
