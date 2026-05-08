@@ -32,6 +32,21 @@
     FROM ship s
     LEFT JOIN company c ON s.company_id = c.company_id
     WHERE s.ship_type = 5
+      AND NOT (
+          s.hk_metre > 0
+          AND COALESCE((
+              SELECT SUM(orw.quantity)
+              FROM orders o
+              JOIN order_row orw ON o.order_id = orw.order_id
+              WHERE (o.ref_ship_id = s.ship_id
+                 OR (o.ref_ship_id IS NULL AND o.ref_no IS NOT NULL AND o.ref_no <> '' AND o.ref_no = s.ship_number))
+                AND orw.product_id = (
+                    SELECT sr2.product_id FROM ship_row sr2
+                    WHERE sr2.ship_id = s.ship_id
+                    ORDER BY sr2.ship_row_id LIMIT 1
+                )
+          ), 0) >= s.hk_metre
+      )
     ORDER BY s.ship_id DESC
 </cfquery>
 
@@ -55,12 +70,6 @@
 
 <cfset fisArr = []>
 <cfloop query="getFisler">
-    <!--- Tamamı partilenen fişleri panelden hariç tut --->
-    <cfset m = isNumeric(hk_metre) ? val(hk_metre) : 0>
-    <cfset pm = isNumeric(parti_metre) ? val(parti_metre) : 0>
-    <cfif m GT 0 AND pm GTE m>
-        <cfcontinue>
-    </cfif>
     <cfset arrayAppend(fisArr, {
         "ship_id":      val(ship_id),
         "ship_number":  ship_number  ?: "",
