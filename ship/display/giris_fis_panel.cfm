@@ -992,5 +992,8 @@ function savePartiModal() {
 
 /* ════ Init ════ */
 renderList(ALL_FIS);
+/* Modalleri body'e taşı — overflow/stacking context sorununu giderir */
+document.body.appendChild(document.getElementById('modalYeniFis'));
+document.body.appendChild(document.getElementById('modalYeniParti'));
 </script>
 </cfoutput>
