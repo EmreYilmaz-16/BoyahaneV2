@@ -10,7 +10,7 @@
 <cfquery name="getOrder" datasource="boyahane">
     SELECT o.order_id, o.order_number, o.order_head, o.order_detail,
            o.order_date, o.deliverdate, o.order_stage, o.order_status,
-           o.ref_no,
+           o.ref_no, o.ref_ship_id,
            o.grosstotal, o.discounttotal, o.taxtotal, o.nettotal,
            o.sarim_sekli, o.ambalaj,
            o.record_date, o.company_id,
@@ -29,16 +29,14 @@
     <cfabort>
 </cfif>
 
-<!--- İrsaliye bilgisi (ref_no = ship_number) --->
+<!--- İrsaliye bilgisi (ref_ship_id FK ile bağlı) --->
 <cfquery name="getShip" datasource="boyahane">
     SELECT s.ship_id, s.ship_number, s.ship_detail,
            s.hk_metre, s.hk_kg, s.hk_top_adedi,
            COALESCE(c.nickname, c.fullname, '') AS company_name
     FROM ship s
     LEFT JOIN company c ON s.company_id = c.company_id
-    WHERE s.ship_number = <cfqueryparam value="#getOrder.ref_no#" cfsqltype="cf_sql_varchar">
-    ORDER BY s.ship_id DESC
-    LIMIT 1
+    WHERE s.ship_id = <cfqueryparam value="#val(getOrder.ref_ship_id)#" cfsqltype="cf_sql_integer">
 </cfquery>
 
 <!--- Parti kalemleri --->
@@ -210,7 +208,7 @@
                                     <cfif getShip.recordCount>
                                     <a href="index.cfm?fuseaction=ship.list_partiler&ship_id=#getShip.ship_id#"
                                        class="text-decoration-none fw-semibold">
-                                        #xmlFormat(getOrder.ref_no)#
+                                        #xmlFormat(getShip.ship_number)#
                                     </a>
                                     <cfelse>
                                     #xmlFormat(getOrder.ref_no)#

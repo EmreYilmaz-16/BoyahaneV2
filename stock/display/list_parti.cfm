@@ -17,8 +17,8 @@
            COALESCE(s.hk_metre, 0)             AS hk_metre
     FROM orders o
     LEFT JOIN company c ON o.company_id = c.company_id
-    LEFT JOIN ship s    ON s.ship_number = o.ref_no
-    WHERE o.ref_no IS NOT NULL AND o.ref_no <> ''
+    LEFT JOIN ship s    ON s.ship_id = o.ref_ship_id
+    WHERE o.ref_ship_id IS NOT NULL
     ORDER BY o.order_id DESC
 </cfquery>
 
@@ -40,7 +40,7 @@
     FROM order_row orw
     JOIN orders o   ON orw.order_id = o.order_id
     LEFT JOIN stocks st ON orw.stock_id = st.stock_id
-    WHERE o.ref_no IS NOT NULL AND o.ref_no <> ''
+    WHERE o.ref_ship_id IS NOT NULL
     ORDER BY orw.order_id, orw.order_row_id
 </cfquery>
 

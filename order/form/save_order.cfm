@@ -9,6 +9,7 @@
     <cfparam name="form.order_number"   default="">
     <cfparam name="form.order_head"     default="">
     <cfparam name="form.ref_no"         default="">
+    <cfparam name="form.ref_ship_id"    default="0">
     <cfparam name="form.order_detail"   default="">
     <cfparam name="form.order_date"     default="">
     <cfparam name="form.deliverdate"    default="">
@@ -34,13 +35,12 @@
     <cfset editMode     = orderId gt 0>
 
     <!--- Parti ekranından kayıt gelirken company_id boş gelebilirse irsaliyeden tamamla --->
-    <cfif companyId lte 0 AND len(trim(form.ref_no))>
+    <cfset refShipIdVal = val(form.ref_ship_id)>
+    <cfif companyId lte 0 AND refShipIdVal gt 0>
         <cfquery name="getShipCompany" datasource="boyahane">
             SELECT company_id
             FROM ship
-            WHERE ship_number = <cfqueryparam value="#trim(form.ref_no)#" cfsqltype="cf_sql_varchar">
-            ORDER BY ship_id DESC
-            LIMIT 1
+            WHERE ship_id = <cfqueryparam value="#refShipIdVal#" cfsqltype="cf_sql_integer">
         </cfquery>
         <cfif getShipCompany.recordCount AND isNumeric(getShipCompany.company_id)>
             <cfset companyId = val(getShipCompany.company_id)>
@@ -108,6 +108,7 @@
                 order_head      = <cfqueryparam value="#trim(form.order_head)#" cfsqltype="cf_sql_varchar" null="#NOT len(trim(form.order_head))#">,
                 order_detail    = <cfqueryparam value="#trim(form.order_detail)#" cfsqltype="cf_sql_longvarchar" null="#NOT len(trim(form.order_detail))#">,
                 ref_no          = <cfqueryparam value="#trim(form.ref_no)#" cfsqltype="cf_sql_varchar" null="#NOT len(trim(form.ref_no))#">,
+                ref_ship_id     = <cfqueryparam value="#refShipIdVal#" cfsqltype="cf_sql_integer" null="#refShipIdVal eq 0#">,
                 order_date      = <cfqueryparam value="#orderDateVal#" cfsqltype="cf_sql_timestamp">,
                 deliverdate     = <cfqueryparam value="#hasDeliverDate ? deliverDateVal : ''#" cfsqltype="cf_sql_timestamp" null="#NOT hasDeliverDate#">,
                 company_id      = <cfqueryparam value="#companyId#" cfsqltype="cf_sql_integer">,
@@ -131,7 +132,7 @@
         <!--- INSERT --->
         <cfquery datasource="boyahane" result="insertResult">
             INSERT INTO orders (
-                purchase_sales, order_stage, order_number, order_head, order_detail, ref_no,
+                purchase_sales, order_stage, order_number, order_head, order_detail, ref_no, ref_ship_id,
                 order_date, deliverdate, company_id, member_type, ref_company_id, paymethod, ship_method, order_currency,
                 order_status, sarim_sekli, ambalaj, grosstotal, discounttotal, taxtotal, nettotal, record_date
             ) VALUES (
@@ -141,6 +142,7 @@
                 <cfqueryparam value="#trim(form.order_head)#" cfsqltype="cf_sql_varchar" null="#NOT len(trim(form.order_head))#">,
                 <cfqueryparam value="#trim(form.order_detail)#" cfsqltype="cf_sql_longvarchar" null="#NOT len(trim(form.order_detail))#">,
                 <cfqueryparam value="#trim(form.ref_no)#" cfsqltype="cf_sql_varchar" null="#NOT len(trim(form.ref_no))#">,
+                <cfqueryparam value="#refShipIdVal#" cfsqltype="cf_sql_integer" null="#refShipIdVal eq 0#">,
                 <cfqueryparam value="#orderDateVal#" cfsqltype="cf_sql_timestamp">,
                 <cfqueryparam value="#hasDeliverDate ? deliverDateVal : ''#" cfsqltype="cf_sql_timestamp" null="#NOT hasDeliverDate#">,
                 <cfqueryparam value="#companyId#" cfsqltype="cf_sql_integer">,

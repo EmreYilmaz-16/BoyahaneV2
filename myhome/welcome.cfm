@@ -48,7 +48,7 @@
                 SELECT SUM(orw.quantity)
                 FROM orders o
                 JOIN order_row orw ON o.order_id = orw.order_id
-                WHERE o.ref_no = s.ship_number
+                WHERE o.ref_ship_id = s.ship_id
                   AND s.ship_number <> ''
                   AND orw.product_id = (
                       SELECT sr2.product_id FROM ship_row sr2

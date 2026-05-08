@@ -83,7 +83,8 @@ CREATE TABLE orders (
     district_id INTEGER,
     due_date TIMESTAMP WITHOUT TIME ZONE,
     ref_no VARCHAR(100),
-    
+    ref_ship_id INTEGER REFERENCES ship(ship_id) ON DELETE SET NULL,
+
     -- İndirim ve Promosyon / Discount & Promotion
     sa_discount NUMERIC(18,6) DEFAULT 0,
     general_prom_id INTEGER,

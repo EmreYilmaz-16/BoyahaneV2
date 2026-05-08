@@ -47,10 +47,10 @@
     LIMIT 1
 </cfquery>
 
-<!--- Mevcut parti sayısı (ref_no ile bağlı siparişler) --->
+<!--- Mevcut parti sayısı (ref_ship_id ile bağlı siparışler) --->
 <cfquery name="countParts" datasource="boyahane">
     SELECT COUNT(*) AS c FROM orders
-    WHERE ref_no = <cfqueryparam value="#getShip.ship_number#" cfsqltype="cf_sql_varchar">
+    WHERE ref_ship_id = <cfqueryparam value="#shipId#" cfsqltype="cf_sql_integer">
 </cfquery>
 <cfset partiNo   = countParts.c + 1>
 <cfset partiKodu = getShip.ship_number & "-P" & partiNo>
@@ -155,7 +155,7 @@
         SELECT COALESCE(SUM(orw.quantity), 0) AS toplam
         FROM orders o
         JOIN order_row orw ON o.order_id = orw.order_id
-        WHERE o.ref_no       = <cfqueryparam value="#getShip.ship_number#" cfsqltype="cf_sql_varchar">
+        WHERE o.ref_ship_id  = <cfqueryparam value="#shipId#" cfsqltype="cf_sql_integer">
           AND orw.product_id = <cfqueryparam value="#mainProductId#" cfsqltype="cf_sql_integer">
     </cfquery>
     <cfif val(getPartiToplamMiktar.toplam) gte shipHkMetre>
@@ -720,6 +720,7 @@ function saveParti() {
         order_number:   document.getElementById('parti_kodu').value,
         order_head:     '#jsStringFormat(getShip.company_name)# — ' + document.getElementById('parti_kodu').value,
         ref_no:         '#jsStringFormat(getShip.ship_number)#',
+        ref_ship_id:    #shipId#,
         order_detail:   document.getElementById('order_detail').value,
         order_date:     todayStr,
         deliverdate:    document.getElementById('deliverdate').value || '',
