@@ -117,6 +117,7 @@ var groups = [
         items: [
             {key:'stock_fis',    label:'Stok Fişi'},
             {key:'ship_fis',     label:'Sevk Fişi'},
+            {key:'giris_fis',    label:'Giriş Fişi'},
             {key:'ship_internal',label:'İç Sevkiyat'},
             {key:'req',          label:'Talep'}
         ]

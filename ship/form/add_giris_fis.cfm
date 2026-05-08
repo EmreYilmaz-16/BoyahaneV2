@@ -135,6 +135,24 @@
     </cfloop>
 </cfif>
 
+<!--- Yeni kayıt modunda giriş fişi numaratöründen önizleme --->
+<cfif NOT editMode>
+    <cfquery name="getNextGirisFis" datasource="boyahane">
+        SELECT COALESCE(giris_fis_no, 'GF') AS fis_prefix,
+               COALESCE(giris_fis_number, 0) + 1 AS next_number
+        FROM general_papers
+        WHERE zone_type = 0
+        ORDER BY general_papers_id
+        LIMIT 1
+    </cfquery>
+    <cfif getNextGirisFis.recordCount>
+        <cfset previewGirisFisNo = getNextGirisFis.fis_prefix & '-' & numberFormat(getNextGirisFis.next_number, '00000')>
+    <cfelse>
+        <cfset previewGirisFisNo = "GF-00001">
+    </cfif>
+    <cfset selShipNumber = previewGirisFisNo>
+</cfif>
+
 <div class="page-header">
     <div class="page-header-left">
         <div class="page-header-icon"><i class="fas fa-dolly"></i></div>
@@ -213,6 +231,7 @@
                             <input type="text" class="form-control" id="ship_number"
                                    placeholder="Otomatik veya elle girin"
                                    value="<cfoutput>#xmlFormat(selShipNumber)#</cfoutput>">
+                            <cfif NOT editMode><small class="text-muted">Kaydedildiğinde otomatik atanır, değiştirilebilir.</small></cfif>
                         </div>
 
                         <!--- Referans No --->

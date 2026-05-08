@@ -64,6 +64,10 @@ CREATE TABLE general_papers (
     ship_fis_no VARCHAR(50),
     ship_fis_number INTEGER,
     
+    -- Giriş Fişi / Goods Receipt
+    giris_fis_no VARCHAR(50),
+    giris_fis_number INTEGER,
+    
     -- Abonelik / Subscription
     subscription_no VARCHAR(50),
     subscription_number INTEGER,

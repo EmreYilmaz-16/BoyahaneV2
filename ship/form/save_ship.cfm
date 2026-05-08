@@ -109,6 +109,39 @@
         </cfquery>
 
     <cfelse>
+        <!--- ── YENİ KAYIT: ship_type=5 ise Giriş Fişi numarasını atomik üret ── --->
+        <cfif ship_type eq 5>
+            <cfquery name="getAutoGirisFisNo" datasource="boyahane">
+                UPDATE general_papers
+                   SET giris_fis_number = COALESCE(giris_fis_number, 0) + 1
+                 WHERE zone_type = 0
+                 RETURNING COALESCE(giris_fis_no, 'GF') || '-' ||
+                               LPAD(giris_fis_number::text, 5, '0') AS generated_no
+            </cfquery>
+            <cfif getAutoGirisFisNo.recordCount>
+                <cfset ship_number = getAutoGirisFisNo.generated_no>
+            <cfelse>
+                <!--- general_papers satırı yoksa oluştur ve tekrar dene --->
+                <cfquery datasource="boyahane">
+                    INSERT INTO general_papers (zone_type, giris_fis_no, giris_fis_number)
+                    VALUES (0, 'GF', 1)
+                    ON CONFLICT DO NOTHING
+                </cfquery>
+                <cfquery name="getAutoGirisFisNo2" datasource="boyahane">
+                    UPDATE general_papers
+                       SET giris_fis_number = COALESCE(giris_fis_number, 0) + 1
+                     WHERE zone_type = 0
+                     RETURNING COALESCE(giris_fis_no, 'GF') || '-' ||
+                                   LPAD(giris_fis_number::text, 5, '0') AS generated_no
+                </cfquery>
+                <cfif getAutoGirisFisNo2.recordCount>
+                    <cfset ship_number = getAutoGirisFisNo2.generated_no>
+                <cfelse>
+                    <cfset ship_number = 'GF-' & dateFormat(now(),'yyyymmdd') & '-' & randRange(1000,9999)>
+                </cfif>
+            </cfif>
+        </cfif>
+
         <!--- INSERT --->
         <cfquery datasource="boyahane">
             INSERT INTO ship (
