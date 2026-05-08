@@ -34,6 +34,7 @@
             <cfcase value="4"><cfset stageLabel = "Hazır"></cfcase>
             <cfcase value="5"><cfset stageLabel = "Sevk Edildi"></cfcase>
             <cfcase value="6"><cfset stageLabel = "Tamamlandı"></cfcase>
+            <cfcase value="7"><cfset stageLabel = "Renkli"></cfcase>
             <cfdefaultcase><cfset stageLabel = "Bilinmiyor"></cfdefaultcase>
         </cfswitch>
         <cfset arrayAppend(result, {

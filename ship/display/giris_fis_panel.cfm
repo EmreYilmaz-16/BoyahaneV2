@@ -672,18 +672,20 @@ function renderPartiler(list) {
         return;
     }
 
-    var stageColors = { 1:'secondary', 2:'primary', 3:'warning', 4:'info', 5:'success', 6:'dark' };
+    var stageColors = { 1:'secondary', 2:'primary', 3:'warning', 4:'info', 5:'success', 6:'dark', 7:'danger' };
+    var fisPartiNo = fis ? (fis.hk_parti_no || '') : '';
 
     var html = '<div class="table-responsive">' +
         '<table class="table table-sm table-hover mb-0 parti-tbl">' +
         '<thead class="table-light"><tr>' +
-        '<th class="ps-3">Parti No</th><th>Tarih</th><th>Miktar</th><th>Durum</th><th></th>' +
+        '<th class="ps-3">Parti No</th><th>Giriş Parti No</th><th>Tarih</th><th>Miktar</th><th>Durum</th><th></th>' +
         '</tr></thead><tbody>';
 
     list.forEach(function(p) {
         var color = stageColors[p.order_stage] || 'secondary';
         html += '<tr>' +
             '<td class="ps-3 fw-semibold">' + escHtml(p.order_number) + '</td>' +
+            '<td class="text-primary fw-semibold">' + (fisPartiNo ? escHtml(fisPartiNo) : '—') + '</td>' +
             '<td class="text-muted">' + p.order_date + '</td>' +
             '<td>' + (p.ana_miktar > 0 ? p.ana_miktar.toFixed(2) + ' mt' : '—') + '</td>' +
             '<td><span class="badge bg-' + color + ' rounded-pill" style="font-size:.72rem">' +
