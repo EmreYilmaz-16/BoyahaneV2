@@ -16,6 +16,7 @@
         s.hk_gr_mtul,
         s.hk_ucretli,
         s.hk_ham_boyali,
+        s.hk_parti_no,
         COALESCE(c.nickname, c.fullname, '') AS company_name,
         c.company_id,
         COALESCE((
@@ -66,6 +67,7 @@
         "hk_gr_mtul":    isNumeric(hk_gr_mtul)   ? val(hk_gr_mtul)   : "",
         "hk_ucretli":    hk_ucretli,
         "hk_ham_boyali": hk_ham_boyali,
+        "hk_parti_no":   hk_parti_no ?: "",
         "ref_no":        ref_no ?: "",
         "ship_detail":   ship_detail ?: "",
         "ship_status":   ship_status ?: 1,
@@ -228,6 +230,11 @@ window.addEventListener('load', function() {
                 { dataField:'hk_metre', caption:'Metre', width:100, alignment:'right', dataType:'number', format:{type:'fixedPoint',precision:2} },
                 { dataField:'hk_kg', caption:'Kg', width:100, alignment:'right', dataType:'number', format:{type:'fixedPoint',precision:2} },
                 { dataField:'hk_top_adedi', caption:'Top Adedi', width:95, alignment:'center', dataType:'number' },
+                { dataField:'hk_parti_no', caption:'Parti No', width:160,
+                    cellTemplate: function(c,o) {
+                        $('<span>').addClass('fw-semibold text-primary small').text(o.value||'-').appendTo(c);
+                    }
+                },
                 { dataField:'parti_metre', caption:'Partilenen (mt)', width:120, alignment:'right', dataType:'number', format:{type:'fixedPoint',precision:2},
                     cellTemplate: function(c,o) {
                         var pm  = parseFloat(o.value) || 0;

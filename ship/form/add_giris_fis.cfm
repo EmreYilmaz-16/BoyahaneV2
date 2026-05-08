@@ -62,6 +62,7 @@
     <cfset selHkGrMtul    = isNumeric(s.hk_gr_mtul)   ? s.hk_gr_mtul   : "">
     <cfset selHkUcretli   = s.hk_ucretli ?: true>
     <cfset selHkHamBoyali = s.hk_ham_boyali ?: true>
+    <cfset selHkPartiNo   = len(trim(s.hk_parti_no ?: "")) ? trim(s.hk_parti_no) : "">
     <cfif isDefined("getShipRow") AND getShipRow.recordCount>
         <cfset r = getShipRow>
         <cfset selStockId   = val(r.stock_id ?: 0)>
@@ -92,7 +93,7 @@
     <cfset selPaymethod = 0><cfset selShipMethod = 0><cfset selLocationIn = url.location_id>
     <cfset selHkMetre = ""><cfset selHkKg = ""><cfset selHkTopAdedi = "">
     <cfset selHkHGramaj = ""><cfset selHkGrMtul = "">
-    <cfset selHkUcretli = true><cfset selHkHamBoyali = true>
+    <cfset selHkUcretli = true><cfset selHkHamBoyali = true><cfset selHkPartiNo = "">
     <cfset selStockId = 0><cfset selStockName = "">
     <cfset selUnit = ""><cfset selUnitId = 0><cfset selLotNo = ""><cfset selRafId = 0>
     <cfset selReturnCatId = 0>
@@ -380,7 +381,8 @@
                             </label>
                             <input type="text" class="form-control form-control-sm" id="parti_no"
                                    readonly placeholder="Müşteri Kodu-Top-Miktar"
-                                   style="background:#f8f9fa;font-weight:600;letter-spacing:.04em;">
+                                   style="background:#f8f9fa;font-weight:600;letter-spacing:.04em;"
+                                   value="<cfoutput>#xmlFormat(selHkPartiNo)#</cfoutput>">
                         </div>
 
                         <div class="row g-2 mb-2">
@@ -805,6 +807,7 @@ function saveShip() {
         hk_gr_mtul:     document.getElementById('hk_gr_mtul').value   || '',
         hk_ucretli:     ucretliSel   ? ucretliSel.value   : 'true',
         hk_ham_boyali:  hamBoyaliSel ? hamBoyaliSel.value : 'true',
+        hk_parti_no:    document.getElementById('parti_no').value || '',
         return_cat_id:  parseInt(document.getElementById('return_cat_id').value) || 0,
         rows:           JSON.stringify([row])
     };
