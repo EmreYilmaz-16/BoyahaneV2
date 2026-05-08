@@ -257,7 +257,7 @@ window.addEventListener('load', function() {
                             .appendTo(c);
                     }
                 },
-                { caption:'Parti Durumu', width:150, alignment:'center', allowSorting:false, allowFiltering:false,
+                { caption:'Parti Durumu', name:'parti_durumu', width:150, alignment:'center', allowSorting:true, allowFiltering:true, allowGrouping:true,
                     calculateCellValue: function(r) {
                         var pm = parseFloat(r.parti_metre) || 0;
                         var hm = parseFloat(r.hk_metre) || 0;
