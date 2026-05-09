@@ -182,13 +182,23 @@
             <p>İrsaliyelerden oluşturulan tüm sipariş partilerini görüntüleyin</p>
         </div>
     </div>
+    <div class="d-flex gap-2">
+        <button type="button" class="btn btn-sm btn-outline-primary" onclick="openQuickColorPicker()">
+            <i class="fas fa-palette me-1"></i>Yeni Renk
+        </button>
+    </div>
 </div>
 
 <div class="px-3 pb-5">
     <div class="grid-card">
         <div class="grid-card-header">
             <div class="grid-card-header-title"><i class="fas fa-layer-group"></i>Parti Listesi</div>
-            <span class="record-count" id="partiTotalBadge"><cfoutput>#getPartiler.recordCount#</cfoutput> parti</span>
+            <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-sm btn-outline-primary py-0" onclick="openQuickColorPicker()">
+                    <i class="fas fa-palette me-1"></i>Yeni Renk
+                </button>
+                <span class="record-count" id="partiTotalBadge"><cfoutput>#getPartiler.recordCount#</cfoutput> parti</span>
+            </div>
         </div>
         <div class="card-body p-2">
             <div id="mainPartiGrid"></div>
@@ -319,7 +329,7 @@ window.addEventListener('load', function() {
                 });
                 e.cancel = true;
             },
-            selection: { mode: 'none' },
+            selection: { mode: 'single' },
             columns: [
                 { dataField:'order_id',     caption:'ID',         width:70, alignment:'center', dataType:'number' },
                 { dataField:'order_number', caption:'Parti Kodu', width:160,
@@ -548,6 +558,23 @@ function openRowModal(partiData) {
     if (modalEl.parentNode !== document.body) document.body.appendChild(modalEl);
     rowModalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
     rowModalInstance.show();
+}
+
+/* ─── Hızlı Renk Seç (Toolbar kısayolu) ───────────────────── */
+function openQuickColorPicker() {
+    /* İlk renk bekleyen (is_main_stock=true + renk varyantı var) partiyi bul */
+    /* Kullanıcı önce ana grid'den bir satır seçmeli — grid selection ile */
+    var mg = DevExpress.ui.dxDataGrid.getInstance(document.getElementById('mainPartiGrid'));
+    if (!mg) return;
+    var sel = mg.getSelectedRowsData();
+    if (!sel || sel.length === 0) {
+        DevExpress.ui.notify({
+            message: 'Lütfen önce listeden bir parti satırı seçin, sonra "Yeni Renk" butonuna tıklayın.',
+            width: 420
+        }, 'warning', 3500);
+        return;
+    }
+    openColorPickerFromParti(sel[0]);
 }
 
 /* ─── Renk Seç (ana grid'den doğrudan) ───────────────────── */
