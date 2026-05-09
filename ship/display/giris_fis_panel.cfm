@@ -1211,35 +1211,47 @@ function openYeniPartiModal(shipId) {
                     'Toplam: ' + fis.hk_metre.toFixed(2) + ' mt · Kalan: ' + kalan.toFixed(2) + ' mt';
                 document.getElementById('mprt_miktar').value = kalan > 0 ? kalan.toFixed(3) : '';
             }
-            /* Tekstil özellikleri */
-            var t = res.tekstil || {};
-            document.getElementById('mprt_gramaj').value        = t.gramaj        || '';
-            document.getElementById('mprt_en').value            = t.en            || '';
-            document.getElementById('mprt_isi').value           = t.isi           || '';
-            document.getElementById('mprt_hiz').value           = t.hiz           || '';
-            document.getElementById('mprt_besleme_avans').value = t.besleme_avans || '';
-            document.getElementById('mprt_kumas_tipi').value    = t.kumas_tipi    || '';
-            document.getElementById('mprt_tuse').value          = t.tuse          || '';
-            document.getElementById('mprt_cekme').value         = t.cekme         || '';
-            /* Ek işlemler */
+            /* Tekstil özellikleri: son partiden varsa onu kullan, yoksa ürün kartından */
+            var sonT = (res.son_parti_tekstil && Object.keys(res.son_parti_tekstil).length > 0)
+                       ? res.son_parti_tekstil : (res.tekstil || {});
+            var tSource = (res.son_parti_tekstil && Object.keys(res.son_parti_tekstil).length > 0)
+                          ? 'son_parti' : 'urun_kart';
+            document.getElementById('mprt_gramaj').value        = sonT.gramaj        || sonT.GRAMAJ        || '';
+            document.getElementById('mprt_en').value            = sonT.en            || sonT.EN            || '';
+            document.getElementById('mprt_isi').value           = sonT.isi           || sonT.ISI           || '';
+            document.getElementById('mprt_hiz').value           = sonT.hiz           || sonT.HIZ           || '';
+            document.getElementById('mprt_besleme_avans').value = sonT.besleme_avans || sonT.BESLEME_AVANS || '';
+            document.getElementById('mprt_kumas_tipi').value    = sonT.kumas_tipi    || sonT.KUMAS_TIPI    || '';
+            document.getElementById('mprt_tuse').value          = sonT.tuse          || sonT.TUSE          || '';
+            document.getElementById('mprt_cekme').value         = sonT.cekme         || sonT.CEKME         || '';
+            /* Sarım / Ambalaj: son partiden varsa onu kullan */
+            var ss = document.getElementById('mprt_sarim_sekli');
+            var ab = document.getElementById('mprt_ambalaj');
+            if (res.son_parti_sarim  && res.son_parti_sarim  > 0) ss.value = res.son_parti_sarim;
+            if (res.son_parti_ambalaj && res.son_parti_ambalaj > 0) ab.value = res.son_parti_ambalaj;
+            /* Ek işlemler: son partideki seçimler varsayılan işaretli gelsin */
+            var lastEkIds = Array.isArray(res.son_parti_ek_islem) ? res.son_parti_ek_islem.map(Number) : [];
             var ekListEl = document.getElementById('mprt_ekIslemList');
             var ekItems  = res.ek_islem || [];
             if (ekItems.length === 0) {
                 ekListEl.innerHTML = '<span class="text-muted small">Bu firmaya ait ek işlem tanımlı değil.</span>';
             } else {
                 ekListEl.innerHTML = ekItems.map(function(e) {
-                    var sid = e.stock_id || e.STOCK_ID || 0;
-                    var pid = e.product_id || e.PRODUCT_ID || 0;
-                    var nm  = escHtml(e.product_name || e.PRODUCT_NAME || '');
-                    var sc  = e.stock_code || e.STOCK_CODE || '';
+                    var sid      = e.stock_id || e.STOCK_ID || 0;
+                    var pid      = e.product_id || e.PRODUCT_ID || 0;
+                    var nm       = escHtml(e.product_name || e.PRODUCT_NAME || '');
+                    var sc       = e.stock_code || e.STOCK_CODE || '';
+                    var checked  = lastEkIds.indexOf(Number(sid)) !== -1 ? ' checked' : '';
                     return '<div class="form-check mb-1">'
                         + '<input class="form-check-input mprt-ek-chk" type="checkbox"'
                         + ' id="mprt_ek_' + sid + '"'
+                        + checked
                         + ' data-stock-id="' + sid + '"'
                         + ' data-product-id="' + pid + '"'
                         + ' data-product-name="' + nm + '">'
                         + '<label class="form-check-label small" for="mprt_ek_' + sid + '">'
                         + nm + (sc ? ' <span class="text-muted">(' + escHtml(sc) + ')</span>' : '')
+                        + (checked ? ' <span class="badge bg-info text-dark ms-1" style="font-size:.65rem">Önceki</span>' : '')
                         + '</label></div>';
                 }).join('');
             }
