@@ -269,7 +269,8 @@
                     </label>
                     <input type="text" class="form-control form-control-sm" id="mfis_stockSearch"
                            placeholder="Önce firma seçin..." autocomplete="off" disabled
-                           oninput="mfis_filterStock(this.value)">
+                           oninput="mfis_filterStock(this.value)"
+                           onfocus="mfis_filterStock(this.value)">
                     <input type="hidden" id="mfis_stock_id"   value="0">
                     <input type="hidden" id="mfis_product_id" value="0">
                     <div id="mfis_stockDropdown" class="search-dropdown d-none"></div>
@@ -950,11 +951,14 @@ function mfis_filterCompany(q) {
 
 function mfis_filterStock(q) {
     var dd = document.getElementById('mfis_stockDropdown');
-    if (!q || q.length < 2) { dd.classList.add('d-none'); return; }
-    q = q.toLowerCase();
-    var results = mfis_allStocks.filter(function(s) {
-        return ((s.product_name || '') + ' ' + (s.stock_code || '') + ' ' + (s.barcod || '')).toLowerCase().includes(q);
-    }).slice(0, 20);
+    if (!mfis_allStocks || !mfis_allStocks.length) { dd.classList.add('d-none'); return; }
+    q = (q || '').toLowerCase().trim();
+    var results = (q.length > 0
+        ? mfis_allStocks.filter(function(s) {
+            return ((s.product_name || '') + ' ' + (s.stock_code || '') + ' ' + (s.barcod || '')).toLowerCase().includes(q);
+          })
+        : mfis_allStocks
+    ).slice(0, 50);
     if (!results.length) { dd.innerHTML = '<div class="search-item text-muted">Sonuç yok</div>'; dd.classList.remove('d-none'); return; }
     dd.innerHTML = '';
     results.forEach(function(s) {
@@ -1386,5 +1390,19 @@ function saveUrunKarti() {
         }
     });
 }
+
+/* Dropdown dışına tıklanınca kapat */
+document.addEventListener('click', function(e) {
+    var stockSearch  = document.getElementById('mfis_stockSearch');
+    var stockDd      = document.getElementById('mfis_stockDropdown');
+    var compSearch   = document.getElementById('mfis_companySearch');
+    var compDd       = document.getElementById('mfis_companyDropdown');
+    if (stockDd && stockSearch && !stockSearch.contains(e.target) && !stockDd.contains(e.target)) {
+        stockDd.classList.add('d-none');
+    }
+    if (compDd && compSearch && !compSearch.contains(e.target) && !compDd.contains(e.target)) {
+        compDd.classList.add('d-none');
+    }
+});
 </script>
 </cfoutput>
