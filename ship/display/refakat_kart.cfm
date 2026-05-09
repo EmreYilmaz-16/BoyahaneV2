@@ -84,22 +84,22 @@
         ORDER BY orw.order_row_id
         LIMIT 1
     </cfquery>
-    <cfset tGramaj       = (getTekstil.recordCount AND isNumeric(getTekstil.gramaj)        AND val(getTekstil.gramaj)        gt 0) ? numberFormat(getTekstil.gramaj,       '0.##') : "">
-    <cfset tEn           = (getTekstil.recordCount AND isNumeric(getTekstil.en)            AND val(getTekstil.en)            gt 0) ? numberFormat(getTekstil.en,           '0.##') : "">
+    <cfset tGramaj       = (getTekstil.recordCount AND isNumeric(getTekstil.gramaj)        AND val(getTekstil.gramaj)        gt 0) ? val(getTekstil.gramaj)        : "">
+    <cfset tEn           = (getTekstil.recordCount AND isNumeric(getTekstil.en)            AND val(getTekstil.en)            gt 0) ? val(getTekstil.en)            : "">
     <cfset tKumasTipi    = getTekstil.recordCount ? trim(getTekstil.kumas_tipi   ?: "") : "">
     <cfset tTuse         = getTekstil.recordCount ? trim(getTekstil.tuse         ?: "") : "">
-    <cfset tIsi          = (getTekstil.recordCount AND isNumeric(getTekstil.isi)           AND val(getTekstil.isi)           gt 0) ? numberFormat(getTekstil.isi,          '0.##') : "">
-    <cfset tHiz          = (getTekstil.recordCount AND isNumeric(getTekstil.hiz)           AND val(getTekstil.hiz)           gt 0) ? numberFormat(getTekstil.hiz,          '0.##') : "">
-    <cfset tBesleme      = (getTekstil.recordCount AND isNumeric(getTekstil.besleme_avans) AND val(getTekstil.besleme_avans) gt 0) ? numberFormat(getTekstil.besleme_avans,'0.##') : "">
+    <cfset tIsi          = (getTekstil.recordCount AND isNumeric(getTekstil.isi)           AND val(getTekstil.isi)           gt 0) ? val(getTekstil.isi)           : "">
+    <cfset tHiz          = (getTekstil.recordCount AND isNumeric(getTekstil.hiz)           AND val(getTekstil.hiz)           gt 0) ? val(getTekstil.hiz)           : "">
+    <cfset tBesleme      = (getTekstil.recordCount AND isNumeric(getTekstil.besleme_avans) AND val(getTekstil.besleme_avans) gt 0) ? val(getTekstil.besleme_avans) : "">
     <cfset tCekme        = getTekstil.recordCount ? trim(getTekstil.cekme        ?: "") : "">
 <cfelse>
-    <cfset tGramaj       = (isNumeric(getOrder.gramaj)        AND val(getOrder.gramaj)        gt 0) ? numberFormat(getOrder.gramaj,       '0.##') : "">
-    <cfset tEn           = (isNumeric(getOrder.en)            AND val(getOrder.en)            gt 0) ? numberFormat(getOrder.en,           '0.##') : "">
+    <cfset tGramaj       = (isNumeric(getOrder.gramaj)        AND val(getOrder.gramaj)        gt 0) ? val(getOrder.gramaj)        : "">
+    <cfset tEn           = (isNumeric(getOrder.en)            AND val(getOrder.en)            gt 0) ? val(getOrder.en)            : "">
     <cfset tKumasTipi    = trim(getOrder.kumas_tipi   ?: "")>
     <cfset tTuse         = trim(getOrder.tuse         ?: "")>
-    <cfset tIsi          = (isNumeric(getOrder.isi)           AND val(getOrder.isi)           gt 0) ? numberFormat(getOrder.isi,          '0.##') : "">
-    <cfset tHiz          = (isNumeric(getOrder.hiz)           AND val(getOrder.hiz)           gt 0) ? numberFormat(getOrder.hiz,          '0.##') : "">
-    <cfset tBesleme      = (isNumeric(getOrder.besleme_avans) AND val(getOrder.besleme_avans) gt 0) ? numberFormat(getOrder.besleme_avans,'0.##') : "">
+    <cfset tIsi          = (isNumeric(getOrder.isi)           AND val(getOrder.isi)           gt 0) ? val(getOrder.isi)           : "">
+    <cfset tHiz          = (isNumeric(getOrder.hiz)           AND val(getOrder.hiz)           gt 0) ? val(getOrder.hiz)           : "">
+    <cfset tBesleme      = (isNumeric(getOrder.besleme_avans) AND val(getOrder.besleme_avans) gt 0) ? val(getOrder.besleme_avans) : "">
     <cfset tCekme        = trim(getOrder.cekme        ?: "")>
 </cfif>
 
