@@ -78,6 +78,14 @@
     <cfset arrayAppend(productCatsArr, {"id": val(product_catid), "label": (len(trim(hierarchy)) ? trim(hierarchy) & " - " : "") & (product_cat ?: "")})>
 </cfloop>
 
+<cfquery name="getSetupUnits" datasource="boyahane">
+    SELECT unit_id, unit, unit_code FROM setup_unit ORDER BY unit
+</cfquery>
+<cfset setupUnitsArr = []>
+<cfloop query="getSetupUnits">
+    <cfset arrayAppend(setupUnitsArr, {"id": val(unit_id), "unit": unit ?: "", "unit_code": unit_code ?: ""})>
+</cfloop>
+
 <cfset fisArr = []>
 <cfloop query="getFisler">
     <cfset arrayAppend(fisArr, {
@@ -450,7 +458,7 @@
 
 <!--- ══════════════ MODAL: YENİ ÜRÜN KARTI ══════════════ --->
 <div class="modal fade" id="modalYeniUrunKarti" tabindex="-1" aria-labelledby="modalYeniUrunKartiLabel" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header py-2">
                 <h6 class="modal-title fw-semibold" id="modalYeniUrunKartiLabel">
@@ -460,41 +468,89 @@
             </div>
             <div class="modal-body p-3">
 
+                <!--- Temel bilgiler --->
                 <div class="row g-2 mb-3">
-                    <div class="col-5">
+                    <div class="col-4">
                         <label class="form-label small mb-1 fw-semibold">Ürün Kodu <span class="text-muted">(opsiyonel)</span></label>
                         <input type="text" class="form-control form-control-sm" id="mukm_product_code"
                                placeholder="HK-001">
                     </div>
-                    <div class="col-7">
+                    <div class="col-8">
                         <label class="form-label small mb-1 fw-semibold">Ürün Adı <span class="text-danger">*</span></label>
                         <input type="text" class="form-control form-control-sm" id="mukm_product_name"
                                placeholder="Örn: Viskon Ham Kumaş">
                     </div>
                 </div>
 
-                <div class="mb-3">
-                    <label class="form-label small mb-1 fw-semibold">Kategori <span class="text-danger">*</span></label>
-                    <select class="form-select form-select-sm" id="mukm_product_catid">
-                        <option value="">-- Kategori Seçin --</option>
-                    </select>
+                <div class="row g-2 mb-3">
+                    <div class="col-8">
+                        <label class="form-label small mb-1 fw-semibold">Kategori <span class="text-danger">*</span></label>
+                        <select class="form-select form-select-sm" id="mukm_product_catid">
+                            <option value="">-- Kategori Seçin --</option>
+                        </select>
+                    </div>
+                    <div class="col-4">
+                        <label class="form-label small mb-1 fw-semibold">Birim <span class="text-danger">*</span></label>
+                        <select class="form-select form-select-sm" id="mukm_unit_id">
+                            <option value="">-- Seçin --</option>
+                        </select>
+                    </div>
                 </div>
 
-                <div class="row g-2 mb-3">
-                    <div class="col-4">
-                        <label class="form-label small mb-1 fw-semibold">Gramaj <span class="text-muted">(g/m²)</span></label>
-                        <input type="number" class="form-control form-control-sm" id="mukm_gramaj"
-                               step="0.01" min="0" placeholder="0.00">
-                    </div>
-                    <div class="col-4">
-                        <label class="form-label small mb-1 fw-semibold">En <span class="text-muted">(cm)</span></label>
-                        <input type="number" class="form-control form-control-sm" id="mukm_en"
-                               step="0.1" min="0" placeholder="0">
-                    </div>
-                    <div class="col-4">
-                        <label class="form-label small mb-1 fw-semibold">Kumaş Tipi</label>
-                        <input type="text" class="form-control form-control-sm" id="mukm_kumas_tipi"
-                               placeholder="Örn: Viskon">
+                <!--- Müşteri --->
+                <div class="mb-3 position-relative">
+                    <label class="form-label small mb-1 fw-semibold">Müşteri / Firma</label>
+                    <input type="text" class="form-control form-control-sm" id="mukm_companySearch"
+                           placeholder="Firma adı veya kodu..." autocomplete="off"
+                           oninput="mukm_filterCompany(this.value)" onfocus="mukm_filterCompany(this.value)">
+                    <input type="hidden" id="mukm_company_id" value="0">
+                    <div id="mukm_companyDropdown" class="search-dropdown d-none"></div>
+                </div>
+
+                <!--- Tekstil özellikleri --->
+                <div class="border rounded p-2 mb-3">
+                    <div class="small fw-semibold text-muted mb-2"><i class="fas fa-tshirt me-1"></i>Tekstil / Kumaş Özellikleri</div>
+                    <div class="row g-2">
+                        <div class="col-3">
+                            <label class="form-label small mb-1">Gramaj (g/m²)</label>
+                            <input type="number" class="form-control form-control-sm" id="mukm_gramaj"
+                                   step="0.01" min="0" placeholder="0.00">
+                        </div>
+                        <div class="col-3">
+                            <label class="form-label small mb-1">En (cm)</label>
+                            <input type="number" class="form-control form-control-sm" id="mukm_en"
+                                   step="0.1" min="0" placeholder="0">
+                        </div>
+                        <div class="col-3">
+                            <label class="form-label small mb-1">Kumaş Tipi</label>
+                            <input type="text" class="form-control form-control-sm" id="mukm_kumas_tipi"
+                                   placeholder="Örn: Viskon">
+                        </div>
+                        <div class="col-3">
+                            <label class="form-label small mb-1">Tuşe</label>
+                            <input type="text" class="form-control form-control-sm" id="mukm_tuse"
+                                   placeholder="Tuşe">
+                        </div>
+                        <div class="col-3">
+                            <label class="form-label small mb-1">Isı (°C)</label>
+                            <input type="number" class="form-control form-control-sm" id="mukm_isi"
+                                   step="0.01" placeholder="0">
+                        </div>
+                        <div class="col-3">
+                            <label class="form-label small mb-1">Hız (m/dak)</label>
+                            <input type="number" class="form-control form-control-sm" id="mukm_hiz"
+                                   step="0.01" min="0" placeholder="0">
+                        </div>
+                        <div class="col-3">
+                            <label class="form-label small mb-1">Besleme Avans</label>
+                            <input type="number" class="form-control form-control-sm" id="mukm_besleme_avans"
+                                   step="0.01" placeholder="0">
+                        </div>
+                        <div class="col-3">
+                            <label class="form-label small mb-1">Çekme</label>
+                            <input type="text" class="form-control form-control-sm" id="mukm_cekme"
+                                   placeholder="Çekme">
+                        </div>
                     </div>
                 </div>
 
@@ -1149,24 +1205,71 @@ document.body.appendChild(document.getElementById('modalYeniParti'));
 document.body.appendChild(document.getElementById('modalYeniUrunKarti'));
 
 /* ════ Yeni Ürün Kartı Modalı ════ */
-var PRODUCT_CATS = #serializeJSON(productCatsArr)#;
+var PRODUCT_CATS  = #serializeJSON(productCatsArr)#;
+var SETUP_UNITS   = #serializeJSON(setupUnitsArr)#;
+var mukm_allCompanies = [], mukm_companiesLoaded = false;
 
 (function() {
-    var sel = document.getElementById('mukm_product_catid');
+    var selCat = document.getElementById('mukm_product_catid');
     PRODUCT_CATS.forEach(function(c) {
         var o = document.createElement('option');
         o.value = c.id; o.textContent = c.label;
-        sel.appendChild(o);
+        selCat.appendChild(o);
+    });
+    var selUnit = document.getElementById('mukm_unit_id');
+    SETUP_UNITS.forEach(function(u) {
+        var o = document.createElement('option');
+        o.value = u.id; o.textContent = u.unit + (u.unit_code ? ' (' + u.unit_code + ')' : '');
+        selUnit.appendChild(o);
     });
 })();
 
+function mukm_filterCompany(q) {
+    var dd = document.getElementById('mukm_companyDropdown');
+    if (!mukm_companiesLoaded) {
+        $.ajax({
+            url: '/company/cfc/company.cfc?method=getCompaniesForDropdown',
+            method: 'GET', dataType: 'json',
+            success: function(data) {
+                mukm_allCompanies = Array.isArray(data) ? data : [];
+                mukm_companiesLoaded = true;
+                mukm_filterCompany(q);
+            }
+        });
+        return;
+    }
+    if (!q || q.length < 1) { dd.classList.add('d-none'); return; }
+    q = q.toLowerCase();
+    var results = mukm_allCompanies.filter(function(c) {
+        return ((c.display_name || c.fullname || '') + ' ' + (c.nickname || '') + ' ' + (c.member_code || '')).toLowerCase().includes(q);
+    }).slice(0, 20);
+    if (!results.length) { dd.innerHTML = '<div class="search-item text-muted">Sonuç yok</div>'; dd.classList.remove('d-none'); return; }
+    dd.innerHTML = '';
+    results.forEach(function(c) {
+        var div = document.createElement('div');
+        div.className = 'search-item';
+        div.innerHTML = '<div>' + escHtml(c.display_name || c.nickname || c.fullname) + '</div>' +
+                        '<div class="item-code">' + escHtml(c.member_code || '') + '</div>';
+        div.addEventListener('click', function() {
+            dd.classList.add('d-none');
+            document.getElementById('mukm_companySearch').value = c.display_name || c.nickname || c.fullname;
+            document.getElementById('mukm_company_id').value = c.company_id;
+        });
+        dd.appendChild(div);
+    });
+    dd.classList.remove('d-none');
+}
+
 function openUrunKartiModal() {
-    document.getElementById('mukm_product_code').value = '';
-    document.getElementById('mukm_product_name').value = '';
+    ['mukm_product_code','mukm_product_name','mukm_companySearch',
+     'mukm_gramaj','mukm_en','mukm_kumas_tipi','mukm_tuse',
+     'mukm_isi','mukm_hiz','mukm_besleme_avans','mukm_cekme'].forEach(function(id) {
+        document.getElementById(id).value = '';
+    });
     document.getElementById('mukm_product_catid').value = '';
-    document.getElementById('mukm_gramaj').value = '';
-    document.getElementById('mukm_en').value = '';
-    document.getElementById('mukm_kumas_tipi').value = '';
+    document.getElementById('mukm_unit_id').value = '';
+    document.getElementById('mukm_company_id').value = '0';
+    document.getElementById('mukm_companyDropdown').classList.add('d-none');
     document.getElementById('mukm_errorMsg').classList.add('d-none');
     document.getElementById('mukm_saveBtn').disabled = false;
     document.getElementById('mukm_saveBtn').innerHTML = '<i class="fas fa-save me-1"></i>Kaydet';
@@ -1176,10 +1279,12 @@ function openUrunKartiModal() {
 function saveUrunKarti() {
     var productName = document.getElementById('mukm_product_name').value.trim();
     var catId       = document.getElementById('mukm_product_catid').value;
+    var unitId      = document.getElementById('mukm_unit_id').value;
     var errEl       = document.getElementById('mukm_errorMsg');
 
     if (!productName) { errEl.textContent = 'Ürün adı zorunludur.'; errEl.classList.remove('d-none'); return; }
     if (!catId)        { errEl.textContent = 'Kategori seçimi zorunludur.'; errEl.classList.remove('d-none'); return; }
+    if (!unitId)       { errEl.textContent = 'Birim seçimi zorunludur.'; errEl.classList.remove('d-none'); return; }
     errEl.classList.add('d-none');
 
     var btn = document.getElementById('mukm_saveBtn');
@@ -1191,33 +1296,47 @@ function saveUrunKarti() {
         method: 'POST',
         dataType: 'json',
         data: {
-            product_code:   document.getElementById('mukm_product_code').value.trim(),
-            product_name:   productName,
-            product_catid:  catId,
-            gramaj:         document.getElementById('mukm_gramaj').value || 0,
-            en:             document.getElementById('mukm_en').value || 0,
-            kumas_tipi:     document.getElementById('mukm_kumas_tipi').value.trim(),
-            product_status: true,
-            is_sales:       false,
-            is_purchase:    true,
-            is_ek_islem:    false,
-            tax:            0,
-            brand_id:       0,
-            barcod:         '',
-            product_detail: '',
-            product_detail2:'',
-            shelf_life:     '',
-            manufact_code:  '',
-            short_code:     '',
-            tuse:           '',
-            cekme:          '',
-            isi:            0,
-            hiz:            0,
-            besleme_avans:  0,
+            product_code:        document.getElementById('mukm_product_code').value.trim(),
+            product_name:        productName,
+            product_catid:       catId,
+            company_id:          document.getElementById('mukm_company_id').value || 0,
+            gramaj:              document.getElementById('mukm_gramaj').value || 0,
+            en:                  document.getElementById('mukm_en').value || 0,
+            kumas_tipi:          document.getElementById('mukm_kumas_tipi').value.trim(),
+            tuse:                document.getElementById('mukm_tuse').value.trim(),
+            isi:                 document.getElementById('mukm_isi').value || 0,
+            hiz:                 document.getElementById('mukm_hiz').value || 0,
+            besleme_avans:       document.getElementById('mukm_besleme_avans').value || 0,
+            cekme:               document.getElementById('mukm_cekme').value.trim(),
+            product_status:      true,
+            is_sales:            false,
+            is_purchase:         true,
+            is_ek_islem:         false,
+            tax:                 0,
+            brand_id:            0,
+            barcod:              '',
+            product_detail:      '',
+            product_detail2:     '',
+            shelf_life:          '',
+            manufact_code:       '',
+            short_code:          '',
             kullanilan_kimyassal: 0
         },
         success: function(res) {
             if (res && res.success) {
+                /* Oluşturulan ürüne birim bağla */
+                if (res.product_id && unitId) {
+                    var selUnit = document.getElementById('mukm_unit_id');
+                    var unitText = selUnit.options[selUnit.selectedIndex] ? selUnit.options[selUnit.selectedIndex].text.split(' (')[0] : '';
+                    $.post('/product/cfc/product.cfc?method=saveUnit', {
+                        product_id: res.product_id,
+                        unit_id:    0,
+                        main_unit:  unitText,
+                        is_main:    true,
+                        multiplier: 1,
+                        quantity:   1
+                    });
+                }
                 bootstrap.Modal.getInstance(document.getElementById('modalYeniUrunKarti')).hide();
                 DevExpress.ui.notify({ message: res.message || 'Ürün kartı oluşturuldu.', type: 'success', displayTime: 3000,
                     position: { my: 'top right', at: 'top right' } });
