@@ -886,8 +886,11 @@ function renderPartiler(list) {
             escHtml(p.stage_label) + '</span></td>' +
             '<td class="pe-2 text-end">' +
             '<a href="index.cfm?fuseaction=ship.detail_parti&order_id=' + p.order_id + '" ' +
-            'class="btn btn-xs btn-outline-secondary btn-sm py-0 px-2" style="font-size:.72rem" title="Detay">' +
+            'class="btn btn-xs btn-outline-secondary btn-sm py-0 px-2 me-1" style="font-size:.72rem" title="Detay">' +
             '<i class="fas fa-eye"></i></a>' +
+            '<button type="button" onclick="window.open(\'/ship/display/refakat_kart.cfm?order_id=' + p.order_id + '\',\'_blank\',\'width=900,height=780,scrollbars=yes\')" ' +
+            'class="btn btn-xs btn-outline-dark btn-sm py-0 px-2" style="font-size:.72rem" title="Refakat Kartı Yazdır">' +
+            '<i class="fas fa-print"></i></button>' +
             '</td></tr>';
     });
 

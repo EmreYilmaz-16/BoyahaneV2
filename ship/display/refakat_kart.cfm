@@ -1,0 +1,431 @@
+<cfprocessingdirective pageEncoding="utf-8">
+<!--- Session kontrolü --->
+<cfif NOT (structKeyExists(session, "authenticated") AND session.authenticated)>
+    <cflocation url="/login.cfm" addtoken="false">
+    <cfabort>
+</cfif>
+<cfset orderId = isDefined("url.order_id") AND isNumeric(url.order_id) ? val(url.order_id) : 0>
+<cfif orderId lte 0>
+    <cfoutput><p style="color:red;padding:20px">order_id gerekli.</p></cfoutput>
+    <cfabort>
+</cfif>
+
+<!--- Parti (order) bilgisi --->
+<cfquery name="getOrder" datasource="boyahane">
+    SELECT o.order_id, o.order_number, o.order_head, o.order_detail,
+           o.order_date, o.order_stage,
+           o.ref_no, o.ref_ship_id,
+           o.sarim_sekli, o.ambalaj,
+           o.gramaj, o.en, o.kumas_tipi, o.tuse, o.isi, o.hiz, o.besleme_avans, o.cekme,
+           COALESCE(c.nickname, c.fullname, '') AS company_name,
+           COALESCE(ss.sarim_sekli_adi, '')     AS sarim_sekli_adi,
+           COALESCE(ab.ambalaj_adi,     '')     AS ambalaj_adi
+    FROM orders o
+    LEFT JOIN company           c  ON o.company_id  = c.company_id
+    LEFT JOIN setup_sarim_sekli ss ON o.sarim_sekli = ss.sarim_sekli_id
+    LEFT JOIN setup_ambalaj     ab ON o.ambalaj     = ab.ambalaj_id
+    WHERE o.order_id = <cfqueryparam value="#orderId#" cfsqltype="cf_sql_integer">
+</cfquery>
+
+<cfif NOT getOrder.recordCount>
+    <cfoutput><p style="color:red;padding:20px">Parti bulunamadı.</p></cfoutput>
+    <cfabort>
+</cfif>
+
+<!--- İrsaliye bilgisi --->
+<cfquery name="getShip" datasource="boyahane">
+    SELECT s.ship_id, s.ship_number,
+           s.hk_metre, s.hk_kg, s.hk_top_adedi
+    FROM ship s
+    WHERE s.ship_id = <cfqueryparam value="#val(getOrder.ref_ship_id)#" cfsqltype="cf_sql_integer">
+</cfquery>
+
+<!--- Ana ürün (kumaş cinsi) --->
+<cfquery name="getMainRow" datasource="boyahane">
+    SELECT orw.product_name
+    FROM order_row orw
+    LEFT JOIN stocks st ON orw.stock_id = st.stock_id
+    WHERE orw.order_id = <cfqueryparam value="#orderId#" cfsqltype="cf_sql_integer">
+      AND COALESCE(st.is_main_stock, true) = true
+    ORDER BY orw.order_row_id
+    LIMIT 1
+</cfquery>
+
+<!--- Ek işlemler (PROSES) --->
+<cfquery name="getEkIslemRows" datasource="boyahane">
+    SELECT DISTINCT orw.product_name
+    FROM order_row orw
+    JOIN stocks  st ON orw.stock_id  = st.stock_id
+    JOIN product  p ON st.product_id = p.product_id
+    WHERE orw.order_id = <cfqueryparam value="#orderId#" cfsqltype="cf_sql_integer">
+      AND p.is_ek_islem = true
+    ORDER BY orw.product_name
+</cfquery>
+
+<!--- Tekstil: partiye özel varsa onları kullan, yoksa ürün kartından --->
+<cfset hasPartiTekstil = (
+    (isNumeric(getOrder.gramaj)        AND val(getOrder.gramaj)        gt 0) OR
+    (isNumeric(getOrder.en)            AND val(getOrder.en)            gt 0) OR
+    len(trim(getOrder.kumas_tipi       ?: "")) OR
+    len(trim(getOrder.tuse             ?: "")) OR
+    (isNumeric(getOrder.isi)           AND val(getOrder.isi)           gt 0) OR
+    (isNumeric(getOrder.hiz)           AND val(getOrder.hiz)           gt 0) OR
+    (isNumeric(getOrder.besleme_avans) AND val(getOrder.besleme_avans) gt 0) OR
+    len(trim(getOrder.cekme            ?: ""))
+)>
+
+<cfif NOT hasPartiTekstil>
+    <cfquery name="getTekstil" datasource="boyahane">
+        SELECT p.gramaj, p.en, p.kumas_tipi, p.tuse, p.isi, p.hiz, p.besleme_avans, p.cekme
+        FROM order_row orw
+        JOIN stocks  st ON orw.stock_id  = st.stock_id
+        JOIN product  p ON st.product_id = p.product_id
+        WHERE orw.order_id = <cfqueryparam value="#orderId#" cfsqltype="cf_sql_integer">
+        ORDER BY orw.order_row_id
+        LIMIT 1
+    </cfquery>
+    <cfset tGramaj       = (getTekstil.recordCount AND isNumeric(getTekstil.gramaj)        AND val(getTekstil.gramaj)        gt 0) ? numberFormat(getTekstil.gramaj,       '0.##') : "">
+    <cfset tEn           = (getTekstil.recordCount AND isNumeric(getTekstil.en)            AND val(getTekstil.en)            gt 0) ? numberFormat(getTekstil.en,           '0.##') : "">
+    <cfset tKumasTipi    = getTekstil.recordCount ? trim(getTekstil.kumas_tipi   ?: "") : "">
+    <cfset tTuse         = getTekstil.recordCount ? trim(getTekstil.tuse         ?: "") : "">
+    <cfset tIsi          = (getTekstil.recordCount AND isNumeric(getTekstil.isi)           AND val(getTekstil.isi)           gt 0) ? numberFormat(getTekstil.isi,          '0.##') : "">
+    <cfset tHiz          = (getTekstil.recordCount AND isNumeric(getTekstil.hiz)           AND val(getTekstil.hiz)           gt 0) ? numberFormat(getTekstil.hiz,          '0.##') : "">
+    <cfset tBesleme      = (getTekstil.recordCount AND isNumeric(getTekstil.besleme_avans) AND val(getTekstil.besleme_avans) gt 0) ? numberFormat(getTekstil.besleme_avans,'0.##') : "">
+    <cfset tCekme        = getTekstil.recordCount ? trim(getTekstil.cekme        ?: "") : "">
+<cfelse>
+    <cfset tGramaj       = (isNumeric(getOrder.gramaj)        AND val(getOrder.gramaj)        gt 0) ? numberFormat(getOrder.gramaj,       '0.##') : "">
+    <cfset tEn           = (isNumeric(getOrder.en)            AND val(getOrder.en)            gt 0) ? numberFormat(getOrder.en,           '0.##') : "">
+    <cfset tKumasTipi    = trim(getOrder.kumas_tipi   ?: "")>
+    <cfset tTuse         = trim(getOrder.tuse         ?: "")>
+    <cfset tIsi          = (isNumeric(getOrder.isi)           AND val(getOrder.isi)           gt 0) ? numberFormat(getOrder.isi,          '0.##') : "">
+    <cfset tHiz          = (isNumeric(getOrder.hiz)           AND val(getOrder.hiz)           gt 0) ? numberFormat(getOrder.hiz,          '0.##') : "">
+    <cfset tBesleme      = (isNumeric(getOrder.besleme_avans) AND val(getOrder.besleme_avans) gt 0) ? numberFormat(getOrder.besleme_avans,'0.##') : "">
+    <cfset tCekme        = trim(getOrder.cekme        ?: "")>
+</cfif>
+
+<!--- Değişkenler --->
+<cfset vPartKodu  = getOrder.order_number ?: "">
+<cfset vMusteri   = getOrder.company_name ?: "">
+<cfset vRenk      = getOrder.order_head   ?: "">
+<cfset vKumasCins = getMainRow.recordCount ? (getMainRow.product_name ?: "") : "">
+<cfset vMetre     = (getShip.recordCount AND isNumeric(getShip.hk_metre)     AND getShip.hk_metre     gt 0) ? numberFormat(getShip.hk_metre,    '0.00') : "">
+<cfset vKg        = (getShip.recordCount AND isNumeric(getShip.hk_kg)        AND getShip.hk_kg        gt 0) ? numberFormat(getShip.hk_kg,       '0.00') : "">
+<cfset vTop       = (getShip.recordCount AND isNumeric(getShip.hk_top_adedi) AND getShip.hk_top_adedi gt 0) ? val(getShip.hk_top_adedi) : "">
+<cfset vAmbalaj   = getOrder.ambalaj_adi   ?: "">
+<cfset vSarim     = getOrder.sarim_sekli_adi ?: "">
+<cfset vAciklama  = trim(getOrder.order_detail ?: "")>
+<cfset vTarih     = now()>
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Refakat Kartı — <cfoutput>#xmlFormat(vPartKodu)#</cfoutput></title>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 11px;
+    background: #888;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    gap: 12px;
+  }
+  .btn-bar {
+    display: flex;
+    gap: 8px;
+  }
+  .btn-bar button {
+    padding: 8px 18px;
+    font-size: 13px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  .btn-print  { background: #1d4ed8; color: #fff; }
+  .btn-close  { background: #6b7280; color: #fff; }
+  .kart {
+    width: 210mm;
+    background: #fff;
+    padding: 8mm 8mm 6mm 8mm;
+    box-shadow: 0 4px 24px rgba(0,0,0,.35);
+  }
+
+  /* ── HEADER ── */
+  .kart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 2px solid #000;
+    padding-bottom: 5px;
+    margin-bottom: 5px;
+  }
+  .kart-logo { line-height: 1.3; }
+  .kart-logo .firma-adi-italic { font-style: italic; font-size: 13px; font-weight: 600; }
+  .kart-logo .refakat-baslik {
+    font-size: 22px;
+    font-weight: 900;
+    letter-spacing: 2px;
+  }
+  .kart-logo .parti-rn {
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .kart-header-right { text-align: right; }
+  .kart-header-right .tarih-satir { font-size: 11px; margin-bottom: 3px; }
+  svg.barcode { display: block; }
+
+  /* ── INFO TABLE ── */
+  .info-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1.5px solid #000;
+    margin-bottom: 5px;
+  }
+  .info-table td {
+    border: 1px solid #000;
+    padding: 2px 5px;
+    vertical-align: top;
+  }
+  .info-table .lbl { font-weight: bold; width: 90px; white-space: nowrap; }
+  .info-table .val { }
+  .info-table .num-lbl { font-weight: bold; white-space: nowrap; }
+  .info-table .num-val { font-weight: bold; font-size: 12px; }
+
+  /* ── SECTION HEADER ── */
+  .section-header {
+    background: #000;
+    color: #fff;
+    text-align: center;
+    font-weight: 900;
+    letter-spacing: 2px;
+    font-size: 11px;
+    padding: 2px 0;
+    margin-top: 4px;
+  }
+
+  /* ── APRE TABLE ── */
+  .apre-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1.5px solid #000;
+  }
+  .apre-table td {
+    border: 1px solid #000;
+    padding: 2px 5px;
+    vertical-align: top;
+  }
+  .apre-table .lbl { font-weight: bold; width: 100px; white-space: nowrap; }
+  .apre-table .val { }
+
+  /* ── PROSES + KKT split ── */
+  .split-row {
+    display: flex;
+    border: 1.5px solid #000;
+    margin-bottom: 4px;
+    min-height: 80px;
+  }
+  .split-col {
+    flex: 1;
+    padding: 4px 6px;
+  }
+  .split-col-divider {
+    border-left: 1.5px solid #000;
+    flex: 1.5;
+    padding: 4px 6px;
+  }
+  .split-header {
+    font-weight: 900;
+    letter-spacing: 1px;
+    font-size: 10px;
+    border-bottom: 1px solid #000;
+    margin-bottom: 3px;
+    padding-bottom: 2px;
+    text-align: center;
+  }
+  .proses-item { padding: 1px 0; font-weight: 700; font-size: 11px; }
+  .kkt-row { display: flex; gap: 4px; margin-bottom: 2px; }
+  .kkt-row .lbl { font-weight: bold; width: 80px; }
+  .kkt-aciklama { margin-top: 4px; font-weight: 700; font-size: 11px; line-height: 1.5; }
+
+  /* ── AÇIKLAMA ── */
+  .aciklama-box {
+    border: 1.5px solid #000;
+    min-height: 50px;
+    padding: 4px 6px;
+    font-size: 11px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+  }
+
+  @media print {
+    body { background: none; padding: 0; }
+    .btn-bar { display: none; }
+    .kart {
+      width: 100%;
+      box-shadow: none;
+      padding: 5mm 5mm 4mm 5mm;
+    }
+    @page { size: A4 portrait; margin: 8mm; }
+  }
+</style>
+</head>
+<body>
+<div class="btn-bar">
+  <button class="btn-print" onclick="window.print()">&#128438; Yazdır</button>
+  <button class="btn-close" onclick="window.close()">✕ Kapat</button>
+</div>
+
+<div class="kart">
+  <cfoutput>
+  <!--- HEADER --->
+  <div class="kart-header">
+    <div class="kart-logo">
+      <div class="firma-adi-italic">Rasih Çelik</div>
+      <div class="refakat-baslik">R E F A K A T</div>
+      <div class="parti-rn">Parti RN: #orderId#</div>
+    </div>
+    <div class="kart-header-right">
+      <div class="tarih-satir">Tarih : #dateFormat(vTarih,'dd/mm/yyyy')# #timeFormat(vTarih,'HH:mm:ss')#</div>
+      <svg id="barcode" class="barcode"></svg>
+    </div>
+  </div>
+
+  <!--- BİLGİ TABLOSU --->
+  <table class="info-table">
+    <tr>
+      <td class="lbl">Parti Kodu</td>
+      <td class="val"><strong>#xmlFormat(vPartKodu)#</strong></td>
+      <td class="num-lbl">Metre</td>
+      <td class="num-val">: #xmlFormat(vMetre)#</td>
+    </tr>
+    <tr>
+      <td class="lbl">Müşteri</td>
+      <td class="val"><strong>#xmlFormat(vMusteri)#</strong></td>
+      <td class="num-lbl">Kg</td>
+      <td class="num-val">: #xmlFormat(vKg)#</td>
+    </tr>
+    <tr>
+      <td class="lbl">Renk</td>
+      <td class="val">#xmlFormat(vRenk)#</td>
+      <td class="num-lbl">Top Adedi</td>
+      <td class="num-val">: #xmlFormat(vTop)#</td>
+    </tr>
+    <tr>
+      <td class="lbl">Kumaş Cinsi</td>
+      <td class="val" colspan="3">#xmlFormat(vKumasCins)#</td>
+    </tr>
+    <tr>
+      <td class="lbl">Kartela</td>
+      <td class="val">&nbsp;</td>
+      <td class="num-lbl">Kartela Trh</td>
+      <td class="num-val">:&nbsp;</td>
+    </tr>
+    <tr>
+      <td class="lbl">İnditex PO1</td>
+      <td class="val" colspan="3">&nbsp;</td>
+    </tr>
+    <tr>
+      <td class="lbl">İnditex PO2</td>
+      <td class="num-lbl">Standart</td>
+      <td class="num-val" colspan="2">:&nbsp;</td>
+    </tr>
+  </table>
+
+  <!--- APRE TALİMATI --->
+  <div class="section-header">A P R E &nbsp; T A L İ M A T I</div>
+  <table class="apre-table" style="margin-bottom:4px">
+    <tr>
+      <td class="lbl">Elyaf İçeriği</td>
+      <td class="val">&nbsp;</td>
+      <td class="lbl">Kull.Kimyasal</td>
+      <td class="val">:&nbsp;</td>
+    </tr>
+    <tr>
+      <td class="lbl">Gramaj</td>
+      <td class="val"><cfif len(tGramaj)>: #xmlFormat(tGramaj)#</cfif></td>
+      <td class="lbl">Isı</td>
+      <td class="val">:<cfif len(tIsi)> #xmlFormat(tIsi)#</cfif></td>
+    </tr>
+    <tr>
+      <td class="lbl">En</td>
+      <td class="val"><cfif len(tEn)>: #xmlFormat(tEn)#</cfif></td>
+      <td class="lbl">Hız</td>
+      <td class="val">:<cfif len(tHiz)> #xmlFormat(tHiz)#</cfif></td>
+    </tr>
+    <tr>
+      <td class="lbl">Tuşe</td>
+      <td class="val"><cfif len(tTuse)>: #xmlFormat(tTuse)#</cfif></td>
+      <td class="lbl">Besleme/Avans</td>
+      <td class="val">:<cfif len(tBesleme)> #xmlFormat(tBesleme)#</cfif></td>
+    </tr>
+    <tr>
+      <td class="lbl">Çekme</td>
+      <td class="val"><cfif len(tCekme)>: #xmlFormat(tCekme)#</cfif></td>
+      <td class="lbl">Su Geçmez</td>
+      <td class="val">:&nbsp;</td>
+    </tr>
+    <tr>
+      <td class="lbl">Apre</td>
+      <td class="val">:&nbsp;</td>
+      <td class="lbl">Yanmaz</td>
+      <td class="val">:&nbsp;</td>
+    </tr>
+    <tr>
+      <td class="lbl">Ön Fikse</td>
+      <td class="val" colspan="3">:&nbsp;</td>
+    </tr>
+  </table>
+
+  <!--- PROSES + KALİTE KONTROL --->
+  <div class="split-row">
+    <div class="split-col">
+      <div class="split-header">P R O S E S</div>
+      <cfif getEkIslemRows.recordCount>
+        <cfloop query="getEkIslemRows">
+          <div class="proses-item">#xmlFormat(product_name)#</div>
+        </cfloop>
+      <cfelse>
+        <div style="color:#aaa;font-style:italic;font-size:10px">—</div>
+      </cfif>
+    </div>
+    <div class="split-col-divider">
+      <div class="split-header">K A L İ T E &nbsp; K O N T R O L &nbsp; T A L İ M A T I</div>
+      <div class="kkt-row">
+        <span class="lbl">Ambalaj</span>
+        <span>: #xmlFormat(vAmbalaj)#</span>
+      </div>
+      <div class="kkt-row">
+        <span class="lbl">Sarım Şekli</span>
+        <span>: #xmlFormat(vSarim)#</span>
+      </div>
+    </div>
+  </div>
+
+  <!--- APRE AÇIKLAMA --->
+  <div class="section-header">A P R E &nbsp; A Ç I K L A M A</div>
+  <div class="aciklama-box">#xmlFormat(vAciklama)#</div>
+  </cfoutput>
+</div>
+
+<script>
+(function() {
+  var barcodeVal = '<cfoutput>#jsStringFormat(vPartKodu)#</cfoutput>';
+  if (barcodeVal && typeof JsBarcode !== 'undefined') {
+    try {
+      JsBarcode('#barcode', barcodeVal, {
+        format:      'CODE128',
+        width:       1.5,
+        height:      40,
+        displayValue: false,
+        margin:       0
+      });
+    } catch(e) {}
+  }
+})();
+</script>
+</body>
+</html>
