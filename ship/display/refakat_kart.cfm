@@ -389,7 +389,7 @@
           <div class="proses-item">#xmlFormat(product_name)#</div>
         </cfloop>
       <cfelse>
-        <div style="color:#aaa;font-style:italic;font-size:10px">—</div>
+        <div style="color:##aaa;font-style:italic;font-size:10px">—</div>
       </cfif>
     </div>
     <div class="split-col-divider">
