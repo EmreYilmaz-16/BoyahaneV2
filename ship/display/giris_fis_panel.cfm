@@ -449,7 +449,7 @@
                     </div>
 
                     <!--- Tekstil Özellikleri --->
-                    <div class="border rounded p-2 mb-3" style="background:#f8f9fa;">
+                    <div class="border rounded p-2 mb-3" style="background:##f8f9fa;">
                         <div class="small fw-semibold text-muted mb-2">
                             <i class="fas fa-tshirt me-1"></i>Tekstil Özellikleri
                             <small class="fw-normal">(ürün kartından, partiye özel değiştirilebilir)</small>
