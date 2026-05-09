@@ -579,7 +579,9 @@
 
             <cfquery name="qStocks" datasource="boyahane">
                 SELECT s.stock_id, s.stock_code, s.barcod, s.property, s.product_unit_id,
-                       p.product_id, p.product_name, p.product_code
+                       p.product_id, p.product_name, p.product_code,
+                       p.gramaj, p.en, p.kumas_tipi, p.tuse, p.isi, p.hiz,
+                       p.besleme_avans, p.cekme
                 FROM stocks s
                 LEFT JOIN product p ON s.product_id = p.product_id
                 WHERE s.stock_status  = true
@@ -599,6 +601,14 @@
                     "product_id":      product_id ?: 0,
                     "product_name":    product_name ?: "",
                     "product_code":    product_code ?: "",
+                    "gramaj":          isNumeric(gramaj)        ? val(gramaj)        : 0,
+                    "en":              isNumeric(en)            ? val(en)            : 0,
+                    "kumas_tipi":      kumas_tipi      ?: "",
+                    "tuse":            tuse            ?: "",
+                    "isi":             isNumeric(isi)           ? val(isi)           : 0,
+                    "hiz":             isNumeric(hiz)           ? val(hiz)           : 0,
+                    "besleme_avans":   isNumeric(besleme_avans) ? val(besleme_avans) : 0,
+                    "cekme":           cekme           ?: "",
                     "label":           (product_name ?: "?") & " — " & (stock_code ?: "")
                 })>
             </cfloop>

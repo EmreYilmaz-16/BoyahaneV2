@@ -278,6 +278,12 @@
                     </div>
                 </div>
 
+                <!--- Ürün kartı tekstil özellikleri (stok seçilince görünür) --->
+                <div id="mfis_urunBilgi" class="border rounded p-2 mb-3 bg-light d-none">
+                    <div class="small fw-semibold text-muted mb-2"><i class="fas fa-tshirt me-1"></i>Ürün Kartı Bilgileri</div>
+                    <div class="row g-1" id="mfis_urunBilgiRow"></div>
+                </div>
+
                 <!--- Metrik bilgiler --->
                 <div class="row g-2 mb-2">
                     <div class="col-4">
@@ -869,6 +875,8 @@ function openYeniFisModal() {
     document.getElementById('mfis_product_id').value = '0';
     document.getElementById('mfis_stockSelected').classList.add('d-none');
     document.getElementById('mfis_stockDropdown').classList.add('d-none');
+    document.getElementById('mfis_urunBilgi').classList.add('d-none');
+    document.getElementById('mfis_urunBilgiRow').innerHTML = '';
     document.getElementById('mfis_hk_metre').value     = '';
     document.getElementById('mfis_hk_kg').value        = '';
     document.getElementById('mfis_hk_top_adedi').value = '';
@@ -961,6 +969,29 @@ function mfis_filterStock(q) {
             document.getElementById('mfis_product_id').value  = s.product_id || 0;
             document.getElementById('mfis_stockLabel').textContent = s.product_name + (s.stock_code ? ' — ' + s.stock_code : '');
             document.getElementById('mfis_stockSelected').classList.remove('d-none');
+            /* Tekstil bilgileri göster */
+            var fields = [
+                ['Gramaj', s.gramaj ? s.gramaj + ' g/m²' : ''],
+                ['En', s.en ? s.en + ' cm' : ''],
+                ['Kumaş Tipi', s.kumas_tipi],
+                ['Tuşe', s.tuse],
+                ['Isı', s.isi ? s.isi + ' °C' : ''],
+                ['Hız', s.hiz ? s.hiz + ' m/dak' : ''],
+                ['Besleme Avans', s.besleme_avans || ''],
+                ['Çekme', s.cekme]
+            ].filter(function(f) { return f[1] && String(f[1]).trim() !== '' && String(f[1]) !== '0'; });
+            var bilgiEl = document.getElementById('mfis_urunBilgi');
+            var rowEl   = document.getElementById('mfis_urunBilgiRow');
+            if (fields.length) {
+                rowEl.innerHTML = fields.map(function(f) {
+                    return '<div class="col-6 col-md-3"><span class="text-muted" style="font-size:.72rem">' +
+                           escHtml(f[0]) + '</span><div class="fw-semibold" style="font-size:.8rem">' +
+                           escHtml(String(f[1])) + '</div></div>';
+                }).join('');
+                bilgiEl.classList.remove('d-none');
+            } else {
+                bilgiEl.classList.add('d-none');
+            }
         });
         dd.appendChild(div);
     });
