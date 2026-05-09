@@ -370,7 +370,7 @@
 
 <!--- ══════════════ MODAL: YENİ PARTİ ══════════════ --->
 <div class="modal fade" id="modalYeniParti" tabindex="-1" aria-labelledby="modalYeniPartiLabel" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header py-2">
                 <h6 class="modal-title fw-semibold" id="modalYeniPartiLabel">
@@ -442,10 +442,63 @@
                     </div>
 
                     <!--- Açıklama --->
-                    <div class="mb-0">
+                    <div class="mb-3">
                         <label class="form-label small mb-1 fw-semibold">Açıklama <span class="text-muted">(opsiyonel)</span></label>
                         <input type="text" class="form-control form-control-sm" id="mprt_aciklama"
                                placeholder="Parti notu...">
+                    </div>
+
+                    <!--- Tekstil Özellikleri --->
+                    <div class="border rounded p-2 mb-3" style="background:#f8f9fa;">
+                        <div class="small fw-semibold text-muted mb-2">
+                            <i class="fas fa-tshirt me-1"></i>Tekstil Özellikleri
+                            <small class="fw-normal">(ürün kartından, partiye özel değiştirilebilir)</small>
+                        </div>
+                        <div class="row g-2">
+                            <div class="col-6 col-sm-3">
+                                <label class="form-label small mb-0">Gramaj (g/m²)</label>
+                                <input type="number" step="0.01" class="form-control form-control-sm" id="mprt_gramaj" placeholder="0">
+                            </div>
+                            <div class="col-6 col-sm-3">
+                                <label class="form-label small mb-0">En (cm)</label>
+                                <input type="number" step="0.01" class="form-control form-control-sm" id="mprt_en" placeholder="0">
+                            </div>
+                            <div class="col-6 col-sm-3">
+                                <label class="form-label small mb-0">Isı (°C)</label>
+                                <input type="number" step="0.1" class="form-control form-control-sm" id="mprt_isi" placeholder="0">
+                            </div>
+                            <div class="col-6 col-sm-3">
+                                <label class="form-label small mb-0">Hız (m/dak)</label>
+                                <input type="number" step="0.1" class="form-control form-control-sm" id="mprt_hiz" placeholder="0">
+                            </div>
+                            <div class="col-6 col-sm-3">
+                                <label class="form-label small mb-0">Besleme Avans</label>
+                                <input type="number" step="0.01" class="form-control form-control-sm" id="mprt_besleme_avans" placeholder="0">
+                            </div>
+                            <div class="col-6 col-sm-3">
+                                <label class="form-label small mb-0">Kumaş Tipi</label>
+                                <input type="text" class="form-control form-control-sm" id="mprt_kumas_tipi" placeholder="">
+                            </div>
+                            <div class="col-6 col-sm-3">
+                                <label class="form-label small mb-0">Tuşe</label>
+                                <input type="text" class="form-control form-control-sm" id="mprt_tuse" placeholder="">
+                            </div>
+                            <div class="col-6 col-sm-3">
+                                <label class="form-label small mb-0">Çekme</label>
+                                <input type="text" class="form-control form-control-sm" id="mprt_cekme" placeholder="">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!--- Ek İşlemler --->
+                    <div class="border rounded p-2 mb-0" id="mprt_ekIslemSection" style="background:#f8f9fa;">
+                        <div class="small fw-semibold text-muted mb-2">
+                            <i class="fas fa-cogs me-1"></i>Ek İşlemler
+                            <small class="fw-normal">(seçilen her ek işlem aynı miktarla eklenir)</small>
+                        </div>
+                        <div id="mprt_ekIslemList">
+                            <span class="text-muted small"><i class="fas fa-spinner fa-spin me-1"></i>Yükleniyor...</span>
+                        </div>
                     </div>
 
                 </div>
@@ -1097,6 +1150,16 @@ function openYeniPartiModal(shipId) {
     document.getElementById('mprt_miktar').value    = '';
     document.getElementById('mprt_kg').value        = '';
     document.getElementById('mprt_aciklama').value  = '';
+    /* Tekstil sıfırla */
+    ['mprt_gramaj','mprt_en','mprt_isi','mprt_hiz','mprt_besleme_avans'].forEach(function(id) {
+        document.getElementById(id).value = '';
+    });
+    ['mprt_kumas_tipi','mprt_tuse','mprt_cekme'].forEach(function(id) {
+        document.getElementById(id).value = '';
+    });
+    /* Ek işlem sıfırla */
+    document.getElementById('mprt_ekIslemList').innerHTML =
+        '<span class="text-muted small"><i class="fas fa-spinner fa-spin me-1"></i>Yükleniyor...</span>';
 
     /* Sarım şekli + ambalaj dolduruluyor mu kontrol */
     var ss = document.getElementById('mprt_sarim_sekli');
@@ -1148,6 +1211,38 @@ function openYeniPartiModal(shipId) {
                     'Toplam: ' + fis.hk_metre.toFixed(2) + ' mt · Kalan: ' + kalan.toFixed(2) + ' mt';
                 document.getElementById('mprt_miktar').value = kalan > 0 ? kalan.toFixed(3) : '';
             }
+            /* Tekstil özellikleri */
+            var t = res.tekstil || {};
+            document.getElementById('mprt_gramaj').value        = t.gramaj        || '';
+            document.getElementById('mprt_en').value            = t.en            || '';
+            document.getElementById('mprt_isi').value           = t.isi           || '';
+            document.getElementById('mprt_hiz').value           = t.hiz           || '';
+            document.getElementById('mprt_besleme_avans').value = t.besleme_avans || '';
+            document.getElementById('mprt_kumas_tipi').value    = t.kumas_tipi    || '';
+            document.getElementById('mprt_tuse').value          = t.tuse          || '';
+            document.getElementById('mprt_cekme').value         = t.cekme         || '';
+            /* Ek işlemler */
+            var ekListEl = document.getElementById('mprt_ekIslemList');
+            var ekItems  = res.ek_islem || [];
+            if (ekItems.length === 0) {
+                ekListEl.innerHTML = '<span class="text-muted small">Bu firmaya ait ek işlem tanımlı değil.</span>';
+            } else {
+                ekListEl.innerHTML = ekItems.map(function(e) {
+                    var sid = e.stock_id || e.STOCK_ID || 0;
+                    var pid = e.product_id || e.PRODUCT_ID || 0;
+                    var nm  = escHtml(e.product_name || e.PRODUCT_NAME || '');
+                    var sc  = e.stock_code || e.STOCK_CODE || '';
+                    return '<div class="form-check mb-1">'
+                        + '<input class="form-check-input mprt-ek-chk" type="checkbox"'
+                        + ' id="mprt_ek_' + sid + '"'
+                        + ' data-stock-id="' + sid + '"'
+                        + ' data-product-id="' + pid + '"'
+                        + ' data-product-name="' + nm + '">'
+                        + '<label class="form-check-label small" for="mprt_ek_' + sid + '">'
+                        + nm + (sc ? ' <span class="text-muted">(' + escHtml(sc) + ')</span>' : '')
+                        + '</label></div>';
+                }).join('');
+            }
             document.getElementById('mprt_form').classList.remove('d-none');
             document.getElementById('mprt_saveBtn').classList.remove('d-none');
         },
@@ -1185,6 +1280,21 @@ function savePartiModal() {
         grosstotal:    0, nettotal: 0, taxtotal: 0
     };
 
+    /* Ek işlem satırları */
+    var rows = [rowObj];
+    document.querySelectorAll('.mprt-ek-chk:checked').forEach(function(chk) {
+        rows.push({
+            stock_id:     parseInt(chk.dataset.stockId)   || 0,
+            product_id:   parseInt(chk.dataset.productId) || 0,
+            product_name: chk.dataset.productName || '',
+            quantity:     miktar,
+            unit:         document.getElementById('mprt_unit').value || 'mt',
+            unit_id:      0,
+            price:        0, tax: 0, discount_1: 0,
+            grosstotal:   0, nettotal: 0, taxtotal: 0
+        });
+    });
+
     var btn = document.getElementById('mprt_saveBtn');
     btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Kaydediliyor...';
 
@@ -1202,7 +1312,15 @@ function savePartiModal() {
             order_date:     new Date().toISOString().slice(0, 10),
             sarim_sekli:    document.getElementById('mprt_sarim_sekli').value || 0,
             ambalaj:        document.getElementById('mprt_ambalaj').value     || 0,
-            rows:           JSON.stringify([rowObj])
+            gramaj:         document.getElementById('mprt_gramaj').value        || 0,
+            en:             document.getElementById('mprt_en').value            || 0,
+            isi:            document.getElementById('mprt_isi').value           || 0,
+            hiz:            document.getElementById('mprt_hiz').value           || 0,
+            besleme_avans:  document.getElementById('mprt_besleme_avans').value || 0,
+            kumas_tipi:     document.getElementById('mprt_kumas_tipi').value    || '',
+            tuse:           document.getElementById('mprt_tuse').value          || '',
+            cekme:          document.getElementById('mprt_cekme').value         || '',
+            rows:           JSON.stringify(rows)
         },
         success: function(res) {
             btn.disabled = false; btn.innerHTML = '<i class="fas fa-cut me-1"></i>Parti Oluştur';

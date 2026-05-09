@@ -27,6 +27,50 @@
         LIMIT 1
     </cfquery>
 
+    <!--- Ürün tekstil özellikleri --->
+    <cfset tekstil = { "gramaj":"","en":"","kumas_tipi":"","tuse":"","isi":"","hiz":"","besleme_avans":"","cekme":"" }>
+    <cfif getShipRow.recordCount AND val(getShipRow.product_id) gt 0>
+        <cfquery name="getTekstil" datasource="boyahane">
+            SELECT gramaj, en, kumas_tipi, tuse, isi, hiz, besleme_avans, cekme
+            FROM product
+            WHERE product_id = <cfqueryparam value="#val(getShipRow.product_id)#" cfsqltype="cf_sql_integer">
+        </cfquery>
+        <cfif getTekstil.recordCount>
+            <cfset tekstil = {
+                "gramaj":        isNumeric(getTekstil.gramaj)        ? val(getTekstil.gramaj)        : "",
+                "en":            isNumeric(getTekstil.en)            ? val(getTekstil.en)            : "",
+                "kumas_tipi":    len(getTekstil.kumas_tipi    ?: "") ? getTekstil.kumas_tipi         : "",
+                "tuse":          len(getTekstil.tuse          ?: "") ? getTekstil.tuse               : "",
+                "isi":           isNumeric(getTekstil.isi)           ? val(getTekstil.isi)           : "",
+                "hiz":           isNumeric(getTekstil.hiz)           ? val(getTekstil.hiz)           : "",
+                "besleme_avans": isNumeric(getTekstil.besleme_avans) ? val(getTekstil.besleme_avans) : "",
+                "cekme":         len(getTekstil.cekme         ?: "") ? getTekstil.cekme              : ""
+            }>
+        </cfif>
+    </cfif>
+
+    <!--- Firmaya ait ek işlem ürünleri --->
+    <cfset ekIslemArr = []>
+    <cfif val(getShip.company_id) gt 0>
+        <cfquery name="getEkIslem" datasource="boyahane">
+            SELECT s.stock_id, s.stock_code, p.product_id, p.product_name
+            FROM stocks s
+            JOIN product p ON s.product_id = p.product_id
+            WHERE p.company_id   = <cfqueryparam value="#val(getShip.company_id)#" cfsqltype="cf_sql_integer">
+              AND p.is_ek_islem  = true
+              AND s.stock_status = true
+            ORDER BY p.product_name
+        </cfquery>
+        <cfloop query="getEkIslem">
+            <cfset arrayAppend(ekIslemArr, {
+                "stock_id":     val(stock_id),
+                "product_id":   val(product_id),
+                "product_name": product_name ?: "",
+                "stock_code":   stock_code   ?: ""
+            })>
+        </cfloop>
+    </cfif>
+
     <cfquery name="countParts" datasource="boyahane">
         SELECT COUNT(*) AS c FROM orders
         WHERE ref_ship_id = <cfqueryparam value="#shipId#" cfsqltype="cf_sql_integer">
@@ -48,7 +92,9 @@
         "product_id":    getShipRow.recordCount ? val(getShipRow.product_id ?: 0) : 0,
         "product_name":  getShipRow.recordCount ? (getShipRow.name_product ?: "") : "",
         "unit":          getShipRow.recordCount ? (getShipRow.unit ?: "mt")       : "mt",
-        "unit_id":       getShipRow.recordCount ? val(getShipRow.unit_id ?: 0)    : 0
+        "unit_id":       getShipRow.recordCount ? val(getShipRow.unit_id ?: 0)    : 0,
+        "tekstil":       tekstil,
+        "ek_islem":      ekIslemArr
     }>
 
     <cfoutput>#serializeJSON(result)#</cfoutput>
