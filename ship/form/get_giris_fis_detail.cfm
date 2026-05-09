@@ -23,6 +23,20 @@
                    ORDER BY sr.ship_row_id LIMIT 1
                ), '') AS urun_adi,
                COALESCE((
+                   SELECT p.product_id
+                   FROM ship_row sr
+                   LEFT JOIN stocks st ON sr.stock_id = st.stock_id
+                   LEFT JOIN product p ON st.product_id = p.product_id
+                   WHERE sr.ship_id = s.ship_id
+                   ORDER BY sr.ship_row_id LIMIT 1
+               ), 0) AS product_id,
+               COALESCE((
+                   SELECT sr.stock_id
+                   FROM ship_row sr
+                   WHERE sr.ship_id = s.ship_id
+                   ORDER BY sr.ship_row_id LIMIT 1
+               ), 0) AS stock_id,
+               COALESCE((
                    SELECT SUM(orw.quantity)
                    FROM orders o
                    JOIN order_row orw ON o.order_id = orw.order_id
@@ -52,6 +66,8 @@
         "company_id":   val(getShip.company_id),
         "company_name": getShip.company_name ?: "",
         "urun_adi":     getShip.urun_adi     ?: "",
+        "product_id":   isNumeric(getShip.product_id) ? val(getShip.product_id) : 0,
+        "stock_id":     isNumeric(getShip.stock_id)   ? val(getShip.stock_id)   : 0,
         "hk_metre":     isNumeric(getShip.hk_metre)     ? val(getShip.hk_metre)     : 0,
         "hk_kg":        isNumeric(getShip.hk_kg)        ? val(getShip.hk_kg)        : 0,
         "hk_top_adedi": isNumeric(getShip.hk_top_adedi) ? val(getShip.hk_top_adedi) : 0,

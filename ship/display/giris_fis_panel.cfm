@@ -178,7 +178,13 @@
                             <i class="fas fa-receipt"></i>
                             <span id="detayTitle">Giriş Fişi Detayı</span>
                         </div>
-                        <div id="detayBadges" class="d-flex gap-1 flex-wrap"></div>
+                        <div class="d-flex gap-2 align-items-center">
+                            <div id="detayBadges" class="d-flex gap-1 flex-wrap"></div>
+                            <button class="btn btn-sm btn-outline-primary d-none" id="btnKumasKarti"
+                                    onclick="openKumasKartiModal()" title="Ham Kumaş Kartını Düzenle">
+                                <i class="fas fa-tshirt me-1"></i>Kumaş Kartı
+                            </button>
+                        </div>
                     </div>
                     <div class="card-body p-3" id="detayBody">
                         <div class="text-center text-muted py-4">
@@ -211,6 +217,129 @@
         </div>
     </div>
 
+</div>
+
+<!--- ══════════════ MODAL: HAM KUMAŞ KARTI ══════════════ --->
+<div class="modal fade" id="modalKumasKarti" tabindex="-1" aria-labelledby="modalKumasKartiLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title fw-semibold" id="modalKumasKartiLabel">
+                    <i class="fas fa-tshirt me-2 text-primary"></i>Ham Kumaş Kartı
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-3">
+
+                <div id="mkk_loading" class="text-center text-muted py-4">
+                    <i class="fas fa-spinner fa-spin me-2"></i>Yükleniyor...
+                </div>
+
+                <div id="mkk_form" class="d-none">
+
+                    <!--- Ürün adı (salt okunur bilgi) --->
+                    <div class="alert alert-light border py-2 mb-3 small d-flex align-items-center gap-2">
+                        <i class="fas fa-box text-primary"></i>
+                        <div>
+                            <strong id="mkk_product_name_label">—</strong>
+                            <span class="text-muted ms-2" id="mkk_product_code_label"></span>
+                        </div>
+                        <input type="hidden" id="mkk_product_id"          value="0">
+                        <input type="hidden" id="mkk_product_catid"       value="0">
+                        <input type="hidden" id="mkk_product_name_h"      value="">
+                        <input type="hidden" id="mkk_main_product_unit_id" value="0">
+                        <input type="hidden" id="mkk_orig_unit_id"         value="0">
+                    </div>
+
+                    <!--- ─── Bölüm 1: Firma / Müşteri ─── --->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small mb-1">
+                            <i class="fas fa-building me-1 text-primary"></i>Firma / Müşteri
+                        </label>
+                        <div class="position-relative">
+                            <input type="text" class="form-control form-control-sm" id="mkk_companySearch"
+                                   placeholder="Firma adı ile arayın..." autocomplete="off"
+                                   oninput="mkk_filterCompany(this.value)"
+                                   onfocus="mkk_filterCompany(this.value)">
+                            <input type="hidden" id="mkk_company_id" value="0">
+                            <div id="mkk_companyDropdown" class="search-dropdown d-none"></div>
+                        </div>
+                    </div>
+
+                    <!--- ─── Bölüm 2: Birim ─── --->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small mb-1">
+                            <i class="fas fa-ruler me-1 text-primary"></i>Ana Birim
+                        </label>
+                        <select class="form-select form-select-sm" id="mkk_unit_id">
+                            <option value="0">-- Birim Seçin --</option>
+                        </select>
+                    </div>
+
+                    <hr class="my-3">
+
+                    <!--- ─── Bölüm 3: Tekstil Tanımları ─── --->
+                    <div class="mb-2">
+                        <div class="fw-semibold small mb-2 text-muted">
+                            <i class="fas fa-ruler-combined me-1"></i>Tekstil / Kumaş Özellikleri
+                        </div>
+                        <div class="row g-2">
+                            <div class="col-6 col-md-3">
+                                <label class="form-label small mb-1">En (cm)</label>
+                                <input type="number" class="form-control form-control-sm" id="mkk_en"
+                                       step="0.01" min="0" placeholder="0.00">
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label class="form-label small mb-1">Gramaj (g/m²)</label>
+                                <input type="number" class="form-control form-control-sm" id="mkk_gramaj"
+                                       step="0.01" min="0" placeholder="0.00">
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label class="form-label small mb-1">Isı (°C)</label>
+                                <input type="number" class="form-control form-control-sm" id="mkk_isi"
+                                       step="0.01" placeholder="0.00">
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label class="form-label small mb-1">Hız (m/dak)</label>
+                                <input type="number" class="form-control form-control-sm" id="mkk_hiz"
+                                       step="0.01" min="0" placeholder="0.00">
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label class="form-label small mb-1">Besleme Avans</label>
+                                <input type="number" class="form-control form-control-sm" id="mkk_besleme_avans"
+                                       step="0.01" placeholder="0.00">
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label class="form-label small mb-1">Kumaş Tipi</label>
+                                <input type="text" class="form-control form-control-sm" id="mkk_kumas_tipi"
+                                       placeholder="Dokuma, Örme...">
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label class="form-label small mb-1">Tuşe</label>
+                                <input type="text" class="form-control form-control-sm" id="mkk_tuse"
+                                       placeholder="Tuşe değeri">
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label class="form-label small mb-1">Çekme</label>
+                                <input type="text" class="form-control form-control-sm" id="mkk_cekme"
+                                       placeholder="Çekme değeri">
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div id="mkk_errorMsg" class="alert alert-danger mt-2 py-2 d-none"></div>
+
+            </div>
+            <div class="modal-footer py-2">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">İptal</button>
+                <button type="button" class="btn btn-sm btn-primary d-none" id="mkk_saveBtn" onclick="saveKumasKarti()">
+                    <i class="fas fa-save me-1"></i>Kaydet
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!--- ══════════════ MODAL: YENİ GİRİŞ FİŞİ ══════════════ --->
@@ -565,6 +694,15 @@ function loadDetail(shipId) {
 
 function renderDetail(d) {
     document.getElementById('detayTitle').textContent = d.ship_number;
+
+    /* Kumaş Kartı butonu */
+    mkk_currentProductId = d.product_id || 0;
+    var btnKK = document.getElementById('btnKumasKarti');
+    if (mkk_currentProductId) {
+        btnKK.classList.remove('d-none');
+    } else {
+        btnKK.classList.add('d-none');
+    }
 
     /* Badges */
     var b = '';
@@ -1063,9 +1201,200 @@ function savePartiModal() {
     });
 }
 
+/* ════ Modal: Ham Kumaş Kartı ════ */
+var mkk_currentProductId = 0;
+var mkk_allCompanies     = [];
+var mkk_companiesLoaded  = false;
+
+function openKumasKartiModal() {
+    if (!mkk_currentProductId) return;
+
+    /* Reset form */
+    document.getElementById('mkk_loading').classList.remove('d-none');
+    document.getElementById('mkk_form').classList.add('d-none');
+    document.getElementById('mkk_saveBtn').classList.add('d-none');
+    document.getElementById('mkk_errorMsg').classList.add('d-none');
+
+    var modal = new bootstrap.Modal(document.getElementById('modalKumasKarti'));
+    modal.show();
+
+    /* Load product data */
+    $.ajax({
+        url: '/ship/form/get_kumas_karti.cfm',
+        method: 'GET', data: { product_id: mkk_currentProductId }, dataType: 'json',
+        success: function(res) {
+            document.getElementById('mkk_loading').classList.add('d-none');
+            if (!res.success) {
+                document.getElementById('mkk_errorMsg').textContent = res.message || 'Veri alınamadı';
+                document.getElementById('mkk_errorMsg').classList.remove('d-none');
+                return;
+            }
+            var d = res.data;
+            document.getElementById('mkk_product_id').value           = d.product_id;
+            document.getElementById('mkk_product_catid').value         = d.product_catid;
+            document.getElementById('mkk_product_name_h').value        = d.product_name;
+            document.getElementById('mkk_main_product_unit_id').value  = d.main_product_unit_id || 0;
+            document.getElementById('mkk_orig_unit_id').value          = d.main_unit_id || 0;
+            document.getElementById('mkk_product_name_label').textContent = d.product_name;
+            document.getElementById('mkk_product_code_label').textContent = d.product_code || '';
+
+            /* Company */
+            document.getElementById('mkk_company_id').value     = d.company_id || 0;
+            document.getElementById('mkk_companySearch').value  = d.company_name || '';
+
+            /* Setup units dropdown */
+            var sel = document.getElementById('mkk_unit_id');
+            sel.innerHTML = '<option value="0">-- Birim Seçin --</option>';
+            (d.setup_units || []).forEach(function(u) {
+                var opt = document.createElement('option');
+                opt.value = u.unit_id;
+                opt.textContent = u.unit + (u.unit_code ? ' (' + u.unit_code + ')' : '');
+                if (u.unit_id === d.main_unit_id) opt.selected = true;
+                sel.appendChild(opt);
+            });
+
+            /* Textile fields */
+            document.getElementById('mkk_en').value             = d.en            || '';
+            document.getElementById('mkk_gramaj').value         = d.gramaj        || '';
+            document.getElementById('mkk_isi').value            = d.isi           || '';
+            document.getElementById('mkk_hiz').value            = d.hiz           || '';
+            document.getElementById('mkk_besleme_avans').value  = d.besleme_avans || '';
+            document.getElementById('mkk_kumas_tipi').value     = d.kumas_tipi    || '';
+            document.getElementById('mkk_tuse').value           = d.tuse          || '';
+            document.getElementById('mkk_cekme').value          = d.cekme         || '';
+
+            /* Load companies if not yet cached */
+            if (!mkk_companiesLoaded) {
+                $.ajax({
+                    url: '/company/cfc/company.cfc?method=getCompaniesForDropdown',
+                    method: 'GET', dataType: 'json',
+                    success: function(data) {
+                        mkk_allCompanies    = Array.isArray(data) ? data : [];
+                        mkk_companiesLoaded = true;
+                    }
+                });
+            }
+
+            document.getElementById('mkk_form').classList.remove('d-none');
+            document.getElementById('mkk_saveBtn').classList.remove('d-none');
+        },
+        error: function() {
+            document.getElementById('mkk_loading').classList.add('d-none');
+            document.getElementById('mkk_errorMsg').textContent = 'Ürün verileri yüklenemedi';
+            document.getElementById('mkk_errorMsg').classList.remove('d-none');
+        }
+    });
+}
+
+function mkk_filterCompany(q) {
+    var dd = document.getElementById('mkk_companyDropdown');
+    if (!q || q.length < 1) { dd.classList.add('d-none'); return; }
+    q = q.toLowerCase();
+    var results = mkk_allCompanies.filter(function(c) {
+        return ((c.display_name || c.fullname || '') + ' ' + (c.nickname || '') + ' ' + (c.member_code || '')).toLowerCase().includes(q);
+    }).slice(0, 20);
+    if (!results.length) { dd.innerHTML = '<div class="search-item text-muted">Sonuç yok</div>'; dd.classList.remove('d-none'); return; }
+    dd.innerHTML = '';
+    results.forEach(function(c) {
+        var div = document.createElement('div');
+        div.className = 'search-item';
+        div.innerHTML = '<div>' + escHtml(c.display_name || c.nickname || c.fullname) + '</div>' +
+                        '<div class="item-code">' + escHtml(c.member_code || '') + '</div>';
+        div.addEventListener('click', function() {
+            dd.classList.add('d-none');
+            document.getElementById('mkk_companySearch').value = c.display_name || c.nickname || c.fullname;
+            document.getElementById('mkk_company_id').value    = c.company_id;
+        });
+        dd.appendChild(div);
+    });
+    dd.classList.remove('d-none');
+}
+
+function saveKumasKarti() {
+    var productId = parseInt(document.getElementById('mkk_product_id').value) || 0;
+    var errEl     = document.getElementById('mkk_errorMsg');
+    errEl.classList.add('d-none');
+    if (!productId) {
+        errEl.textContent = 'Ürün bilgisi eksik.'; errEl.classList.remove('d-none'); return;
+    }
+
+    var companyId       = parseInt(document.getElementById('mkk_company_id').value)           || 0;
+    var unitId          = parseInt(document.getElementById('mkk_unit_id').value)               || 0;
+    var origUnitId      = parseInt(document.getElementById('mkk_orig_unit_id').value)          || 0;
+    var productUnitId   = parseInt(document.getElementById('mkk_main_product_unit_id').value)  || 0;
+
+    var btn = document.getElementById('mkk_saveBtn');
+    btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Kaydediliyor...';
+
+    /* 1 — Ürün tekstil + firma güncelle */
+    $.ajax({
+        url: '/product/cfc/product.cfc?method=saveProduct',
+        method: 'POST', dataType: 'json',
+        data: {
+            product_id:    productId,
+            company_id:    companyId,
+            en:            document.getElementById('mkk_en').value            || 0,
+            gramaj:        document.getElementById('mkk_gramaj').value        || 0,
+            isi:           document.getElementById('mkk_isi').value           || 0,
+            hiz:           document.getElementById('mkk_hiz').value           || 0,
+            besleme_avans: document.getElementById('mkk_besleme_avans').value || 0,
+            kumas_tipi:    document.getElementById('mkk_kumas_tipi').value    || '',
+            tuse:          document.getElementById('mkk_tuse').value          || '',
+            cekme:         document.getElementById('mkk_cekme').value         || '',
+            product_name:  document.getElementById('mkk_product_name_h').value || '',
+            product_catid: parseInt(document.getElementById('mkk_product_catid').value) || 1
+        },
+        success: function(res) {
+            if (!res.success) {
+                btn.disabled = false; btn.innerHTML = '<i class="fas fa-save me-1"></i>Kaydet';
+                errEl.textContent = res.message || 'Ürün kayıt hatası'; errEl.classList.remove('d-none');
+                return;
+            }
+
+            /* 2 — Birim değiştiyse kaydet */
+            if (unitId > 0 && unitId !== origUnitId) {
+                $.ajax({
+                    url: '/product/cfc/product.cfc?method=saveUnit',
+                    method: 'POST', dataType: 'json',
+                    data: {
+                        unit_id:    productUnitId,
+                        product_id: productId,
+                        main_unit:  unitId,
+                        is_main:    true,
+                        is_add_unit:false,
+                        product_unit_status: true
+                    },
+                    success: function(ures) {
+                        btn.disabled = false; btn.innerHTML = '<i class="fas fa-save me-1"></i>Kaydet';
+                        if (!ures.success) {
+                            errEl.textContent = 'Birim kayıt hatası: ' + (ures.message || '');
+                            errEl.classList.remove('d-none'); return;
+                        }
+                        bootstrap.Modal.getInstance(document.getElementById('modalKumasKarti')).hide();
+                        if (selectedShipId) loadDetail(selectedShipId);
+                    },
+                    error: function() {
+                        btn.disabled = false; btn.innerHTML = '<i class="fas fa-save me-1"></i>Kaydet';
+                        errEl.textContent = 'Birim sunucu hatası'; errEl.classList.remove('d-none');
+                    }
+                });
+            } else {
+                btn.disabled = false; btn.innerHTML = '<i class="fas fa-save me-1"></i>Kaydet';
+                bootstrap.Modal.getInstance(document.getElementById('modalKumasKarti')).hide();
+                if (selectedShipId) loadDetail(selectedShipId);
+            }
+        },
+        error: function() {
+            btn.disabled = false; btn.innerHTML = '<i class="fas fa-save me-1"></i>Kaydet';
+            errEl.textContent = 'Sunucu hatası'; errEl.classList.remove('d-none');
+        }
+    });
+}
+
 /* ════ Init ════ */
 renderList(ALL_FIS);
 /* Modalleri body'e taşı — overflow/stacking context sorununu giderir */
+document.body.appendChild(document.getElementById('modalKumasKarti'));
 document.body.appendChild(document.getElementById('modalYeniFis'));
 document.body.appendChild(document.getElementById('modalYeniParti'));
 </script>
