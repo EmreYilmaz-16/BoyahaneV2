@@ -14,6 +14,7 @@
            o.grosstotal, o.discounttotal, o.taxtotal, o.nettotal,
            o.sarim_sekli, o.ambalaj,
            o.record_date, o.company_id,
+           o.gramaj, o.en, o.kumas_tipi, o.tuse, o.isi, o.hiz, o.besleme_avans, o.cekme,
            COALESCE(c.nickname, c.fullname, '') AS company_name,
            COALESCE(ss.sarim_sekli_adi, '') AS sarim_sekli_adi,
            COALESCE(ab.ambalaj_adi, '')     AS ambalaj_adi
@@ -75,6 +76,7 @@
     <cfcase value="4"><cfset stageLabel = "Hazır"><cfset stageCls = "bg-info text-dark"></cfcase>
     <cfcase value="5"><cfset stageLabel = "Sevk Edildi"><cfset stageCls = "bg-success"></cfcase>
     <cfcase value="6"><cfset stageLabel = "Tamamlandı"><cfset stageCls = "bg-dark"></cfcase>
+    <cfcase value="7"><cfset stageLabel = "Renkli"><cfset stageCls = "bg-danger"></cfcase>
     <cfdefaultcase><cfset stageLabel = "Bilinmiyor"><cfset stageCls = "bg-secondary"></cfdefaultcase>
 </cfswitch>
 
@@ -332,68 +334,98 @@
         </div>
     </div>
 
-    <!--- Tekstil Bilgileri --->
-    <cfif getTekstil.recordCount AND (
-        (isNumeric(getTekstil.en) AND getTekstil.en gt 0) OR
-        len(trim(getTekstil.kumas_tipi ?: "")) OR
-        (isNumeric(getTekstil.gramaj) AND getTekstil.gramaj gt 0) OR
-        (isNumeric(getTekstil.isi) AND getTekstil.isi gt 0) OR
-        len(trim(getTekstil.tuse ?: "")) OR
-        len(trim(getTekstil.cekme ?: ""))
+    <!--- Tekstil Bilgileri: önce partiye özel (orders tablosu), yoksa ürün kartından --->
+    <!--- Partiye özel veriler kontrolü --->
+    <cfset hasPartiTekstil = (
+        (isNumeric(getOrder.gramaj)        AND val(getOrder.gramaj)        gt 0) OR
+        (isNumeric(getOrder.en)            AND val(getOrder.en)            gt 0) OR
+        len(trim(getOrder.kumas_tipi       ?: "")) OR
+        len(trim(getOrder.tuse             ?: "")) OR
+        (isNumeric(getOrder.isi)           AND val(getOrder.isi)           gt 0) OR
+        (isNumeric(getOrder.hiz)           AND val(getOrder.hiz)           gt 0) OR
+        (isNumeric(getOrder.besleme_avans) AND val(getOrder.besleme_avans) gt 0) OR
+        len(trim(getOrder.cekme            ?: ""))
     )>
+
+    <!--- Ürün kartı verilerinden fallback --->
+    <cfset hasTekstilFallback = getTekstil.recordCount AND (
+        (isNumeric(getTekstil.en)           AND getTekstil.en           gt 0) OR
+        len(trim(getTekstil.kumas_tipi      ?: "")) OR
+        (isNumeric(getTekstil.gramaj)       AND getTekstil.gramaj       gt 0) OR
+        (isNumeric(getTekstil.isi)          AND getTekstil.isi          gt 0) OR
+        len(trim(getTekstil.tuse            ?: "")) OR
+        len(trim(getTekstil.cekme           ?: ""))
+    )>
+
+    <cfif hasPartiTekstil OR hasTekstilFallback>
     <cfoutput>
     <div class="grid-card mb-3">
         <div class="grid-card-header">
             <div class="grid-card-header-title"><i class="fas fa-tshirt"></i>Tekstil / Kumaş Özellikleri</div>
+            <cfif hasPartiTekstil>
+            <span class="badge bg-warning text-dark"><i class="fas fa-star me-1"></i>Partiye Özel</span>
+            <cfelse>
+            <span class="badge bg-light text-secondary border"><i class="fas fa-box me-1"></i>Ürün Kartından</span>
+            </cfif>
         </div>
         <div class="card-body px-3 py-3">
-            <div class="d-flex flex-wrap gap-4">
-                <cfif len(trim(getTekstil.kumas_tipi ?: ""))>
+            <div class="d-flex flex-wrap gap-3">
+                <!--- Partiye özel varsa onları göster, yoksa ürün kartını --->
+                <cfset tGramaj       = hasPartiTekstil ? (isNumeric(getOrder.gramaj)        AND val(getOrder.gramaj)        gt 0 ? getOrder.gramaj        : "") : (isNumeric(getTekstil.gramaj)        AND getTekstil.gramaj        gt 0 ? getTekstil.gramaj        : "")>
+                <cfset tEn          = hasPartiTekstil ? (isNumeric(getOrder.en)            AND val(getOrder.en)            gt 0 ? getOrder.en            : "") : (isNumeric(getTekstil.en)            AND getTekstil.en            gt 0 ? getTekstil.en            : "")>
+                <cfset tKumasTipi   = hasPartiTekstil ? trim(getOrder.kumas_tipi   ?: "") : trim(getTekstil.kumas_tipi    ?: "")>
+                <cfset tTuse        = hasPartiTekstil ? trim(getOrder.tuse         ?: "") : trim(getTekstil.tuse           ?: "")>
+                <cfset tIsi         = hasPartiTekstil ? (isNumeric(getOrder.isi)           AND val(getOrder.isi)           gt 0 ? getOrder.isi           : "") : (isNumeric(getTekstil.isi)           AND getTekstil.isi           gt 0 ? getTekstil.isi           : "")>
+                <cfset tHiz         = hasPartiTekstil ? (isNumeric(getOrder.hiz)           AND val(getOrder.hiz)           gt 0 ? getOrder.hiz           : "") : (isNumeric(getTekstil.hiz)           AND getTekstil.hiz           gt 0 ? getTekstil.hiz           : "")>
+                <cfset tBesleme     = hasPartiTekstil ? (isNumeric(getOrder.besleme_avans) AND val(getOrder.besleme_avans) gt 0 ? getOrder.besleme_avans : "") : (isNumeric(getTekstil.besleme_avans) AND getTekstil.besleme_avans gt 0 ? getTekstil.besleme_avans : "")>
+                <cfset tCekme       = hasPartiTekstil ? trim(getOrder.cekme        ?: "") : trim(getTekstil.cekme          ?: "")>
+
+                <cfif len(tKumasTipi)>
                 <div class="tekstil-item">
                     <small class="text-muted d-block mb-1"><i class="fas fa-tag me-1"></i>Kumaş Tipi</small>
-                    <strong>#xmlFormat(getTekstil.kumas_tipi)#</strong>
+                    <strong>#xmlFormat(tKumasTipi)#</strong>
                 </div>
                 </cfif>
-                <cfif isNumeric(getTekstil.en) AND getTekstil.en gt 0>
+                <cfif len(tEn)>
                 <div class="tekstil-item">
                     <small class="text-muted d-block mb-1"><i class="fas fa-arrows-alt-h me-1"></i>En</small>
-                    <strong>#getTekstil.en# cm</strong>
+                    <strong>#tEn# cm</strong>
                 </div>
                 </cfif>
-                <cfif isNumeric(getTekstil.gramaj) AND getTekstil.gramaj gt 0>
+                <cfif len(tGramaj)>
                 <div class="tekstil-item">
                     <small class="text-muted d-block mb-1"><i class="fas fa-weight me-1"></i>Gramaj</small>
-                    <strong>#getTekstil.gramaj# g/m²</strong>
+                    <strong>#tGramaj# g/m²</strong>
                 </div>
                 </cfif>
-                <cfif isNumeric(getTekstil.isi) AND getTekstil.isi gt 0>
+                <cfif len(tIsi)>
                 <div class="tekstil-item">
                     <small class="text-muted d-block mb-1"><i class="fas fa-thermometer-half me-1"></i>Isı</small>
-                    <strong>#getTekstil.isi# °C</strong>
+                    <strong>#tIsi# °C</strong>
                 </div>
                 </cfif>
-                <cfif isNumeric(getTekstil.hiz) AND getTekstil.hiz gt 0>
+                <cfif len(tHiz)>
                 <div class="tekstil-item">
                     <small class="text-muted d-block mb-1"><i class="fas fa-tachometer-alt me-1"></i>Hız</small>
-                    <strong>#getTekstil.hiz# m/dak</strong>
+                    <strong>#tHiz# m/dak</strong>
                 </div>
                 </cfif>
-                <cfif isNumeric(getTekstil.besleme_avans) AND getTekstil.besleme_avans gt 0>
+                <cfif len(tBesleme)>
                 <div class="tekstil-item">
                     <small class="text-muted d-block mb-1"><i class="fas fa-sliders-h me-1"></i>Besleme Avans</small>
-                    <strong>#getTekstil.besleme_avans#</strong>
+                    <strong>#tBesleme#</strong>
                 </div>
                 </cfif>
-                <cfif len(trim(getTekstil.tuse ?: ""))>
+                <cfif len(tTuse)>
                 <div class="tekstil-item">
                     <small class="text-muted d-block mb-1"><i class="fas fa-hand-paper me-1"></i>Tuşe</small>
-                    <strong>#xmlFormat(getTekstil.tuse)#</strong>
+                    <strong>#xmlFormat(tTuse)#</strong>
                 </div>
                 </cfif>
-                <cfif len(trim(getTekstil.cekme ?: ""))>
+                <cfif len(tCekme)>
                 <div class="tekstil-item">
                     <small class="text-muted d-block mb-1"><i class="fas fa-compress-arrows-alt me-1"></i>Çekme</small>
-                    <strong>#xmlFormat(getTekstil.cekme)#</strong>
+                    <strong>#xmlFormat(tCekme)#</strong>
                 </div>
                 </cfif>
             </div>
