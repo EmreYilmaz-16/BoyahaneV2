@@ -108,7 +108,7 @@
     <div class="page-header-left">
         <div class="page-header-icon"><i class="fas fa-dolly-flatbed"></i></div>
         <div class="page-header-title">
-            <h1>Giriş Fişi Paneli</h1>
+            <h1>Parti İzleme </h1>
             <p>Ham kumaş giriş takibi ve parti yönetimi</p>
         </div>
     </div>
