@@ -1,9 +1,30 @@
-﻿
 <cfprocessingdirective pageEncoding="utf-8">
-<cfset shipId = isDefined("attributes.ship_id") AND isNumeric(attributes.ship_id) ? val(attributes.ship_id) : (isDefined("url.ship_id") AND isNumeric(url.ship_id) ? val(url.ship_id) : 0)>
+<cfset editOrderId = isDefined("attributes.order_id") AND isNumeric(attributes.order_id) ? val(attributes.order_id) : (isDefined("url.order_id") AND isNumeric(url.order_id) ? val(url.order_id) : 0)>
+
+<cfif editOrderId lte 0>
+    <div class="alert alert-warning m-3"><i class="fas fa-exclamation-triangle me-2"></i>Güncellenecek parti belirtilmedi (order_id gerekli).</div>
+    <cfabort>
+</cfif>
+
+<!--- Parti ve irsaliye bilgisi --->
+<cfquery name="getEditOrder" datasource="boyahane">
+    SELECT o.order_id, o.order_number, o.order_detail, o.order_stage,
+           o.deliverdate, o.sarim_sekli, o.ambalaj, o.top_adedi,
+           o.kumas_tipi, o.en, o.gramaj, o.isi, o.hiz, o.besleme_avans, o.tuse, o.cekme,
+           o.ref_ship_id
+    FROM orders o
+    WHERE o.order_id = <cfqueryparam value="#editOrderId#" cfsqltype="cf_sql_integer">
+</cfquery>
+
+<cfif NOT getEditOrder.recordCount>
+    <div class="alert alert-danger m-3"><i class="fas fa-exclamation-triangle me-2"></i>Parti bulunamadı (#editOrderId#).</div>
+    <cfabort>
+</cfif>
+
+<cfset shipId = val(getEditOrder.ref_ship_id ?: 0)>
 
 <cfif shipId lte 0>
-    <div class="alert alert-warning m-3"><i class="fas fa-exclamation-triangle me-2"></i>Lütfen bir irsaliye seçin (ship_id gerekli).</div>
+    <div class="alert alert-danger m-3"><i class="fas fa-exclamation-triangle me-2"></i>Bu parti bir irsaliyeye bağlı değil.</div>
     <cfabort>
 </cfif>
 
@@ -21,6 +42,53 @@
     <div class="alert alert-danger m-3">İrsaliye bulunamadı (#shipId#).</div>
     <cfabort>
 </cfif>
+
+<!--- Parti edit değerleri --->
+<cfset editPartiKodu   = getEditOrder.order_number ?: "">
+<cfset editOrderStage  = val(getEditOrder.order_stage ?: 1)>
+<cfset editDeliverDate = isDate(getEditOrder.deliverdate) ? dateFormat(getEditOrder.deliverdate,"yyyy-mm-dd") : "">
+<cfset editOrderDetail = getEditOrder.order_detail ?: "">
+<cfset editSarimSekli  = val(getEditOrder.sarim_sekli ?: 0)>
+<cfset editAmbalaj     = val(getEditOrder.ambalaj ?: 0)>
+<cfset editMainTop     = isNumeric(getEditOrder.top_adedi) AND val(getEditOrder.top_adedi) gt 0 ? val(getEditOrder.top_adedi) : "">
+<cfset editTekstil     = {
+    "kumas_tipi":    getEditOrder.kumas_tipi ?: "",
+    "en":            isNumeric(getEditOrder.en) ? val(getEditOrder.en) : "",
+    "gramaj":        isNumeric(getEditOrder.gramaj) ? val(getEditOrder.gramaj) : "",
+    "isi":           isNumeric(getEditOrder.isi) ? val(getEditOrder.isi) : "",
+    "hiz":           isNumeric(getEditOrder.hiz) ? val(getEditOrder.hiz) : "",
+    "besleme_avans": isNumeric(getEditOrder.besleme_avans) ? val(getEditOrder.besleme_avans) : "",
+    "tuse":          getEditOrder.tuse ?: "",
+    "cekme":         getEditOrder.cekme ?: ""
+}>
+
+<!--- Parti satırları --->
+<cfset editMainMetre  = "">
+<cfset editMainKg     = "">
+<cfset editLotNo      = "">
+<cfset editEkIslemIds = []>
+
+<cfquery name="getEditRows" datasource="boyahane">
+    SELECT orw.stock_id, orw.quantity, orw.unit, orw.lot_no,
+           COALESCE(p.is_ek_islem, false) AS is_ek_islem
+    FROM order_row orw
+    LEFT JOIN stocks s  ON orw.stock_id  = s.stock_id
+    LEFT JOIN product p ON s.product_id  = p.product_id
+    WHERE orw.order_id = <cfqueryparam value="#editOrderId#" cfsqltype="cf_sql_integer">
+</cfquery>
+
+<cfloop query="getEditRows">
+    <cfif NOT getEditRows.is_ek_islem>
+        <cfif lCase(trim(getEditRows.unit)) eq 'kg'>
+            <cfset editMainKg = val(getEditRows.quantity)>
+        <cfelse>
+            <cfset editMainMetre = val(getEditRows.quantity)>
+        </cfif>
+        <cfset editLotNo = getEditRows.lot_no ?: "">
+    <cfelse>
+        <cfset arrayAppend(editEkIslemIds, val(getEditRows.stock_id))>
+    </cfif>
+</cfloop>
 
 <!--- Sarım şekli ve ambalaj tipleri --->
 <cfquery name="getSarimSekli" datasource="boyahane">
@@ -47,108 +115,14 @@
     LIMIT 1
 </cfquery>
 
-<!--- Mevcut parti sayısı (ref_ship_id ile bağlı siparışler) --->
-<cfquery name="countParts" datasource="boyahane">
-    SELECT COUNT(*) AS c FROM orders
-    WHERE ref_ship_id = <cfqueryparam value="#shipId#" cfsqltype="cf_sql_integer">
-       OR (ref_ship_id IS NULL AND ref_no IS NOT NULL AND ref_no <> '' AND ref_no = <cfqueryparam value="#getShip.ship_number#" cfsqltype="cf_sql_varchar">)
-</cfquery>
-<cfset partiNo   = countParts.c + 1>
-<cfset partiKodu = getShip.ship_number & "-P" & partiNo>
-
-
-
-<!--- Son parti verileri (miktar/kg/açıklama/tekstil ön doldurma) --->
-<cfquery name="getSonPartiRec" datasource="boyahane">
-    SELECT o.order_id, COALESCE(o.order_head, '') AS order_head,
-           o.en, o.gramaj, o.kumas_tipi, o.tuse, o.isi, o.hiz, o.besleme_avans, o.cekme,
-           COALESCE(o.top_adedi, 0) AS top_adedi
-    FROM orders o
-    WHERE o.ref_ship_id = <cfqueryparam value="#shipId#" cfsqltype="cf_sql_integer">
-    ORDER BY o.order_id DESC
-    LIMIT 1
-</cfquery>
-<cfset sonPartiMiktar   = "">
-<cfset sonPartiKg       = "">
-<cfset sonPartiAciklama = "">
-<cfset sonPartiTop      = "">
-<!--- Tekstil: önce ürün tanımından al, sonra son parti varsa üzerine yaz --->
-<cfset sonPartiTekstil = {
-    "kumas_tipi":    tekstilBilgi.kumas_tipi    ?: "",
-    "en":            tekstilBilgi.en            ?: "",
-    "gramaj":        tekstilBilgi.gramaj        ?: "",
-    "isi":           tekstilBilgi.isi           ?: "",
-    "hiz":           tekstilBilgi.hiz           ?: "",
-    "besleme_avans": tekstilBilgi.besleme_avans ?: "",
-    "tuse":          tekstilBilgi.tuse          ?: "",
-    "cekme":         tekstilBilgi.cekme         ?: ""
-}>
-<cfif getSonPartiRec.recordCount AND val(getSonPartiRec.order_id) gt 0>
-    <cfquery name="getSonPartiMiktar" datasource="boyahane">
-        SELECT orw.quantity
-        FROM order_row orw
-        JOIN stocks st ON orw.stock_id = st.stock_id
-        WHERE orw.order_id = <cfqueryparam value="#getSonPartiRec.order_id#" cfsqltype="cf_sql_integer">
-          AND COALESCE(st.is_main_stock, true) = true
-          AND LOWER(TRIM(orw.unit)) IN ('mt','mtr','m','metre')
-        ORDER BY orw.order_row_id
-        LIMIT 1
-    </cfquery>
-    <cfquery name="getSonPartiKg" datasource="boyahane">
-        SELECT orw.quantity
-        FROM order_row orw
-        WHERE orw.order_id = <cfqueryparam value="#getSonPartiRec.order_id#" cfsqltype="cf_sql_integer">
-          AND LOWER(TRIM(orw.unit)) = 'kg'
-        ORDER BY orw.order_row_id
-        LIMIT 1
-    </cfquery>
-    <cfif getSonPartiMiktar.recordCount AND isNumeric(getSonPartiMiktar.quantity) AND val(getSonPartiMiktar.quantity) gt 0>
-        <cfset sonPartiMiktar = val(getSonPartiMiktar.quantity)>
-    </cfif>
-    <cfif getSonPartiKg.recordCount AND isNumeric(getSonPartiKg.quantity) AND val(getSonPartiKg.quantity) gt 0>
-        <cfset sonPartiKg = val(getSonPartiKg.quantity)>
-    </cfif>
-    <cfif len(trim(getSonPartiRec.order_head ?: ""))>
-        <cfset sonPartiAciklama = trim(getSonPartiRec.order_head)>
-    </cfif>
-    <cfif isNumeric(getSonPartiRec.top_adedi) AND val(getSonPartiRec.top_adedi) gt 0>
-        <cfset sonPartiTop = val(getSonPartiRec.top_adedi)>
-    </cfif>
-    <!--- Tekstil alanları son partizde dolu ise üzerine yaz --->
-    <cfif isNumeric(getSonPartiRec.en) AND val(getSonPartiRec.en) gt 0>
-        <cfset sonPartiTekstil.en = val(getSonPartiRec.en)>
-    </cfif>
-    <cfif isNumeric(getSonPartiRec.gramaj) AND val(getSonPartiRec.gramaj) gt 0>
-        <cfset sonPartiTekstil.gramaj = val(getSonPartiRec.gramaj)>
-    </cfif>
-    <cfif isNumeric(getSonPartiRec.isi) AND val(getSonPartiRec.isi) gt 0>
-        <cfset sonPartiTekstil.isi = val(getSonPartiRec.isi)>
-    </cfif>
-    <cfif isNumeric(getSonPartiRec.hiz) AND val(getSonPartiRec.hiz) gt 0>
-        <cfset sonPartiTekstil.hiz = val(getSonPartiRec.hiz)>
-    </cfif>
-    <cfif isNumeric(getSonPartiRec.besleme_avans) AND val(getSonPartiRec.besleme_avans) gt 0>
-        <cfset sonPartiTekstil.besleme_avans = val(getSonPartiRec.besleme_avans)>
-    </cfif>
-    <cfif len(trim(getSonPartiRec.kumas_tipi ?: ""))>
-        <cfset sonPartiTekstil.kumas_tipi = trim(getSonPartiRec.kumas_tipi)>
-    </cfif>
-    <cfif len(trim(getSonPartiRec.tuse ?: ""))>
-        <cfset sonPartiTekstil.tuse = trim(getSonPartiRec.tuse)>
-    </cfif>
-    <cfif len(trim(getSonPartiRec.cekme ?: ""))>
-        <cfset sonPartiTekstil.cekme = trim(getSonPartiRec.cekme)>
-    </cfif>
-</cfif>
-
 <!--- Ek işlem ürünleri (bu firmaya ait) --->
 <cfquery name="getEkIslem" datasource="boyahane">
     SELECT s.stock_id, s.stock_code, p.product_id, p.product_name, p.product_code
     FROM stocks s
     JOIN product p ON s.product_id = p.product_id
-    WHERE p.company_id      = <cfqueryparam value="#getShip.company_id#" cfsqltype="cf_sql_integer">
-      AND p.is_ek_islem = true
-      AND s.stock_status    = true
+    WHERE p.company_id   = <cfqueryparam value="#getShip.company_id#" cfsqltype="cf_sql_integer">
+      AND p.is_ek_islem  = true
+      AND s.stock_status = true
     ORDER BY p.product_name
 </cfquery>
 
@@ -159,50 +133,14 @@
     ORDER BY hierarchy, product_cat
 </cfquery>
 
-<!--- Ek işlemleri JSON dizisine çevir (JS için) --->
-<cfset ekIslemArray = []>
-<cfloop query="getEkIslem">
-    <cfset arrayAppend(ekIslemArray, {
-        "stock_id":     stock_id,
-        "product_id":   product_id,
-        "product_name": product_name ?: "",
-        "product_code": product_code ?: "",
-        "stock_code":   stock_code   ?: ""
-    })>
-</cfloop>
-
 <!--- Ana ürün değerleri --->
 <cfset mainStockId   = getShipRow.recordCount ? val(getShipRow.stock_id   ?: 0) : 0>
 <cfset mainProductId = getShipRow.recordCount ? val(getShipRow.product_id ?: 0) : 0>
 <cfset mainName      = getShipRow.recordCount ? (getShipRow.name_product  ?: "") : "">
-<cfset mainMetre     = getShipRow.recordCount AND isNumeric(getShipRow.amount)  ? getShipRow.amount  : "">
-<cfset mainKg        = getShipRow.recordCount AND isNumeric(getShipRow.amount2) ? getShipRow.amount2 : "">
 <cfset mainUnit      = getShipRow.recordCount ? (getShipRow.unit   ?: "mt") : "mt">
 <cfset mainUnitId    = getShipRow.recordCount ? val(getShipRow.unit_id ?: 0) : 0>
 
-<!--- Ana ürünün tekstil bilgileri --->
-<cfset tekstilBilgi = {}>
-<cfif mainProductId gt 0>
-    <cfquery name="getTekstilBilgi" datasource="boyahane">
-        SELECT en, tuse, cekme, isi, hiz, gramaj, besleme_avans, kumas_tipi
-        FROM product
-        WHERE product_id = <cfqueryparam value="#mainProductId#" cfsqltype="cf_sql_integer">
-    </cfquery>
-    <cfif getTekstilBilgi.recordCount>
-        <cfset tekstilBilgi = {
-            "en":            isNumeric(getTekstilBilgi.en) ? getTekstilBilgi.en : "",
-            "tuse":          len(getTekstilBilgi.tuse ?: "") ? getTekstilBilgi.tuse : "",
-            "cekme":         len(getTekstilBilgi.cekme ?: "") ? getTekstilBilgi.cekme : "",
-            "isi":           isNumeric(getTekstilBilgi.isi) ? getTekstilBilgi.isi : "",
-            "hiz":           isNumeric(getTekstilBilgi.hiz) ? getTekstilBilgi.hiz : "",
-            "gramaj":        isNumeric(getTekstilBilgi.gramaj) ? getTekstilBilgi.gramaj : "",
-            "besleme_avans": isNumeric(getTekstilBilgi.besleme_avans) ? getTekstilBilgi.besleme_avans : "",
-            "kumas_tipi":    len(getTekstilBilgi.kumas_tipi ?: "") ? getTekstilBilgi.kumas_tipi : ""
-        }>
-    </cfif>
-</cfif>
-
-<!--- Müşteri satış fiyat listesi ---> 
+<!--- Müşteri satış fiyat listesi --->
 <cfset companyPriceCat = 0>
 <cfquery name="getCompanyCat" datasource="boyahane">
     SELECT price_cat FROM company_credit
@@ -234,50 +172,33 @@
     </cfloop>
 </cfif>
 
-<!--- Tamamen partilendi kontrolü --->
-<cfset shipHkMetre = isNumeric(getShip.hk_metre) ? val(getShip.hk_metre) : 0>
-<cfif shipHkMetre gt 0 AND mainProductId gt 0 AND len(trim(getShip.ship_number))>
-    <cfquery name="getPartiToplamMiktar" datasource="boyahane">
-        SELECT COALESCE(SUM(orw.quantity), 0) AS toplam
-        FROM orders o
-        JOIN order_row orw ON o.order_id = orw.order_id
-        WHERE (o.ref_ship_id = <cfqueryparam value="#shipId#" cfsqltype="cf_sql_integer">
-           OR (o.ref_ship_id IS NULL AND o.ref_no IS NOT NULL AND o.ref_no <> '' AND o.ref_no = <cfqueryparam value="#getShip.ship_number#" cfsqltype="cf_sql_varchar">))
-          AND orw.product_id = <cfqueryparam value="#mainProductId#" cfsqltype="cf_sql_integer">
-    </cfquery>
-    <cfif val(getPartiToplamMiktar.toplam) gte shipHkMetre>
-        <cfoutput>
-        <div class="alert alert-warning m-4 d-flex align-items-start gap-3">
-            <i class="fas fa-lock fs-3 mt-1 text-warning"></i>
-            <div>
-                <h5 class="mb-1">Bu giriş fişi tamamen partilendi!</h5>
-                <p class="mb-2">Toplam <strong>#numberFormat(shipHkMetre,'0.00')# mt</strong> girişin tamamı (<strong>#numberFormat(val(getPartiToplamMiktar.toplam),'0.00')# mt</strong>) sipariş/parti olarak işlenmiştir.</p>
-                <a href="index.cfm?fuseaction=ship.list_giris_fis" class="btn btn-sm btn-secondary">
-                    <i class="fas fa-arrow-left me-1"></i>Giriş Fişleri Listesi
-                </a>
-                <a href="index.cfm?fuseaction=ship.list_partiler&ship_id=#shipId#" class="btn btn-sm btn-outline-primary ms-2">
-                    <i class="fas fa-list-ol me-1"></i>Parti Listesi
-                </a>
-            </div>
-        </div>
-        </cfoutput>
-        <cfabort>
-    </cfif>
-</cfif>
+<!--- Ek İşlemleri JSON dizisine çevir (JS için) --->
+<cfset ekIslemArray = []>
+<cfloop query="getEkIslem">
+    <cfset arrayAppend(ekIslemArray, {
+        "stock_id":     stock_id,
+        "product_id":   product_id,
+        "product_name": product_name ?: "",
+        "product_code": product_code ?: "",
+        "stock_code":   stock_code   ?: ""
+    })>
+</cfloop>
 
 <div class="page-header">
     <div class="page-header-left">
-        <div class="page-header-icon"><i class="fas fa-cut"></i></div>
+        <div class="page-header-icon"><i class="fas fa-edit"></i></div>
         <div class="page-header-title">
             <cfoutput>
-            <h1>Parti Oluştur <small class="text-muted fs-6">#partiKodu#</small></h1>
-            <p>İrsaliye <strong>#getShip.ship_number#</strong> — <strong>#xmlFormat(getShip.company_name)#</strong></p>
+            <h1>Parti Güncelle <small class="text-muted fs-6">#xmlFormat(editPartiKodu)#</small></h1>
+            <p>İrsaliye <strong>#xmlFormat(getShip.ship_number)#</strong> — <strong>#xmlFormat(getShip.company_name)#</strong></p>
             </cfoutput>
         </div>
     </div>
-    <a href="index.cfm?fuseaction=ship.list_ship" class="btn-back">
-        <i class="fas fa-arrow-left"></i>İrsaliye Listesi
+    <cfoutput>
+    <a href="index.cfm?fuseaction=ship.list_partiler&ship_id=#shipId#" class="btn-back">
+        <i class="fas fa-arrow-left"></i>Parti Listesi
     </a>
+    </cfoutput>
 </div>
 
 <div class="px-3 pb-5">
@@ -293,13 +214,13 @@
                 </div>
                 <div class="card-body p-3">
 
-                    <!--- Sipariş No (Parti Kodu) --->
+                    <!--- Parti Kodu --->
                     <div class="mb-3">
                         <label class="form-label fw-semibold">
                             <i class="fas fa-hashtag me-1 text-primary"></i>Parti Kodu
                         </label>
                         <input type="text" class="form-control" id="parti_kodu"
-                               value="<cfoutput>#xmlFormat(partiKodu)#</cfoutput>">
+                               value="<cfoutput>#xmlFormat(editPartiKodu)#</cfoutput>">
                         <small class="text-muted">Varsayılan otomatik oluşturuldu, değiştirilebilir.</small>
                     </div>
 
@@ -309,12 +230,12 @@
                             <i class="fas fa-tasks me-1 text-primary"></i>Aşama
                         </label>
                         <cfoutput><select class="form-select" id="order_stage">
-                            <option value="1" selected>Beklemede</option>
-                            <option value="2">Onaylandı</option>
-                            <option value="3">Üretimde</option>
-                            <option value="4">Hazır</option>
-                            <option value="5">Sevk Edildi</option>
-                            <option value="6">Tamamlandı</option>
+                            <option value="1" <cfif editOrderStage eq 1>selected</cfif>>Beklemede</option>
+                            <option value="2" <cfif editOrderStage eq 2>selected</cfif>>Onaylandı</option>
+                            <option value="3" <cfif editOrderStage eq 3>selected</cfif>>Üretimde</option>
+                            <option value="4" <cfif editOrderStage eq 4>selected</cfif>>Hazır</option>
+                            <option value="5" <cfif editOrderStage eq 5>selected</cfif>>Sevk Edildi</option>
+                            <option value="6" <cfif editOrderStage eq 6>selected</cfif>>Tamamlandı</option>
                         </select></cfoutput>
                     </div>
 
@@ -323,7 +244,8 @@
                         <label class="form-label fw-semibold">
                             <i class="fas fa-calendar-alt me-1 text-primary"></i>Teslim Tarihi
                         </label>
-                        <input type="date" class="form-control" id="deliverdate" value="">
+                        <input type="date" class="form-control" id="deliverdate"
+                               value="<cfoutput>#xmlFormat(editDeliverDate)#</cfoutput>">
                     </div>
 
                     <!--- Açıklama --->
@@ -332,7 +254,7 @@
                             <i class="fas fa-sticky-note me-1 text-primary"></i>Açıklama
                         </label>
                         <textarea class="form-control" id="order_detail" rows="3"
-                                  placeholder="Parti açıklaması..."><cfoutput>#xmlFormat(sonPartiAciklama)#</cfoutput></textarea>
+                                  placeholder="Parti açıklaması..."><cfoutput>#xmlFormat(editOrderDetail)#</cfoutput></textarea>
                     </div>
 
                     <!--- Sarım ve Ambalaj --->
@@ -344,7 +266,7 @@
                             <select class="form-select" id="sarim_sekli">
                                 <option value="0">-- Seçiniz --</option>
                                 <cfoutput query="getSarimSekli">
-                                <option value="#sarim_sekli_id#">#xmlFormat(sarim_sekli_adi)#</option>
+                                <option value="#sarim_sekli_id#" <cfif editSarimSekli eq val(sarim_sekli_id)>selected</cfif>>#xmlFormat(sarim_sekli_adi)#</option>
                                 </cfoutput>
                             </select>
                         </div>
@@ -355,7 +277,7 @@
                             <select class="form-select" id="ambalaj">
                                 <option value="0">-- Seçiniz --</option>
                                 <cfoutput query="getAmbalajTipleri">
-                                <option value="#ambalaj_id#">#xmlFormat(ambalaj_adi)#</option>
+                                <option value="#ambalaj_id#" <cfif editAmbalaj eq val(ambalaj_id)>selected</cfif>>#xmlFormat(ambalaj_adi)#</option>
                                 </cfoutput>
                             </select>
                         </div>
@@ -363,8 +285,8 @@
 
                     <!--- Kaydet --->
                     <div class="d-grid mt-3">
-                        <button type="button" class="btn btn-primary" id="saveBtn" onclick="saveParti()">
-                            <i class="fas fa-save me-2"></i>Parti Oluştur
+                        <button type="button" class="btn btn-warning" id="saveBtn" onclick="saveParti()">
+                            <i class="fas fa-save me-2"></i>Güncelle
                         </button>
                     </div>
 
@@ -401,7 +323,7 @@
                                 <i class="fas fa-ruler me-1 text-primary"></i>Metre
                             </label>
                             <input type="number" step="0.0001" class="form-control" id="main_metre"
-                                   value="<cfoutput>#len(sonPartiMiktar) ? sonPartiMiktar : mainMetre#</cfoutput>"
+                                   value="<cfoutput>#xmlFormat(editMainMetre)#</cfoutput>"
                                    placeholder="0.0000">
                         </div>
                         <div class="col-sm-4">
@@ -409,7 +331,7 @@
                                 <i class="fas fa-weight me-1 text-primary"></i>Kg
                             </label>
                             <input type="number" step="0.0001" class="form-control" id="main_kg"
-                                   value="<cfoutput>#len(sonPartiKg) ? sonPartiKg : mainKg#</cfoutput>"
+                                   value="<cfoutput>#xmlFormat(editMainKg)#</cfoutput>"
                                    placeholder="0.0000">
                         </div>
                         <div class="col-sm-4">
@@ -417,7 +339,7 @@
                                 <i class="fas fa-boxes me-1 text-primary"></i>Top Adedi
                             </label>
                             <input type="number" step="1" class="form-control" id="main_top"
-                                   value="<cfoutput>#len(sonPartiTop) ? sonPartiTop : ''#</cfoutput>"
+                                   value="<cfoutput>#xmlFormat(editMainTop)#</cfoutput>"
                                    placeholder="0">
                         </div>
                     </div>
@@ -435,19 +357,19 @@
                                 <i class="fas fa-barcode me-1 text-primary"></i>Lot No
                             </label>
                             <input type="text" class="form-control" id="main_lot_no"
-                                   value=""
+                                   value="<cfoutput>#xmlFormat(editLotNo)#</cfoutput>"
                                    placeholder="Lot / Parti no">
                         </div>
                     </div>
 
                 </div>
             </div>
-            <!--- Tekstil Bilgileri Kartı — her zaman göster, editable --->
+
+            <!--- Tekstil Bilgileri Kartı --->
             <div class="grid-card mb-3">
                 <div class="grid-card-header">
                     <div class="grid-card-header-title">
                         <i class="fas fa-tshirt"></i>Tekstil Özellikleri
-                        <small class="text-muted ms-2">(önceki partiden / değiştirilebilir)</small>
                     </div>
                 </div>
                 <div class="card-body p-3">
@@ -456,47 +378,48 @@
                         <div class="col-6 col-sm-4">
                             <label class="form-label fw-semibold small mb-1">Kumaş Tipi</label>
                             <input type="text" class="form-control form-control-sm" id="txt_kumas_tipi"
-                                   value="#xmlFormat(sonPartiTekstil.kumas_tipi)#" placeholder="Kumaş tipi...">
+                                   value="#xmlFormat(editTekstil.kumas_tipi)#" placeholder="Kumaş tipi...">
                         </div>
                         <div class="col-6 col-sm-4">
                             <label class="form-label fw-semibold small mb-1">En (cm)</label>
                             <input type="number" step="0.01" class="form-control form-control-sm" id="txt_en"
-                                   value="#xmlFormat(sonPartiTekstil.en)#" placeholder="0">
+                                   value="#xmlFormat(editTekstil.en)#" placeholder="0">
                         </div>
                         <div class="col-6 col-sm-4">
                             <label class="form-label fw-semibold small mb-1">Gramaj (g/m²)</label>
                             <input type="number" step="0.01" class="form-control form-control-sm" id="txt_gramaj"
-                                   value="#xmlFormat(sonPartiTekstil.gramaj)#" placeholder="0">
+                                   value="#xmlFormat(editTekstil.gramaj)#" placeholder="0">
                         </div>
                         <div class="col-6 col-sm-4">
                             <label class="form-label fw-semibold small mb-1">Isı (°C)</label>
                             <input type="number" step="0.1" class="form-control form-control-sm" id="txt_isi"
-                                   value="#xmlFormat(sonPartiTekstil.isi)#" placeholder="0">
+                                   value="#xmlFormat(editTekstil.isi)#" placeholder="0">
                         </div>
                         <div class="col-6 col-sm-4">
                             <label class="form-label fw-semibold small mb-1">Hız (m/dak)</label>
                             <input type="number" step="0.1" class="form-control form-control-sm" id="txt_hiz"
-                                   value="#xmlFormat(sonPartiTekstil.hiz)#" placeholder="0">
+                                   value="#xmlFormat(editTekstil.hiz)#" placeholder="0">
                         </div>
                         <div class="col-6 col-sm-4">
                             <label class="form-label fw-semibold small mb-1">Besleme Avans</label>
                             <input type="number" step="0.01" class="form-control form-control-sm" id="txt_besleme_avans"
-                                   value="#xmlFormat(sonPartiTekstil.besleme_avans)#" placeholder="0">
+                                   value="#xmlFormat(editTekstil.besleme_avans)#" placeholder="0">
                         </div>
                         <div class="col-6 col-sm-4">
                             <label class="form-label fw-semibold small mb-1">Tuşe</label>
                             <input type="text" class="form-control form-control-sm" id="txt_tuse"
-                                   value="#xmlFormat(sonPartiTekstil.tuse)#" placeholder="Tuşe...">
+                                   value="#xmlFormat(editTekstil.tuse)#" placeholder="Tuşe...">
                         </div>
                         <div class="col-6 col-sm-4">
                             <label class="form-label fw-semibold small mb-1">Çekme</label>
                             <input type="text" class="form-control form-control-sm" id="txt_cekme"
-                                   value="#xmlFormat(sonPartiTekstil.cekme)#" placeholder="Çekme...">
+                                   value="#xmlFormat(editTekstil.cekme)#" placeholder="Çekme...">
                         </div>
                     </div>
                     </cfoutput>
                 </div>
             </div>
+
             <!--- Ek İşlemler kartı --->
             <div class="grid-card">
                 <div class="grid-card-header">
@@ -545,7 +468,6 @@
                                             </cfif>
                                         </label>
                                     </div>
-
                                 </div>
                             </div>
                             </cfoutput>
@@ -572,7 +494,6 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <!--- Bilgi satırı: şirket ve birim ---> 
                 <div class="alert alert-info py-2 mb-3">
                     <small>
                         <i class="fas fa-building me-1"></i><strong>Şirket:</strong> #xmlFormat(getShip.company_name)#
@@ -580,8 +501,6 @@
                         <i class="fas fa-ruler me-1"></i><strong>Birim:</strong> #xmlFormat(mainUnit)#
                     </small>
                 </div>
-
-                <!--- Ek İşlem Adı --->
                 <div class="mb-3">
                     <label for="qei_product_name" class="form-label fw-semibold">
                         Ek İşlem Adı <span class="text-danger">*</span>
@@ -589,8 +508,6 @@
                     <input type="text" class="form-control" id="qei_product_name"
                            placeholder="Örn: Boyama, Apre, Kasarlama...">
                 </div>
-
-                <!--- Kategori --->
                 <div class="mb-3">
                     <label for="qei_product_catid" class="form-label fw-semibold">
                         Kategori <span class="text-danger">*</span>
@@ -602,7 +519,6 @@
                         </cfloop>
                     </select>
                 </div>
-
                 <div id="qei_error" class="text-danger small d-none"></div>
             </div>
             <div class="modal-footer">
@@ -626,23 +542,44 @@
 </style>
 
 <script>
-/* ─── Fiyat haritası (firma satış fiyat listesi) ─── */
 var priceListData = #serializeJSON(priceList)#;
 var companyPriceMap = {};
 priceListData.forEach(function(r) {
     if (r.STOCK_ID > 0) companyPriceMap[r.STOCK_ID] = { price: r.PRICE || 0, tax: r.TAX || 0 };
 });
 
-/* ─── Hızlı Ek İşlem Modal ─── */
-var QUICK_COMPANY_ID   = #getShip.company_id#;
+var EDIT_ORDER_ID    = #editOrderId#;
+var QUICK_COMPANY_ID = #getShip.company_id#;
 var QUICK_COMPANY_NAME = '#jsStringFormat(getShip.company_name)#';
-var QUICK_UNIT         = '#jsStringFormat(mainUnit)#';
-var QUICK_UNIT_ID      = #mainUnitId#;
-var EDIT_ORDER_ID      = 0;
+var QUICK_UNIT       = '#jsStringFormat(mainUnit)#';
+var QUICK_UNIT_ID    = #mainUnitId#;
+
+/* Mevcut ek işlemleri işaretle */
+var EDIT_EK_ISLEM_IDS = #serializeJSON(editEkIslemIds)#;
+document.addEventListener('DOMContentLoaded', function() {
+    if (EDIT_EK_ISLEM_IDS.length) {
+        EDIT_EK_ISLEM_IDS.forEach(function(sid) {
+            var chk = document.querySelector('.ek-chk[data-stock-id="' + sid + '"]');
+            if (chk) {
+                chk.checked = true;
+                var row = document.getElementById('ek_row_' + sid);
+                if (row) row.classList.add('selected');
+            }
+        });
+    }
+});
+
+/* Ek işlem checkbox toggle */
+document.querySelectorAll('.ek-chk').forEach(function(chk) {
+    chk.addEventListener('change', function() {
+        var row = document.getElementById('ek_row_' + this.dataset.stockId);
+        if (this.checked) row.classList.add('selected');
+        else              row.classList.remove('selected');
+    });
+});
 
 function openQuickEkIslemModal() {
     var modalEl = document.getElementById('quickEkIslemModal');
-    /* content-wrapper'ın overflow:hidden içinden kaçmak için body'e taşı */
     if (modalEl.parentElement !== document.body) {
         document.body.appendChild(modalEl);
     }
@@ -654,11 +591,19 @@ function openQuickEkIslemModal() {
     new bootstrap.Modal(modalEl).show();
 }
 
+document.getElementById('qei_product_catid').addEventListener('change', function() {
+    var sel = this.options[this.selectedIndex];
+    var catName = (sel && this.value !== '0') ? sel.getAttribute('data-cat-name') : '';
+    if (catName) {
+        document.getElementById('qei_product_name').value = catName + '-' + QUICK_COMPANY_NAME;
+    }
+});
+
 function quickAddEkIslem() {
-    var name   = document.getElementById('qei_product_name').value.trim();
-    var catid  = parseInt(document.getElementById('qei_product_catid').value) || 0;
-    var errEl  = document.getElementById('qei_error');
-    var btn    = document.getElementById('qei_saveBtn');
+    var name  = document.getElementById('qei_product_name').value.trim();
+    var catid = parseInt(document.getElementById('qei_product_catid').value) || 0;
+    var errEl = document.getElementById('qei_error');
+    var btn   = document.getElementById('qei_saveBtn');
 
     errEl.classList.add('d-none');
 
@@ -694,31 +639,22 @@ function quickAddEkIslem() {
             btn.innerHTML = '<i class="fas fa-save me-2"></i>Kaydet';
             if (res.success) {
                 bootstrap.Modal.getInstance(document.getElementById('quickEkIslemModal')).hide();
-                /* Yeni ürünü listeye ekle + checkbox ile seç */
-                var newStockId  = res.stock_id  || 0;
-                var newProdId   = res.product_id || 0;
+                var newStockId = res.stock_id  || 0;
+                var newProdId  = res.product_id || 0;
                 var listEl = document.getElementById('ekIslemList');
-                if (!listEl) {
-                    /* Liste elementi yoksa (firma için ilk ek işlem) sayfa yenile */
-                    location.reload();
-                    return;
-                }
-                var rowId = 'ek_row_' + newStockId;
-                var html  = '<div class="ek-islem-row p-2 mb-2 rounded selected" id="' + rowId + '" style="border:1px solid ##a5d6a7;background:##e8f5e9;">'
-                          + '<div class="d-flex align-items-center gap-3">'
-                          + '<div class="form-check mb-0">'
-                          + '<input class="form-check-input ek-chk" type="checkbox" id="ek_chk_' + newStockId + '" checked'
-                          + ' data-stock-id="' + newStockId + '"'
-                          + ' data-product-id="' + newProdId + '"'
-                          + ' data-product-name="' + name.replace(/"/g, '&quot;') + '"'
-                          + ' data-product-code=""'
-                          + ' data-stock-code="">'
-                          + '<label class="form-check-label fw-semibold" for="ek_chk_' + newStockId + '">'
-                          + name
-                          + ' <small class="badge bg-success ms-1">Yeni</small>'
-                          + '</label></div></div></div>';
+                if (!listEl) { location.reload(); return; }
+                var html = '<div class="ek-islem-row p-2 mb-2 rounded selected" id="ek_row_' + newStockId + '" style="border:1px solid ##a5d6a7;background:##e8f5e9;">'
+                         + '<div class="d-flex align-items-center gap-3">'
+                         + '<div class="form-check mb-0">'
+                         + '<input class="form-check-input ek-chk" type="checkbox" id="ek_chk_' + newStockId + '" checked'
+                         + ' data-stock-id="' + newStockId + '"'
+                         + ' data-product-id="' + newProdId + '"'
+                         + ' data-product-name="' + name.replace(/"/g, '&quot;') + '"'
+                         + ' data-product-code="" data-stock-code="">'
+                         + '<label class="form-check-label fw-semibold" for="ek_chk_' + newStockId + '">'
+                         + name + ' <small class="badge bg-success ms-1">Yeni</small>'
+                         + '</label></div></div></div>';
                 listEl.insertAdjacentHTML('beforeend', html);
-                /* Checkbox toggle event'ını da bağla */
                 var newChk = document.getElementById('ek_chk_' + newStockId);
                 if (newChk) {
                     newChk.addEventListener('change', function() {
@@ -727,7 +663,6 @@ function quickAddEkIslem() {
                         else              r.classList.remove('selected');
                     });
                 }
-                /* Sayacı güncelle */
                 var cntEl = document.getElementById('ekIslemCount');
                 if (cntEl) cntEl.textContent = (parseInt(cntEl.textContent) || 0) + 1 + ' adet';
             } else {
@@ -744,29 +679,9 @@ function quickAddEkIslem() {
     });
 }
 
-/* ─── Kategori seçilince ürün adını otomatik doldur ─── */
-document.getElementById('qei_product_catid').addEventListener('change', function() {
-    var sel = this.options[this.selectedIndex];
-    var catName = (sel && this.value !== '0') ? sel.getAttribute('data-cat-name') : '';
-    if (catName) {
-        document.getElementById('qei_product_name').value = catName + '-' + QUICK_COMPANY_NAME;
-    }
-});
-
-/* ─── Ek işlem checkbox toggle ─── */
-document.querySelectorAll('.ek-chk').forEach(function(chk) {
-    chk.addEventListener('change', function() {
-        var row = document.getElementById('ek_row_' + this.dataset.stockId);
-        if (this.checked) row.classList.add('selected');
-        else              row.classList.remove('selected');
-    });
-});
-
-/* ─── Kaydet ─── */
 function saveParti() {
     var mainMetre = parseFloat(document.getElementById('main_metre').value) || 0;
     var mainKg    = parseFloat(document.getElementById('main_kg').value)    || 0;
-    var mainTop   = parseFloat(document.getElementById('main_top').value)   || 0;
 
     if (mainMetre <= 0 && mainKg <= 0) {
         alert('Lütfen ana ürün için en az Metre veya Kg girin.');
@@ -774,12 +689,11 @@ function saveParti() {
         return;
     }
 
-    /* Ana ürün satırı — miktar olarak metre kullanılır (>0 ise), yoksa kg */
-    var mainQty = mainMetre > 0 ? mainMetre : mainKg;
-    var mainUnit = '#jsStringFormat(mainUnit)#';
+    var mainQty     = mainMetre > 0 ? mainMetre : mainKg;
+    var mainUnit    = '#jsStringFormat(mainUnit)#';
+    var mainRowUnit = mainQty === mainMetre ? (mainUnit || 'mt') : 'kg';
 
     var mainPriceInfo = companyPriceMap[#mainStockId#] || { price: 0, tax: 0 };
-    var mainRowUnit = mainQty === mainMetre ? (mainUnit || 'mt') : 'kg';
 
     var rows = [{
         stock_id:     #mainStockId#,
@@ -795,7 +709,6 @@ function saveParti() {
         lot_no:       document.getElementById('main_lot_no').value || ''
     }];
 
-    /* Ek işlem satırları — ana ürünün miktarı ve birimi, firma fiyat listesinden fiyat */
     document.querySelectorAll('.ek-chk:checked').forEach(function(chk) {
         var ekSid       = parseInt(chk.dataset.stockId);
         var ekPriceInfo = companyPriceMap[ekSid] || { price: 0, tax: 0 };
@@ -814,7 +727,7 @@ function saveParti() {
         });
     });
 
-    var today = new Date();
+    var today    = new Date();
     var todayStr = today.toISOString().slice(0, 10) + 'T' + today.toTimeString().slice(0, 5);
 
     var data = {
@@ -851,7 +764,7 @@ function saveParti() {
 
     var btn = document.getElementById('saveBtn');
     btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Kaydediliyor...';
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Güncelleniyor...';
 
     $.ajax({
         url:      '/order/form/save_order.cfm',
@@ -860,16 +773,16 @@ function saveParti() {
         dataType: 'json',
         success: function(res) {
             if (res.success) {
-                window.location.href = 'index.cfm?fuseaction=ship.list_partiler&ship_id=#getShip.ship_id#';
+                window.location.href = 'index.cfm?fuseaction=ship.list_partiler&ship_id=#shipId#';
             } else {
                 btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-save me-2"></i>Sipariş Olarak Kaydet';
+                btn.innerHTML = '<i class="fas fa-save me-2"></i>Güncelle';
                 alert('Hata: ' + (res.message || 'Bilinmeyen hata'));
             }
         },
         error: function() {
             btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-save me-2"></i>Sipariş Olarak Kaydet';
+            btn.innerHTML = '<i class="fas fa-save me-2"></i>Güncelle';
             alert('Sunucu hatası! Lütfen tekrar deneyin.');
         }
     });

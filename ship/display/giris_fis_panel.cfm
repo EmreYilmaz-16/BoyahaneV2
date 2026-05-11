@@ -936,7 +936,7 @@ function renderPartiler(list) {
             '<a href="index.cfm?fuseaction=ship.detail_parti&order_id=' + p.order_id + '" ' +
             'class="btn btn-xs btn-outline-secondary btn-sm py-0 px-2 me-1" style="font-size:.72rem" title="Detay">' +
             '<i class="fas fa-eye"></i></a>' +
-            '<a href="index.cfm?fuseaction=ship.add_parti&ship_id=' + p.ship_id + '&order_id=' + p.order_id + '" ' +
+            '<a href="index.cfm?fuseaction=ship.edit_parti&order_id=' + p.order_id + '" ' +
             'class="btn btn-xs btn-outline-primary btn-sm py-0 px-2 me-1" style="font-size:.72rem" title="Düzenle">' +
             '<i class="fas fa-edit"></i></a>' +
             '<button type="button" onclick="window.open(\'/ship/display/refakat_kart.cfm?order_id=' + p.order_id + '\',\'_blank\',\'width=900,height=780,scrollbars=yes\')" ' +

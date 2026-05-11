@@ -479,7 +479,7 @@ window.addEventListener('load', function() {
                             .html('<i class="fas fa-edit"></i>')
                             .on('click', function(e2){
                                 e2.stopPropagation();
-                                window.location.href='index.cfm?fuseaction=ship.add_parti&ship_id=#shipId#&order_id='+oid;
+                                window.location.href='index.cfm?fuseaction=ship.edit_parti&order_id='+oid;
                             })
                             .appendTo(g);
                         g.appendTo(c);
