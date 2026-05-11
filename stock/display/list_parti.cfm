@@ -3,6 +3,7 @@
 <!--- Tüm partiler: ref_no dolu olan orders (irsaliyeden oluşturulmuş sipariş = parti) --->
 <cfquery name="getPartiler" datasource="boyahane">
     SELECT o.order_id,
+           o.company_id,
            o.order_number,
            o.order_stage,
            o.order_date,
@@ -133,6 +134,7 @@
         "ref_no":             ref_no       ?: "",
         "ship_id":            val(ship_id),
         "hk_metre":           isNumeric(hk_metre) ? val(hk_metre) : 0,
+        "company_id":         val(company_id),
         "company_name":       company_name ?: "",
         "order_date":         isDate(order_date)  ? dateFormat(order_date,  "dd/mm/yyyy") : "",
         "deliverdate":        isDate(deliverdate) ? dateFormat(deliverdate, "dd/mm/yyyy") : "",
@@ -170,6 +172,24 @@
         "price":         isNumeric(price)    ? val(price)    : 0,
         "tax":           isNumeric(tax)      ? val(tax)      : 0,
         "nettotal":      isNumeric(nettotal) ? val(nettotal) : 0
+    })>
+</cfloop>
+
+<!--- Müşteri listesi (yeni renk popup için) --->
+<cfquery name="getCompanies" datasource="boyahane">
+    SELECT company_id,
+           COALESCE(nickname, fullname, '') AS company_name,
+           COALESCE(member_code, '')        AS member_code
+    FROM company
+    WHERE company_status = true
+    ORDER BY nickname, fullname
+</cfquery>
+<cfset companiesArr = []>
+<cfloop query="getCompanies">
+    <cfset arrayAppend(companiesArr, {
+        "company_id"  : val(company_id),
+        "company_name": company_name ?: "",
+        "member_code" : member_code  ?: ""
     })>
 </cfloop>
 
@@ -231,6 +251,85 @@
     </div>
 </div>
 
+<!--- ─── Yeni Renk Ekle Modal (Parti'den) ─── --->
+<div class="modal fade add-color-modal" id="lpModalAddColor" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-palette me-2"></i>Yeni Renk Ekle</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="row g-2">
+                    <div class="col-12"><div class="popup-section-label"><i class="fas fa-link me-1"></i>Bağlantı</div></div>
+                    <div class="col-md-6">
+                        <label class="form-label">Müşteri <span class="text-danger">*</span></label>
+                        <div id="lpCompanySelect"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Ürün / Kumaş</label>
+                        <div id="lpProductSelect"></div>
+                        <div class="form-text text-muted" id="lpProductHint">Önce müşteri seçin.</div>
+                    </div>
+                    <div class="col-12"><div class="popup-section-label"><i class="fas fa-fill-drip me-1"></i>Renk Tanımı</div></div>
+                    <div class="col-md-4">
+                        <label class="form-label">Renk Kodu</label>
+                        <input type="text" class="form-control" id="lp_color_code" maxlength="100" placeholder="R.Kodu">
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label">Renk Adı</label>
+                        <input type="text" class="form-control" id="lp_color_name" maxlength="255" placeholder="Renk adı">
+                    </div>
+                    <div class="col-12"><div class="popup-section-label"><i class="fas fa-id-card me-1"></i>Kartela Bilgisi</div></div>
+                    <div class="col-md-6">
+                        <label class="form-label">Kartela No</label>
+                        <input type="text" class="form-control" id="lp_kartela_no" maxlength="100">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Kartela Tarihi</label>
+                        <input type="date" class="form-control" id="lp_kartela_date">
+                    </div>
+                    <div class="col-12"><div class="popup-section-label"><i class="fas fa-flask me-1"></i>Boyama Parametreleri</div></div>
+                    <div class="col-md-4">
+                        <label class="form-label">R.Tonu</label>
+                        <input type="number" min="0" max="9" class="form-control" id="lp_renk_tonu">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Boya C.</label>
+                        <input type="text" class="form-control" id="lp_boya_derecesi" maxlength="50">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Flote</label>
+                        <input type="number" step="0.01" min="0" class="form-control" id="lp_flote">
+                    </div>
+                    <div class="col-12"><div class="popup-section-label"><i class="fas fa-sticky-note me-1"></i>Ek Bilgi</div></div>
+                    <div class="col-md-8">
+                        <label class="form-label">Açıklama</label>
+                        <input type="text" class="form-control" id="lp_information" maxlength="500">
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <div class="ready-switch-wrap w-100">
+                            <span><i class="fas fa-check-circle me-1"></i>Hazır?</span>
+                            <div class="form-check form-switch mb-0">
+                                <input class="form-check-input" type="checkbox" id="lp_is_ready">
+                                <label class="form-check-label" for="lp_is_ready">Hazır</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>İptal
+                </button>
+                <button type="button" class="btn btn-primary btn-sm" id="lpBtnSave" onclick="saveLpNewColor()">
+                    <i class="fas fa-save me-1"></i>Kaydet ve Reçeteye Git
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!--- ─── Renk Seçim Modal ─── --->
 <div class="modal fade" id="colorPickerModal" tabindex="-1" aria-labelledby="colorPickerLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -263,20 +362,34 @@
 .color-select-btn { border:none; background:transparent; cursor:pointer; color:##6366f1; padding:2px 6px; border-radius:4px; font-size:.78rem; }
 .color-select-btn:hover { background:##ede9fe; }
 /* Renk popup z-index */
-##colorPickerModal { z-index: 99999 !important; }
-##partiRowModal    { z-index: 99990 !important; }
-.modal-backdrop    { z-index: 99988 !important; }
+##colorPickerModal  { z-index: 99999 !important; }
+##partiRowModal     { z-index: 99990 !important; }
+##lpModalAddColor   { z-index: 99995 !important; }
+.modal-backdrop     { z-index: 99988 !important; }
 /* Renk seçenekleri */
 ##colorPickerModal .color-option { cursor:pointer; border:2px solid ##e5e7eb; border-radius:8px; padding:8px 12px; transition:.15s; display:flex; align-items:center; gap:8px; }
 ##colorPickerModal .color-option:hover  { border-color:##6366f1; background:##f5f3ff; }
 ##colorPickerModal .color-option.active { border-color:##6366f1; background:##ede9fe; }
 ##colorPickerModal .color-dot { width:14px; height:14px; border-radius:50%; background:##6366f1; flex-shrink:0; }
+/* Add-color modal styles */
+.add-color-modal .modal-header { background:linear-gradient(135deg,##4f46e5,##7c3aed); color:##fff; }
+.add-color-modal .modal-content { border:none; border-radius:12px; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,.25); }
+.add-color-modal .modal-footer  { background:##f8fafc; border-top:1px solid ##e2e8f0; }
+.popup-section-label { font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:##6366f1; padding:6px 0 2px; border-bottom:1px solid ##e0e7ff; margin-bottom:4px; }
+.ready-switch-wrap   { display:flex; align-items:center; justify-content:space-between; padding:8px 12px; border:1px solid ##e2e8f0; border-radius:8px; background:##f8fafc; font-size:.85rem; }
 </style>
 
 <script>
 var partilerData   = #serializeJSON(partilerArr)#;
 var partiRowsData  = #serializeJSON(partiRowsArr)#;
 var colorVariants  = #serializeJSON(colorVariantsArr)#;
+var companiesData  = #serializeJSON(companiesArr)#;
+
+/* LP modal state */
+var lpSelectsInit      = false;
+var lpSkipProductLoad  = false;
+var lpPendingCompanyId = null;
+var lpPendingProductId = null;
 
 /* Renk haritası: product_id -> [{stock_id, stock_code, stock_code_2, property}] */
 var colorMap = {};
@@ -302,6 +415,44 @@ var rowModalInstance    = null;
 
 window.addEventListener('load', function() {
     if (typeof DevExpress !== 'undefined') DevExpress.localization.locale('tr');
+
+    /* LP yeni renk modalını body'e taşı */
+    var lpModalEl = document.getElementById('lpModalAddColor');
+    if (lpModalEl && lpModalEl.parentNode !== document.body) document.body.appendChild(lpModalEl);
+
+    /* LP modal shown → selectbox'ları başlat ve ön doldurmayı uygula */
+    $('##lpModalAddColor').on('shown.bs.modal', function() {
+        if (!lpSelectsInit) {
+            lpSelectsInit = true;
+            $('##lpCompanySelect').dxSelectBox({
+                dataSource: companiesData,
+                valueExpr: 'company_id',
+                displayExpr: function(item) {
+                    return item ? (item.member_code ? item.member_code + ' \u2014 ' : '') + item.company_name : '';
+                },
+                searchEnabled: true,
+                searchExpr: ['company_name','member_code'],
+                placeholder: 'M\u00fc\u015fteri se\u00e7in...',
+                value: null,
+                onValueChanged: function(e) {
+                    if (lpSkipProductLoad) return;
+                    if (e.value) loadLpProducts(e.value, null);
+                    else clearLpProducts();
+                }
+            });
+        }
+        /* Ön doldurma uygula */
+        var compId = lpPendingCompanyId;
+        var prodId = lpPendingProductId;
+        lpPendingCompanyId = null;
+        lpPendingProductId = null;
+        var cInst = $('##lpCompanySelect').dxSelectBox('instance');
+        lpSkipProductLoad = true;
+        cInst.option('value', compId || null);
+        lpSkipProductLoad = false;
+        if (compId) loadLpProducts(compId, prodId);
+        else clearLpProducts();
+    });
 
     if (typeof $ !== 'undefined' && $.fn.dxDataGrid) {
 
@@ -560,21 +711,121 @@ function openRowModal(partiData) {
     rowModalInstance.show();
 }
 
-/* ─── Hızlı Renk Seç (Toolbar kısayolu) ───────────────────── */
+/* ─── Hızlı Renk Seç → Yeni Renk Ekle Modal ──────────────── */
 function openQuickColorPicker() {
-    /* İlk renk bekleyen (is_main_stock=true + renk varyantı var) partiyi bul */
-    /* Kullanıcı önce ana grid'den bir satır seçmeli — grid selection ile */
     var mg = DevExpress.ui.dxDataGrid.getInstance(document.getElementById('mainPartiGrid'));
     if (!mg) return;
     var sel = mg.getSelectedRowsData();
     if (!sel || sel.length === 0) {
         DevExpress.ui.notify({
             message: 'Lütfen önce listeden bir parti satırı seçin, sonra "Yeni Renk" butonuna tıklayın.',
-            width: 420
+            width: 460
         }, 'warning', 3500);
         return;
     }
-    openColorPickerFromParti(sel[0]);
+    var d = sel[0];
+    var companyId = d.COMPANY_ID     || d.company_id     || null;
+    var productId = d.FIRST_PRODUCT_ID || d.first_product_id || null;
+    openPartiAddColorModal(companyId, productId);
+}
+
+/* ─── Parti'den Yeni Renk Ekle Modal Aç ─────────────────── */
+function openPartiAddColorModal(preCompanyId, preProductId) {
+    lpPendingCompanyId = preCompanyId || null;
+    lpPendingProductId = preProductId || null;
+
+    ['lp_color_code','lp_color_name','lp_kartela_no','lp_kartela_date',
+     'lp_renk_tonu','lp_boya_derecesi','lp_flote','lp_information'
+    ].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+    var cb = document.getElementById('lp_is_ready');
+    if (cb) cb.checked = false;
+
+    var modalEl = document.getElementById('lpModalAddColor');
+    if (modalEl.parentNode !== document.body) document.body.appendChild(modalEl);
+    bootstrap.Modal.getOrCreateInstance(modalEl).show();
+}
+
+/* ─── Müşteriye Göre Ürünleri Yükle ─────────────────────── */
+function loadLpProducts(companyId, preProductId) {
+    if (!companyId) { clearLpProducts(); return; }
+    $('##lpProductHint').text('Yükleniyor...');
+    $.get('/colors/api/get_company_products.cfm', { company_id: companyId }, function(res) {
+        var data = Array.isArray(res) ? res : [];
+        $('##lpProductHint').text('');
+        if ($('##lpProductSelect').data('dxSelectBox')) {
+            var pInst = $('##lpProductSelect').dxSelectBox('instance');
+            pInst.option('dataSource', data);
+            pInst.option('value', preProductId || null);
+        } else {
+            $('##lpProductSelect').dxSelectBox({
+                dataSource: data,
+                valueExpr: 'product_id',
+                displayExpr: function(item) {
+                    return item ? (item.stock_code ? item.stock_code + ' \u2014 ' : '') + item.product_name : '';
+                },
+                searchEnabled: true,
+                searchExpr: ['product_name','stock_code'],
+                placeholder: 'Ürün / Kumaş se\u00e7in...',
+                value: preProductId || null
+            });
+        }
+    }, 'json').fail(function() {
+        $('##lpProductHint').text('Ürünler yüklenemedi.');
+    });
+}
+
+/* ─── Ürün Seçimini Temizle ──────────────────────────────── */
+function clearLpProducts() {
+    if ($('##lpProductSelect').data('dxSelectBox')) {
+        var pInst = $('##lpProductSelect').dxSelectBox('instance');
+        pInst.option('dataSource', []);
+        pInst.option('value', null);
+    }
+    $('##lpProductHint').text('Önce müşteri seçin.');
+}
+
+/* ─── Yeni Renk Kaydet ───────────────────────────────────── */
+function saveLpNewColor() {
+    var compInst = $('##lpCompanySelect').data('dxSelectBox') ? $('##lpCompanySelect').dxSelectBox('instance') : null;
+    var companyId = compInst ? compInst.option('value') : null;
+    if (!companyId) {
+        DevExpress.ui.notify({ message: 'Lütfen müşteri seçin.', width: 320 }, 'warning', 3000);
+        return;
+    }
+    var prodInst = $('##lpProductSelect').data('dxSelectBox') ? $('##lpProductSelect').dxSelectBox('instance') : null;
+    var productId = prodInst ? (prodInst.option('value') || null) : null;
+
+    var $btn = $('##lpBtnSave').prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i>Kaydediliyor...');
+
+    $.post('/colors/form/save_color.cfm', {
+        company_id    : companyId,
+        product_id    : productId || '',
+        color_code    : $('##lp_color_code').val().trim(),
+        color_name    : $('##lp_color_name').val().trim(),
+        kartela_no    : $('##lp_kartela_no').val().trim(),
+        kartela_date  : $('##lp_kartela_date').val(),
+        renk_tonu     : $('##lp_renk_tonu').val(),
+        boya_derecesi : $('##lp_boya_derecesi').val().trim(),
+        flote         : $('##lp_flote').val(),
+        information   : $('##lp_information').val().trim(),
+        is_ready      : document.getElementById('lp_is_ready').checked ? 1 : 0
+    }, function(res) {
+        if (res && res.success) {
+            bootstrap.Modal.getInstance(document.getElementById('lpModalAddColor')).hide();
+            if (res.color_id) {
+                window.location.href = 'index.cfm?fuseaction=colors.add_color&color_id=' + res.color_id;
+            }
+        } else {
+            DevExpress.ui.notify({ message: res.message || 'Kayıt sırasında hata oluştu.', width: 380 }, 'error', 4000);
+            $btn.prop('disabled', false).html('<i class="fas fa-save me-1"></i>Kaydet ve Reçeteye Git');
+        }
+    }, 'json').fail(function() {
+        DevExpress.ui.notify({ message: 'Sunucu hatası oluştu.', width: 320 }, 'error', 4000);
+        $btn.prop('disabled', false).html('<i class="fas fa-save me-1"></i>Kaydet ve Reçeteye Git');
+    });
 }
 
 /* ─── Renk Seç (ana grid'den doğrudan) ───────────────────── */
