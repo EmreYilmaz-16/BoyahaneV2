@@ -192,7 +192,7 @@
             </div>
 
             <!--- İçerik paneli (başta gizli) --->
-            <div id="rightContent" class="d-none" style="height:calc(100vh - 230px);overflow-y:auto;display:flex!important;flex-direction:column;gap:12px">
+            <div id="rightContent" class="d-none" style="height:calc(100vh - 230px);overflow:hidden;display:flex!important;flex-direction:column;gap:12px">
 
                 <!--- ÜST: Giriş Fişi Detayı --->
                 <div class="grid-card flex-shrink-0" id="detayCard">
@@ -211,7 +211,7 @@
                 </div>
 
                 <!--- ALT: Partiler --->
-                <div class="grid-card flex-grow-1" id="partilerCard">
+                <div class="grid-card flex-grow-1" id="partilerCard" style="display:flex;flex-direction:column;min-height:0;overflow:hidden">
                     <div class="grid-card-header py-2 px-3">
                         <div class="grid-card-header-title">
                             <i class="fas fa-cut"></i>Partiler
@@ -222,7 +222,7 @@
                             <i class="fas fa-plus me-1"></i>Parti Ekle
                         </button>
                     </div>
-                    <div class="card-body p-0" id="partilerBody" style="overflow-y:auto;max-height:420px;">
+                    <div class="card-body p-0" id="partilerBody" style="overflow-y:auto;flex:1;min-height:0;">
                         <div class="text-center text-muted py-4">
                             <i class="fas fa-spinner fa-spin me-2"></i>Yükleniyor...
                         </div>
