@@ -300,6 +300,7 @@ const FIELDS = [
     { key: 'tax',             label: 'KDV (%)',         required: false },
     { key: 'manufact_code',   label: 'Üretici Kodu',    required: false },
     { key: 'short_code',      label: 'Kısa Kod',        required: false },
+    { key: 'muh_stok_kodu',   label: 'Muhasebe Stok Kodu', required: false },
     { key: 'shelf_life',      label: 'Raf Ömrü',        required: false },
     { key: 'product_status',  label: 'Aktif (1/0)',     required: false },
     { key: 'is_sales',        label: 'Satış (1/0)',     required: false },
@@ -326,6 +327,8 @@ const AUTO_HEADER_MAP = {
     'manufact code':'manufact_code', 'manufact_code':'manufact_code', 'üretici':'manufact_code',
     'kısa kod':'short_code', 'kisa kod':'short_code', 'short code':'short_code',
     'short_code':'short_code',
+    'muhasebe stok kodu':'muh_stok_kodu', 'muhasebe kodu':'muh_stok_kodu',
+    'muh stok kodu':'muh_stok_kodu', 'muh_stok_kodu':'muh_stok_kodu',
     'raf ömrü':'shelf_life', 'raf omru':'shelf_life', 'shelf life':'shelf_life',
     'shelf_life':'shelf_life',
     'aktif':'product_status', 'durum':'product_status', 'status':'product_status',
@@ -613,6 +616,7 @@ function doImport() {
             tax:            parseFloat(fieldToColIdx.hasOwnProperty('tax')         ? raw[fieldToColIdx['tax']]            : 18) || 18,
             manufact_code:  String(fieldToColIdx.hasOwnProperty('manufact_code')  ? raw[fieldToColIdx['manufact_code']]  : '').trim(),
             short_code:     String(fieldToColIdx.hasOwnProperty('short_code')     ? raw[fieldToColIdx['short_code']]     : '').trim(),
+            muh_stok_kodu:  String(fieldToColIdx.hasOwnProperty('muh_stok_kodu')  ? raw[fieldToColIdx['muh_stok_kodu']]  : '').trim(),
             shelf_life:     String(fieldToColIdx.hasOwnProperty('shelf_life')     ? raw[fieldToColIdx['shelf_life']]     : '').trim(),
             product_status: toBool(fieldToColIdx.hasOwnProperty('product_status') ? raw[fieldToColIdx['product_status']] : 1, true),
             is_sales:       toBool(fieldToColIdx.hasOwnProperty('is_sales')       ? raw[fieldToColIdx['is_sales']]       : 1, true),
@@ -680,21 +684,21 @@ function downloadTemplate() {
     const headers = [
         'Ürün Kodu', 'Ürün Adı', 'Kategori ID', 'Barkod', 'Marka ID',
         'Ürün Detayı', 'KDV (%)', 'Üretici Kodu', 'Kısa Kod', 'Raf Ömrü',
-        'Aktif', 'Satış', 'Satın Alma'
+        'Aktif', 'Satış', 'Satın Alma', 'Muhasebe Stok Kodu'
     ];
     const example = [
         'BOYA001', 'Örnek Ürün Adı',
         CATEGORIES.length ? CATEGORIES[0].id : 1,
         '1234567890123',
         BRANDS.length ? BRANDS[0].id : '',
-        'Örnek ürün açıklaması', 18, 'ÜR-001', 'KOD1', '12 ay', 1, 1, 1
+        'Örnek ürün açıklaması', 18, 'ÜR-001', 'KOD1', '12 ay', 1, 1, 1, ''
     ];
 
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet([headers, example]);
 
     // Sütun genişlikleri
-    ws['!cols'] = [10,25,12,18,10,30,8,15,12,12,8,8,12].map(w => ({ wch: w }));
+    ws['!cols'] = [10,25,12,18,10,30,8,15,12,12,8,8,12,18].map(w => ({ wch: w }));
 
     XLSX.utils.book_append_sheet(wb, ws, 'Ürünler');
     XLSX.writeFile(wb, 'urun_import_sablonu.xlsx');

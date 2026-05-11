@@ -83,6 +83,11 @@
                             <input type="text" class="form-control" id="manufact_code" name="manufact_code" placeholder="Üretici kodu">
                         </div>
                         
+                        <div class="col-md-6">
+                            <label for="muh_stok_kodu" class="form-label">Muhasebe Stok Kodu</label>
+                            <input type="text" class="form-control" id="muh_stok_kodu" name="muh_stok_kodu" placeholder="Muhasebe stok kodu">
+                        </div>
+                        
                         <div class="col-12">
                             <label for="product_detail" class="form-label">Ürün Detayı</label>
                             <textarea class="form-control" id="product_detail" name="product_detail" rows="2" placeholder="Ürün detayı"></textarea>
@@ -337,6 +342,7 @@ $(document).ready(function() {
             shelf_life: $('#shelf_life').val(),
             manufact_code: $('#manufact_code').val(),
             short_code: $('#short_code').val(),
+            muh_stok_kodu: $('#muh_stok_kodu').val(),
             product_status: $('#product_status').is(':checked'),
             is_sales: $('#is_sales').is(':checked'),
             is_purchase: $('#is_purchase').is(':checked'),

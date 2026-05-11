@@ -108,6 +108,7 @@
                         "shelf_life": getProduct.shelf_life ?: "",
                         "manufact_code": getProduct.manufact_code ?: "",
                         "short_code": getProduct.short_code ?: "",
+                        "muh_stok_kodu": getProduct.muh_stok_kodu ?: "",
                         "record_date": isDate(getProduct.record_date) ? dateFormat(getProduct.record_date, "dd/mm/yyyy") & " " & timeFormat(getProduct.record_date, "HH:mm") : "",
                         "update_date": isDate(getProduct.update_date) ? dateFormat(getProduct.update_date, "dd/mm/yyyy") & " " & timeFormat(getProduct.update_date, "HH:mm") : ""
                     }
@@ -183,6 +184,7 @@
         <cfargument name="shelf_life" type="string" required="false" default="">
         <cfargument name="manufact_code" type="string" required="false" default="">
         <cfargument name="short_code" type="string" required="false" default="">
+        <cfargument name="muh_stok_kodu" type="string" required="false" default="">
         <cfargument name="company_id" type="numeric" required="false" default="0">
         <cfargument name="en" type="numeric" required="false" default="0">
         <cfargument name="tuse" type="string" required="false" default="">
@@ -236,6 +238,7 @@
                         shelf_life = <cfqueryparam value="#arguments.shelf_life#" cfsqltype="cf_sql_varchar" null="#len(trim(arguments.shelf_life)) eq 0#">,
                         manufact_code = <cfqueryparam value="#arguments.manufact_code#" cfsqltype="cf_sql_varchar" null="#len(trim(arguments.manufact_code)) eq 0#">,
                         short_code = <cfqueryparam value="#arguments.short_code#" cfsqltype="cf_sql_varchar" null="#len(trim(arguments.short_code)) eq 0#">,
+                        muh_stok_kodu = <cfqueryparam value="#arguments.muh_stok_kodu#" cfsqltype="cf_sql_varchar" null="#len(trim(arguments.muh_stok_kodu)) eq 0#">,
                         company_id = <cfqueryparam value="#arguments.company_id#" cfsqltype="cf_sql_integer" null="#val(arguments.company_id) eq 0#">,
                         en = <cfqueryparam value="#arguments.en#" cfsqltype="cf_sql_double" null="#val(arguments.en) eq 0#">,
                         tuse = <cfqueryparam value="#arguments.tuse#" cfsqltype="cf_sql_varchar" null="#len(trim(arguments.tuse)) eq 0#">,
@@ -283,6 +286,7 @@
                         <cfqueryparam value="#arguments.shelf_life#" cfsqltype="cf_sql_varchar" null="#len(trim(arguments.shelf_life)) eq 0#">,
                         <cfqueryparam value="#arguments.manufact_code#" cfsqltype="cf_sql_varchar" null="#len(trim(arguments.manufact_code)) eq 0#">,
                         <cfqueryparam value="#arguments.short_code#" cfsqltype="cf_sql_varchar" null="#len(trim(arguments.short_code)) eq 0#">,
+                        <cfqueryparam value="#arguments.muh_stok_kodu#" cfsqltype="cf_sql_varchar" null="#len(trim(arguments.muh_stok_kodu)) eq 0#">,
                         <cfqueryparam value="#arguments.company_id#" cfsqltype="cf_sql_integer" null="#val(arguments.company_id) eq 0#">,
                         <cfqueryparam value="#arguments.en#" cfsqltype="cf_sql_double" null="#val(arguments.en) eq 0#">,
                         <cfqueryparam value="#arguments.tuse#" cfsqltype="cf_sql_varchar" null="#len(trim(arguments.tuse)) eq 0#">,
@@ -1109,6 +1113,7 @@
                 <cfset pTax       = structKeyExists(row, "tax")              ? val(row.tax)               : 18>
                 <cfset pManufact  = structKeyExists(row, "manufact_code")    ? trim(row.manufact_code)    : "">
                 <cfset pShortCode = structKeyExists(row, "short_code")       ? trim(row.short_code)       : "">
+                <cfset pMuhStokKodu = structKeyExists(row, "muh_stok_kodu")  ? trim(row.muh_stok_kodu)   : "">
                 <cfset pShelfLife     = structKeyExists(row, "shelf_life")          ? trim(row.shelf_life)          : "">
                 <cfset pCustOzelKod   = structKeyExists(row, "customer_ozel_kod")   ? trim(row.customer_ozel_kod)   : "">
                 <!--- Müşteri özel kodundan company_id çözümle --->
@@ -1142,7 +1147,7 @@
                             product_code, product_name, product_catid, barcod,
                             product_detail, product_status, tax,
                             is_sales, is_purchase, brand_id, shelf_life,
-                            manufact_code, short_code, company_id, record_date, record_member
+                            manufact_code, short_code, muh_stok_kodu, company_id, record_date, record_member
                         ) VALUES (
                             <cfqueryparam value="#pCode#"      cfsqltype="cf_sql_varchar" null="#len(pCode) eq 0#">,
                             <cfqueryparam value="#pName#"      cfsqltype="cf_sql_varchar">,
@@ -1157,6 +1162,7 @@
                             <cfqueryparam value="#pShelfLife#" cfsqltype="cf_sql_varchar" null="#len(pShelfLife) eq 0#">,
                             <cfqueryparam value="#pManufact#"   cfsqltype="cf_sql_varchar" null="#len(pManufact) eq 0#">,
                             <cfqueryparam value="#pShortCode#"  cfsqltype="cf_sql_varchar" null="#len(pShortCode) eq 0#">,
+                            <cfqueryparam value="#pMuhStokKodu#" cfsqltype="cf_sql_varchar" null="#len(pMuhStokKodu) eq 0#">,
                             <cfqueryparam value="#pCompanyId#"  cfsqltype="cf_sql_integer" null="#pCompanyId eq 0#">,
                             CURRENT_TIMESTAMP,
                             1

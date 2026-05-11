@@ -1,0 +1,1 @@
+ALTER TABLE product ADD COLUMN IF NOT EXISTS muh_stok_kodu VARCHAR(200);
