@@ -1207,13 +1207,24 @@ function openYeniPartiModal(shipId) {
             document.getElementById('mprt_parti_kodu').value   = res.parti_kodu;
             document.getElementById('mprt_fisLabel').textContent    = res.ship_number;
             document.getElementById('mprt_companyLabel').textContent = fis ? fis.company_name : '';
-            /* Kalan metre --->  */
+            /* Kalan metre */
             if (fis && fis.hk_metre > 0) {
                 var kalan = Math.max(0, fis.hk_metre - fis.parti_metre);
                 document.getElementById('mprt_kalanText').textContent =
                     'Toplam: ' + fis.hk_metre.toFixed(2) + ' mt · Kalan: ' + kalan.toFixed(2) + ' mt';
-                document.getElementById('mprt_miktar').value = kalan > 0 ? kalan.toFixed(3) : '';
+                /* Miktar: son partiden varsa onu kullan, yoksa kalan */
+                var sonMiktar = res.son_parti_miktar || res.SON_PARTI_MIKTAR || 0;
+                document.getElementById('mprt_miktar').value = sonMiktar > 0 ? parseFloat(sonMiktar).toFixed(3) : (kalan > 0 ? kalan.toFixed(3) : '');
+            } else {
+                var sonMiktar = res.son_parti_miktar || res.SON_PARTI_MIKTAR || 0;
+                if (sonMiktar > 0) document.getElementById('mprt_miktar').value = parseFloat(sonMiktar).toFixed(3);
             }
+            /* Kg: son partiden */
+            var sonKg = res.son_parti_kg || res.SON_PARTI_KG || 0;
+            if (sonKg > 0) document.getElementById('mprt_kg').value = parseFloat(sonKg).toFixed(3);
+            /* Açıklama: son partiden */
+            var sonAciklama = res.son_parti_aciklama || res.SON_PARTI_ACIKLAMA || '';
+            if (sonAciklama) document.getElementById('mprt_aciklama').value = sonAciklama;
             /* Tekstil özellikleri: son partiden varsa onu kullan, yoksa ürün kartından */
             var sonT = (res.son_parti_tekstil && Object.keys(res.son_parti_tekstil).length > 0)
                        ? res.son_parti_tekstil : (res.tekstil || {});
@@ -1295,8 +1306,23 @@ function savePartiModal() {
         grosstotal:    0, nettotal: 0, taxtotal: 0
     };
 
+    /* Kg satırı — opsiyonel olarak kaydet */
+    var kgVal = parseFloat(document.getElementById('mprt_kg').value) || 0;
+
     /* Ek işlem satırları */
     var rows = [rowObj];
+    if (kgVal > 0) {
+        rows.push({
+            stock_id:     stockId,
+            product_id:   productId,
+            product_name: document.getElementById('mprt_product_name').value,
+            quantity:     kgVal,
+            unit:         'kg',
+            unit_id:      0,
+            price:        0, tax: 0, discount_1: 0,
+            grosstotal:   0, nettotal: 0, taxtotal: 0
+        });
+    }
     document.querySelectorAll('.mprt-ek-chk:checked').forEach(function(chk) {
         rows.push({
             stock_id:     parseInt(chk.dataset.stockId)   || 0,

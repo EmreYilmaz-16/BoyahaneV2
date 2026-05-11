@@ -78,7 +78,8 @@
     <cfset sonPartiAmbalaj = 0>
     <cfquery name="getSonParti" datasource="boyahane">
         SELECT o.order_id, o.sarim_sekli, o.ambalaj,
-               o.gramaj, o.en, o.kumas_tipi, o.tuse, o.isi, o.hiz, o.besleme_avans, o.cekme
+               o.gramaj, o.en, o.kumas_tipi, o.tuse, o.isi, o.hiz, o.besleme_avans, o.cekme,
+               COALESCE(o.order_head, '') AS order_head
         FROM orders o
         WHERE (o.ref_ship_id = <cfqueryparam value="#shipId#" cfsqltype="cf_sql_integer">
            OR (o.ref_ship_id IS NULL AND o.ref_no IS NOT NULL AND o.ref_no <> ''
@@ -109,7 +110,7 @@
                 "cekme":         len(trim(getSonParti.cekme ?: ""))   ? getSonParti.cekme              : ""
             }>
         </cfif>
-        <!--- Son partizdeki ek işlem stock_id'leri --->
+        <!--- Son partizdeki ek işlem stock_id'leri + miktar + kg --->
         <cfif getSonParti.order_id gt 0>
             <cfquery name="getSonPartiEkIslem" datasource="boyahane">
                 SELECT DISTINCT orw.stock_id
@@ -122,6 +123,26 @@
             <cfloop query="getSonPartiEkIslem">
                 <cfset arrayAppend(lastEkIslemIds, val(stock_id))>
             </cfloop>
+            <!--- Ana ürün miktarı (mt) --->
+            <cfquery name="getSonPartiMiktar" datasource="boyahane">
+                SELECT orw.quantity
+                FROM order_row orw
+                JOIN stocks st ON orw.stock_id = st.stock_id
+                WHERE orw.order_id = <cfqueryparam value="#getSonParti.order_id#" cfsqltype="cf_sql_integer">
+                  AND COALESCE(st.is_main_stock, true) = true
+                  AND LOWER(TRIM(orw.unit)) IN ('mt','mtr','m','metre')
+                ORDER BY orw.order_row_id
+                LIMIT 1
+            </cfquery>
+            <!--- Kg satırı --->
+            <cfquery name="getSonPartiKg" datasource="boyahane">
+                SELECT orw.quantity
+                FROM order_row orw
+                WHERE orw.order_id = <cfqueryparam value="#getSonParti.order_id#" cfsqltype="cf_sql_integer">
+                  AND LOWER(TRIM(orw.unit)) = 'kg'
+                ORDER BY orw.order_row_id
+                LIMIT 1
+            </cfquery>
         </cfif>
     </cfif>
 
@@ -147,12 +168,15 @@
         "product_name":       getShipRow.recordCount ? (getShipRow.name_product ?: "") : "",
         "unit":               getShipRow.recordCount ? (getShipRow.unit ?: "mt")       : "mt",
         "unit_id":            getShipRow.recordCount ? val(getShipRow.unit_id ?: 0)    : 0,
-        "tekstil":            tekstil,
-        "son_parti_tekstil":  sonPartiTekstil,
-        "son_parti_sarim":    sonPartiSarim,
-        "son_parti_ambalaj":  sonPartiAmbalaj,
-        "son_parti_ek_islem": lastEkIslemIds,
-        "ek_islem":           ekIslemArr
+        "tekstil":             tekstil,
+        "son_parti_tekstil":   sonPartiTekstil,
+        "son_parti_sarim":     sonPartiSarim,
+        "son_parti_ambalaj":   sonPartiAmbalaj,
+        "son_parti_ek_islem":  lastEkIslemIds,
+        "son_parti_miktar":    (isDefined('getSonPartiMiktar') AND getSonPartiMiktar.recordCount AND isNumeric(getSonPartiMiktar.quantity)) ? val(getSonPartiMiktar.quantity) : 0,
+        "son_parti_kg":        (isDefined('getSonPartiKg') AND getSonPartiKg.recordCount AND isNumeric(getSonPartiKg.quantity)) ? val(getSonPartiKg.quantity) : 0,
+        "son_parti_aciklama":  (getSonParti.recordCount AND len(trim(getSonParti.order_head ?: ""))) ? trim(getSonParti.order_head) : "",
+        "ek_islem":            ekIslemArr
     }>
 
     <cfoutput>#serializeJSON(result)#</cfoutput>
