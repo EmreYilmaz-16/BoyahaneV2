@@ -222,7 +222,7 @@
                             <i class="fas fa-plus me-1"></i>Parti Ekle
                         </button>
                     </div>
-                    <div class="card-body p-0" id="partilerBody">
+                    <div class="card-body p-0" id="partilerBody" style="overflow-y:auto;max-height:420px;">
                         <div class="text-center text-muted py-4">
                             <i class="fas fa-spinner fa-spin me-2"></i>Yükleniyor...
                         </div>
