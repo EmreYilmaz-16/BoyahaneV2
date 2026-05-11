@@ -27,6 +27,7 @@
     <cfset isScrap     = isDefined("form.is_scrap")       and val(form.is_scrap)       eq 1>
     <cfset isCostAction   = isDefined("form.is_cost_action")   and val(form.is_cost_action)   eq 1>
     <cfset isEndOfSeries  = isDefined("form.is_end_of_series") and val(form.is_end_of_series) eq 1>
+    <cfset isGirisLocation = isDefined("form.is_giris_location") and val(form.is_giris_location) eq 1>
 
     <cfif not len(locName)>
         <cfoutput>{"success":false,"message":"Lokasyon adı zorunludur."}</cfoutput>
@@ -57,7 +58,8 @@
                 is_quality           = <cfqueryparam value="#isQuality#"   cfsqltype="cf_sql_bit">,
                 is_scrap             = <cfqueryparam value="#isScrap#"     cfsqltype="cf_sql_bit">,
                 is_cost_action       = <cfqueryparam value="#isCostAction#"   cfsqltype="cf_sql_bit">,
-                is_end_of_series     = <cfqueryparam value="#isEndOfSeries#"  cfsqltype="cf_sql_bit">
+                is_end_of_series     = <cfqueryparam value="#isEndOfSeries#"  cfsqltype="cf_sql_bit">,
+                is_giris_location    = <cfqueryparam value="#isGirisLocation#" cfsqltype="cf_sql_bit">
             WHERE id = <cfqueryparam value="#locId#" cfsqltype="cf_sql_integer">
         </cfquery>
         <cfoutput>{"success":true,"id":#locId#}</cfoutput>
@@ -68,7 +70,7 @@
                 location_id, department_id, department_location, comment,
                 width, height, depth, temperature, pressure, location_type,
                 status, no_sale, priority, delivery,
-                is_quality, is_scrap, is_cost_action, is_end_of_series
+                is_quality, is_scrap, is_cost_action, is_end_of_series, is_giris_location
             ) VALUES (
                 <cfqueryparam value="#locationId#"  cfsqltype="cf_sql_integer">,
                 <cfqueryparam value="#deptId#"      cfsqltype="cf_sql_integer">,
@@ -84,10 +86,11 @@
                 <cfqueryparam value="#noSale#"      cfsqltype="cf_sql_bit">,
                 <cfqueryparam value="#priority#"    cfsqltype="cf_sql_bit">,
                 <cfqueryparam value="#delivery#"    cfsqltype="cf_sql_bit">,
-                <cfqueryparam value="#isQuality#"   cfsqltype="cf_sql_bit">,
-                <cfqueryparam value="#isScrap#"     cfsqltype="cf_sql_bit">,
+                <cfqueryparam value="#isQuality#"      cfsqltype="cf_sql_bit">,
+                <cfqueryparam value="#isScrap#"        cfsqltype="cf_sql_bit">,
                 <cfqueryparam value="#isCostAction#"   cfsqltype="cf_sql_bit">,
-                <cfqueryparam value="#isEndOfSeries#"  cfsqltype="cf_sql_bit">
+                <cfqueryparam value="#isEndOfSeries#"  cfsqltype="cf_sql_bit">,
+                <cfqueryparam value="#isGirisLocation#" cfsqltype="cf_sql_bit">
             ) RETURNING id
         </cfquery>
         <cfoutput>{"success":true,"id":#ins.id#}</cfoutput>

@@ -18,7 +18,7 @@
            sl.no_sale, sl.priority, sl.status,
            sl.location_type, sl.delivery,
            sl.is_quality, sl.is_scrap, sl.is_cost_action,
-           sl.is_end_of_series, sl.temperature, sl.pressure
+           sl.is_end_of_series, sl.is_giris_location, sl.temperature, sl.pressure
     FROM stocks_location sl
     ORDER BY sl.department_id, sl.location_id
 </cfquery>
@@ -62,6 +62,7 @@
         "is_scrap"           = is_scrap,
         "is_cost_action"     = is_cost_action,
         "is_end_of_series"   = is_end_of_series,
+        "is_giris_location"  = is_giris_location,
         "temperature"        = temperature ?: 0,
         "pressure"           = pressure ?: 0
     })>
@@ -275,6 +276,12 @@
                                     <label class="form-check-label" for="locEndOfSeries">Seri Sonu</label>
                                 </div>
                             </div>
+                            <div class="col-6 col-md-4">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="locGirisLocation">
+                                    <label class="form-check-label" for="locGirisLocation">Giriş Lokasyonu</label>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -448,6 +455,12 @@
                                 <div class="form-check form-switch">
                                     <input class="form-check-input" type="checkbox" id="mdLocEndOfSeries">
                                     <label class="form-check-label" for="mdLocEndOfSeries">Seri Sonu</label>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="mdLocGirisLocation">
+                                    <label class="form-check-label" for="mdLocGirisLocation">Giriş Lokasyonu</label>
                                 </div>
                             </div>
                         </div>
@@ -818,8 +831,9 @@ function selectLoc(locId, deptId) {
     document.getElementById('locDelivery').checked  = loc.delivery;
     document.getElementById('locQuality').checked   = loc.is_quality;
     document.getElementById('locScrap').checked     = loc.is_scrap;
-    document.getElementById('locCostAction').checked   = loc.is_cost_action;
-    document.getElementById('locEndOfSeries').checked  = loc.is_end_of_series;
+    document.getElementById('locCostAction').checked      = loc.is_cost_action;
+    document.getElementById('locEndOfSeries').checked     = loc.is_end_of_series;
+    document.getElementById('locGirisLocation').checked   = loc.is_giris_location;
 
     showPanel('loc');
 }
@@ -1010,8 +1024,9 @@ function showLocModal(locId, deptId) {
         document.getElementById('mdLocDelivery').checked     = loc.delivery;
         document.getElementById('mdLocQuality').checked      = loc.is_quality;
         document.getElementById('mdLocScrap').checked        = loc.is_scrap;
-        document.getElementById('mdLocCostAction').checked   = loc.is_cost_action;
-        document.getElementById('mdLocEndOfSeries').checked  = loc.is_end_of_series;
+        document.getElementById('mdLocCostAction').checked      = loc.is_cost_action;
+        document.getElementById('mdLocEndOfSeries').checked     = loc.is_end_of_series;
+        document.getElementById('mdLocGirisLocation').checked   = loc.is_giris_location;
     } else {
         document.getElementById('locModalTitle').textContent = 'Yeni Lokasyon';
         ['mdLocName','mdLocLocationId','mdLocComment','mdLocWidth','mdLocHeight',
@@ -1020,7 +1035,7 @@ function showLocModal(locId, deptId) {
         });
         ['mdLocStatus'].forEach(function(id){ document.getElementById(id).checked = true; });
         ['mdLocNoSale','mdLocPriority','mdLocDelivery','mdLocQuality',
-         'mdLocScrap','mdLocCostAction','mdLocEndOfSeries'].forEach(function(id){
+         'mdLocScrap','mdLocCostAction','mdLocEndOfSeries','mdLocGirisLocation'].forEach(function(id){
             document.getElementById(id).checked = false;
         });
     }
@@ -1070,8 +1085,9 @@ function saveLoc() {
         delivery:          document.getElementById('locDelivery').checked ? 1 : 0,
         is_quality:        document.getElementById('locQuality').checked ? 1 : 0,
         is_scrap:          document.getElementById('locScrap').checked ? 1 : 0,
-        is_cost_action:    document.getElementById('locCostAction').checked ? 1 : 0,
-        is_end_of_series:  document.getElementById('locEndOfSeries').checked ? 1 : 0
+        is_cost_action:      document.getElementById('locCostAction').checked ? 1 : 0,
+        is_end_of_series:    document.getElementById('locEndOfSeries').checked ? 1 : 0,
+        is_giris_location:   document.getElementById('locGirisLocation').checked ? 1 : 0
     };
 
     $.post('department/form/save_location.cfm', payload, function(resp) {
@@ -1116,8 +1132,9 @@ function buildLocPayload(prefix) {
         delivery:          document.getElementById(p + 'LocDelivery').checked ? 1 : 0,
         is_quality:        document.getElementById(p + 'LocQuality').checked ? 1 : 0,
         is_scrap:          document.getElementById(p + 'LocScrap').checked ? 1 : 0,
-        is_cost_action:    document.getElementById(p + 'LocCostAction').checked ? 1 : 0,
-        is_end_of_series:  document.getElementById(p + 'LocEndOfSeries').checked ? 1 : 0
+        is_cost_action:      document.getElementById(p + 'LocCostAction').checked ? 1 : 0,
+        is_end_of_series:    document.getElementById(p + 'LocEndOfSeries').checked ? 1 : 0,
+        is_giris_location:   document.getElementById(p + 'LocGirisLocation').checked ? 1 : 0
     };
 }
 

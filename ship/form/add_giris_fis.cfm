@@ -1,5 +1,15 @@
 <cfprocessingdirective pageEncoding="utf-8">
-<cfparam name="url.location_id" type="integer" default="4">
+
+<!--- Giriş lokasyonunu dinamik olarak al --->
+<cfquery name="getGirisLoc" datasource="boyahane">
+    SELECT id FROM stocks_location
+    WHERE is_giris_location = true AND status = true
+    ORDER BY priority DESC, id ASC
+    LIMIT 1
+</cfquery>
+<cfset defaultLocationId = getGirisLoc.recordCount gt 0 ? val(getGirisLoc.id) : 0>
+
+<cfparam name="url.location_id" type="integer" default="#defaultLocationId#">
 
 <!--- Edit mode --->
 <cfset editMode      = isDefined("url.ship_id") AND isNumeric(url.ship_id) AND url.ship_id gt 0>
