@@ -20,6 +20,7 @@
     <cfparam name="form.color_name"     default="">
     <cfparam name="form.kartela_no"     default="">
     <cfparam name="form.kartela_date"   default="">
+    <cfparam name="form.renk_no"        default="">
     <cfparam name="form.renk_tonu"      default="">
     <cfparam name="form.boya_derecesi"  default="">
     <cfparam name="form.flote"          default="0">
@@ -36,6 +37,7 @@
     <cfset kartelaDate= (len(trim(form.kartela_date)) AND isDate(form.kartela_date))
                          ? createODBCDate(parseDateTime(form.kartela_date))
                          : javaCast("null","")>
+    <cfset renkNo     = trim(form.renk_no)>
     <cfset renkTonu   = isNumeric(form.renk_tonu) AND val(form.renk_tonu) gt 0 ? val(form.renk_tonu) : javaCast("null","")>
     <cfset boyaDer    = trim(form.boya_derecesi)>
     <cfset flote      = isNumeric(form.flote) ? val(form.flote) : 0>
@@ -77,6 +79,7 @@
                 color_name    = <cfqueryparam value="#colorName#"                              cfsqltype="cf_sql_varchar" null="#NOT len(colorName)#">,
                 kartela_no    = <cfqueryparam value="#kartelaNo#"                              cfsqltype="cf_sql_varchar" null="#NOT len(kartelaNo)#">,
                 kartela_date  = <cfqueryparam value="#isNull(kartelaDate)?'':kartelaDate#"      cfsqltype="cf_sql_date"    null="#isNull(kartelaDate)#">,
+                renk_no       = <cfqueryparam value="#renkNo#"                                  cfsqltype="cf_sql_varchar" null="#NOT len(renkNo)#">,
                 renk_tonu     = <cfqueryparam value="#isNull(renkTonu)?'':renkTonu#"            cfsqltype="cf_sql_smallint" null="#isNull(renkTonu)#">,
                 boya_derecesi = <cfqueryparam value="#boyaDer#"                                cfsqltype="cf_sql_varchar" null="#NOT len(boyaDer)#">,
                 flote         = <cfqueryparam value="#flote#"                                  cfsqltype="cf_sql_numeric">,
@@ -123,7 +126,7 @@
         <cfquery name="insColor" datasource="boyahane">
             INSERT INTO color_info
                 (stock_id, company_id, product_id, color_code, color_name,
-                 kartela_no, kartela_date, renk_tonu, boya_derecesi, flote,
+                 kartela_no, kartela_date, renk_no, renk_tonu, boya_derecesi, flote,
                  is_ready, information, record_date)
             VALUES (
                 <cfqueryparam value="#savedStockId#"                                       cfsqltype="cf_sql_integer">,
@@ -133,6 +136,7 @@
                 <cfqueryparam value="#colorName#"                                          cfsqltype="cf_sql_varchar" null="#NOT len(colorName)#">,
                 <cfqueryparam value="#kartelaNo#"                                          cfsqltype="cf_sql_varchar" null="#NOT len(kartelaNo)#">,
                 <cfqueryparam value="#isNull(kartelaDate)?'':kartelaDate#"                 cfsqltype="cf_sql_date"    null="#isNull(kartelaDate)#">,
+                <cfqueryparam value="#renkNo#"                                              cfsqltype="cf_sql_varchar" null="#NOT len(renkNo)#">,
                 <cfqueryparam value="#isNull(renkTonu)?'':renkTonu#"                       cfsqltype="cf_sql_smallint" null="#isNull(renkTonu)#">,
                 <cfqueryparam value="#boyaDer#"                                            cfsqltype="cf_sql_varchar" null="#NOT len(boyaDer)#">,
                 <cfqueryparam value="#flote#"                                              cfsqltype="cf_sql_numeric">,

@@ -139,12 +139,17 @@
             <div class="form-section-label"><i class="fas fa-fill-drip"></i>Renk Tanımı</div>
 
             <div class="row g-2 mb-3">
-                <div class="col-5">
+                <div class="col-4">
+                    <label class="form-label">Renk No</label>
+                    <input type="text" class="form-control bg-light" id="f_renk_no" readonly
+                           value="#htmlEditFormat(getColor.renk_no)#" maxlength="100" placeholder="Renk No">
+                </div>
+                <div class="col-4">
                     <label class="form-label">Renk Kodu</label>
                     <input type="text" class="form-control bg-light" id="f_color_code" readonly
                            value="#htmlEditFormat(getColor.color_code)#" maxlength="100" placeholder="R.Kodu">
                 </div>
-                <div class="col-7">
+                <div class="col-4">
                     <label class="form-label">Renk Adı</label>
                     <input type="text" class="form-control bg-light" id="f_color_name" readonly
                            value="#htmlEditFormat(getColor.color_name)#" maxlength="255" placeholder="Renk adı">

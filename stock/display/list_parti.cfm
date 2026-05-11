@@ -273,10 +273,14 @@
                     </div>
                     <div class="col-12"><div class="popup-section-label"><i class="fas fa-fill-drip me-1"></i>Renk Tanımı</div></div>
                     <div class="col-md-4">
+                        <label class="form-label">Renk No</label>
+                        <input type="text" class="form-control" id="lp_renk_no" maxlength="100" placeholder="Renk No">
+                    </div>
+                    <div class="col-md-4">
                         <label class="form-label">Renk Kodu</label>
                         <input type="text" class="form-control" id="lp_color_code" maxlength="100" placeholder="R.Kodu">
                     </div>
-                    <div class="col-md-8">
+                    <div class="col-md-4">
                         <label class="form-label">Renk Adı</label>
                         <input type="text" class="form-control" id="lp_color_name" maxlength="255" placeholder="Renk adı">
                     </div>
@@ -734,7 +738,7 @@ function openPartiAddColorModal(preCompanyId, preProductId) {
     lpPendingCompanyId = preCompanyId || null;
     lpPendingProductId = preProductId || null;
 
-    ['lp_color_code','lp_color_name','lp_kartela_no','lp_kartela_date',
+    ['lp_color_code','lp_color_name','lp_renk_no','lp_kartela_no','lp_kartela_date',
      'lp_renk_tonu','lp_boya_derecesi','lp_flote','lp_information'
     ].forEach(function(id) {
         var el = document.getElementById(id);
@@ -805,6 +809,7 @@ function saveLpNewColor() {
         product_id    : productId || '',
         color_code    : $('##lp_color_code').val().trim(),
         color_name    : $('##lp_color_name').val().trim(),
+        renk_no       : $('##lp_renk_no').val().trim(),
         kartela_no    : $('##lp_kartela_no').val().trim(),
         kartela_date  : $('##lp_kartela_date').val(),
         renk_tonu     : $('##lp_renk_tonu').val(),

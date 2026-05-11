@@ -8,6 +8,7 @@
         ci.color_code,
         ci.color_name,
         ci.kartela_no,
+        ci.renk_no,
         ci.renk_tonu,
         ci.boya_derecesi,
         ci.flote,
@@ -35,6 +36,7 @@
         "color_code"   : color_code    ?: "",
         "color_name"   : color_name    ?: "",
         "kartela_no"   : kartela_no    ?: "",
+        "renk_no"      : renk_no       ?: "",
         "renk_tonu"    : isNumeric(renk_tonu) ? val(renk_tonu) : 0,
         "boya_derecesi": boya_derecesi ?: "",
         "flote"        : isNumeric(flote) ? val(flote) : 0,
@@ -170,10 +172,14 @@
                     <!--- Renk Tanımı --->
                     <div class="col-12"><div class="popup-section-label"><i class="fas fa-fill-drip"></i>Renk Tanımı</div></div>
                     <div class="col-md-4">
+                        <label class="form-label">Renk No</label>
+                        <input type="text" class="form-control" id="p_renk_no" maxlength="100" placeholder="Renk No">
+                    </div>
+                    <div class="col-md-4">
                         <label class="form-label">Renk Kodu</label>
                         <input type="text" class="form-control" id="p_color_code" maxlength="100" placeholder="R.Kodu">
                     </div>
-                    <div class="col-md-8">
+                    <div class="col-md-4">
                         <label class="form-label">Renk Adı</label>
                         <input type="text" class="form-control" id="p_color_name" maxlength="255" placeholder="Renk adı">
                     </div>
@@ -299,6 +305,7 @@ function initGrid() {
             { dataField: 'company_name',  caption: 'Müşteri',     minWidth: 160 },
             { dataField: 'product_name',  caption: 'Ürün',        minWidth: 150 },
             { dataField: 'kartela_no',    caption: 'Kartela',     width: 120 },
+            { dataField: 'renk_no',       caption: 'Renk No',     width: 110 },
             { dataField: 'kartela_date',  caption: 'K.Tarihi',    width: 110, alignment: 'center' },
             { dataField: 'renk_tonu',     caption: 'R.Tonu',      width: 80, alignment: 'center' },
             { dataField: 'boya_derecesi', caption: 'Boya C',      width: 90 },
@@ -346,7 +353,7 @@ function deleteColor(id, label) {
 }
 /* ── Yeni Renk Popup ── */
 function openAddColorModal() {
-    ['p_color_code','p_color_name','p_kartela_no','p_kartela_date',
+    ['p_color_code','p_color_name','p_renk_no','p_kartela_no','p_kartela_date',
      'p_renk_tonu','p_boya_derecesi','p_flote','p_information'
     ].forEach(function(id) { var el = document.getElementById(id); if (el) el.value = ''; });
     var cb = document.getElementById('p_is_ready'); if (cb) cb.checked = false;
@@ -431,6 +438,7 @@ function saveNewColor() {
         product_id    : productId || '',
         color_code    : document.getElementById('p_color_code').value,
         color_name    : document.getElementById('p_color_name').value,
+        renk_no       : document.getElementById('p_renk_no').value,
         kartela_no    : document.getElementById('p_kartela_no').value,
         kartela_date  : document.getElementById('p_kartela_date').value,
         renk_tonu     : document.getElementById('p_renk_tonu').value,
