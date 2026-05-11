@@ -267,7 +267,7 @@
                         product_code, product_name, product_catid, barcod,
                         product_detail, product_detail2, product_status, tax,
                         is_sales, is_purchase, is_ek_islem, brand_id, shelf_life,
-                        manufact_code, short_code, company_id,
+                        manufact_code, short_code, muh_stok_kodu, company_id,
                         en, tuse, cekme, isi, hiz, gramaj, besleme_avans, kumas_tipi, kullanilan_kimyassal,
                         record_date, record_member
                     ) VALUES (
