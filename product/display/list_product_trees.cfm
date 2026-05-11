@@ -43,6 +43,15 @@
     ORDER BY s.stock_code
 </cfquery>
 
+<cfset allStocksArr = []>
+<cfloop query="getAllStocks">
+    <cfset arrayAppend(allStocksArr, {
+        "stock_id"    : val(stock_id),
+        "stock_code"  : stock_code   ?: "",
+        "product_name": product_name ?: ""
+    })>
+</cfloop>
+
 <div class="page-header">
     <div class="page-header-left">
         <div class="page-header-icon"><i class="fas fa-sitemap"></i></div>
@@ -52,14 +61,7 @@
         </div>
     </div>
     <div class="d-flex gap-2 align-items-center">
-        <select class="form-select form-select-sm" id="selectStock" style="min-width:280px;">
-            <option value="0">Stok seçiniz...</option>
-            <cfoutput>
-            <cfloop query="getAllStocks">
-                <option value="#stock_id#">#htmlEditFormat(stock_code)##len(trim(product_name)) ? " — " & htmlEditFormat(product_name) : ""#</option>
-            </cfloop>
-            </cfoutput>
-        </select>
+        <div id="selectStock" style="min-width:320px;"></div>
         <button class="btn-add" onclick="goToTree()">
             <i class="fas fa-sitemap"></i>Ağacı Aç
         </button>
@@ -89,9 +91,24 @@
 <cfoutput>
 <script>
 var ptData = #serializeJSON(ptArr)#;
+var allStocksData = #serializeJSON(allStocksArr)#;
 
 window.addEventListener('load', function() {
     if (typeof DevExpress !== 'undefined') DevExpress.localization.locale('tr');
+
+    $('##selectStock').dxSelectBox({
+        dataSource   : allStocksData,
+        valueExpr    : 'stock_id',
+        displayExpr  : function(item) {
+            return item ? item.stock_code + (item.product_name ? ' — ' + item.product_name : '') : '';
+        },
+        searchEnabled: true,
+        searchExpr   : ['stock_code', 'product_name'],
+        minSearchLength: 0,
+        showClearButton: true,
+        placeholder  : 'Stok kodu veya adı ile ara...',
+        value        : null
+    });
 
     $('##ptGrid').dxDataGrid({
         dataSource: ptData,
@@ -163,8 +180,9 @@ window.addEventListener('load', function() {
 });
 
 function goToTree() {
-    var id = document.getElementById('selectStock').value;
-    if (!id || id == '0') { DevExpress.ui.notify('Lütfen bir stok seçiniz.', 'warning', 2500); return; }
+    var inst = $('##selectStock').dxSelectBox('instance');
+    var id = inst ? inst.option('value') : null;
+    if (!id) { DevExpress.ui.notify('Lütfen bir stok seçiniz.', 'warning', 2500); return; }
     viewTree(id);
 }
 
