@@ -24,7 +24,7 @@
     <cfset ship_status  = isDefined("form.ship_status")  AND isNumeric(form.ship_status)  ? val(form.ship_status)  : 1>
     <cfset ref_no       = isDefined("form.ref_no")       ? trim(form.ref_no)       : "">
     <cfset ship_detail  = isDefined("form.ship_detail")  ? trim(form.ship_detail)  : "">
-    <cfset return_cat_id = isDefined("form.return_cat_id") AND isNumeric(form.return_cat_id) AND val(form.return_cat_id) gt 0 ? val(form.return_cat_id) : javaCast("null","")>
+    <cfset return_cat_id = isDefined("form.return_cat_id") AND isNumeric(form.return_cat_id) AND val(form.return_cat_id) gt 0 ? val(form.return_cat_id) : 0>
     <cfset rowsJson     = isDefined("form.rows")         ? form.rows               : "[]">
     <!--- Ham Kumaş alanları — yalnızca ship_type=5 (Ham Kumaş Alış) için --->
     <cfif ship_type eq 5>
@@ -92,7 +92,7 @@
                 hk_ucretli     = <cfqueryparam value="#hk_ucretli#"        cfsqltype="cf_sql_bit">,
                 hk_ham_boyali  = <cfqueryparam value="#hk_ham_boyali#"     cfsqltype="cf_sql_bit">,
                 hk_parti_no    = <cfqueryparam value="#hk_parti_no#"       cfsqltype="cf_sql_varchar">,
-                return_cat_id  = <cfif NOT isNull(return_cat_id)><cfqueryparam value="#return_cat_id#" cfsqltype="cf_sql_integer"><cfelse>NULL</cfif>
+                return_cat_id  = <cfqueryparam value="#return_cat_id#" cfsqltype="cf_sql_integer" null="#return_cat_id eq 0#">
             WHERE ship_id = <cfqueryparam value="#ship_id#" cfsqltype="cf_sql_integer">
         </cfquery>
 
@@ -177,7 +177,7 @@
                 <cfqueryparam value="#hk_ucretli#"        cfsqltype="cf_sql_bit">,
                 <cfqueryparam value="#hk_ham_boyali#"     cfsqltype="cf_sql_bit">,
                 <cfqueryparam value="#hk_parti_no#"       cfsqltype="cf_sql_varchar">,
-                <cfif NOT isNull(return_cat_id)><cfqueryparam value="#return_cat_id#" cfsqltype="cf_sql_integer"><cfelse>NULL</cfif>
+                <cfqueryparam value="#return_cat_id#" cfsqltype="cf_sql_integer" null="#return_cat_id eq 0#">
             )
         </cfquery>
 
