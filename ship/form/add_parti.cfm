@@ -56,9 +56,10 @@
 <cfset partiNo   = countParts.c + 1>
 <cfset partiKodu = getShip.ship_number & "-P" & partiNo>
 
-<!--- Son parti verileri (miktar/kg/açıklama ön doldurma) --->
+<!--- Son parti verileri (miktar/kg/açıklama/tekstil ön doldurma) --->
 <cfquery name="getSonPartiRec" datasource="boyahane">
-    SELECT o.order_id, COALESCE(o.order_head, '') AS order_head
+    SELECT o.order_id, COALESCE(o.order_head, '') AS order_head,
+           o.en, o.gramaj, o.kumas_tipi, o.tuse, o.isi, o.hiz, o.besleme_avans, o.cekme
     FROM orders o
     WHERE o.ref_ship_id = <cfqueryparam value="#shipId#" cfsqltype="cf_sql_integer">
     ORDER BY o.order_id DESC
@@ -67,6 +68,17 @@
 <cfset sonPartiMiktar   = "">
 <cfset sonPartiKg       = "">
 <cfset sonPartiAciklama = "">
+<!--- Tekstil: önce ürün tanımından al, sonra son parti varsa üzerine yaz --->
+<cfset sonPartiTekstil = {
+    "kumas_tipi":    tekstilBilgi.kumas_tipi    ?: "",
+    "en":            tekstilBilgi.en            ?: "",
+    "gramaj":        tekstilBilgi.gramaj        ?: "",
+    "isi":           tekstilBilgi.isi           ?: "",
+    "hiz":           tekstilBilgi.hiz           ?: "",
+    "besleme_avans": tekstilBilgi.besleme_avans ?: "",
+    "tuse":          tekstilBilgi.tuse          ?: "",
+    "cekme":         tekstilBilgi.cekme         ?: ""
+}>
 <cfif getSonPartiRec.recordCount AND val(getSonPartiRec.order_id) gt 0>
     <cfquery name="getSonPartiMiktar" datasource="boyahane">
         SELECT orw.quantity
@@ -94,6 +106,31 @@
     </cfif>
     <cfif len(trim(getSonPartiRec.order_head ?: ""))>
         <cfset sonPartiAciklama = trim(getSonPartiRec.order_head)>
+    </cfif>
+    <!--- Tekstil alanları son partizde dolu ise üzerine yaz --->
+    <cfif isNumeric(getSonPartiRec.en) AND val(getSonPartiRec.en) gt 0>
+        <cfset sonPartiTekstil.en = val(getSonPartiRec.en)>
+    </cfif>
+    <cfif isNumeric(getSonPartiRec.gramaj) AND val(getSonPartiRec.gramaj) gt 0>
+        <cfset sonPartiTekstil.gramaj = val(getSonPartiRec.gramaj)>
+    </cfif>
+    <cfif isNumeric(getSonPartiRec.isi) AND val(getSonPartiRec.isi) gt 0>
+        <cfset sonPartiTekstil.isi = val(getSonPartiRec.isi)>
+    </cfif>
+    <cfif isNumeric(getSonPartiRec.hiz) AND val(getSonPartiRec.hiz) gt 0>
+        <cfset sonPartiTekstil.hiz = val(getSonPartiRec.hiz)>
+    </cfif>
+    <cfif isNumeric(getSonPartiRec.besleme_avans) AND val(getSonPartiRec.besleme_avans) gt 0>
+        <cfset sonPartiTekstil.besleme_avans = val(getSonPartiRec.besleme_avans)>
+    </cfif>
+    <cfif len(trim(getSonPartiRec.kumas_tipi ?: ""))>
+        <cfset sonPartiTekstil.kumas_tipi = trim(getSonPartiRec.kumas_tipi)>
+    </cfif>
+    <cfif len(trim(getSonPartiRec.tuse ?: ""))>
+        <cfset sonPartiTekstil.tuse = trim(getSonPartiRec.tuse)>
+    </cfif>
+    <cfif len(trim(getSonPartiRec.cekme ?: ""))>
+        <cfset sonPartiTekstil.cekme = trim(getSonPartiRec.cekme)>
     </cfif>
 </cfif>
 
@@ -396,47 +433,61 @@
 
                 </div>
             </div>
-            <!--- Tekstil Bilgileri Kartı --->
-            <cfif structCount(tekstilBilgi) gt 0>
+            <!--- Tekstil Bilgileri Kartı — her zaman göster, editable --->
             <div class="grid-card mb-3">
                 <div class="grid-card-header">
                     <div class="grid-card-header-title">
                         <i class="fas fa-tshirt"></i>Tekstil Özellikleri
-                        <small class="text-muted ms-2">(ürün tanımından)</small>
+                        <small class="text-muted ms-2">(önceki partiden / değiştirilebilir)</small>
                     </div>
                 </div>
                 <div class="card-body p-3">
+                    <cfoutput>
                     <div class="row g-2">
-                        <cfoutput>
-                        <cfif len(tekstilBilgi.kumas_tipi)>
-                        <div class="col-6 col-sm-4"><small class="text-muted d-block">Kumaş Tipi</small><strong>#xmlFormat(tekstilBilgi.kumas_tipi)#</strong></div>
-                        </cfif>
-                        <cfif len(tekstilBilgi.en)>
-                        <div class="col-6 col-sm-4"><small class="text-muted d-block">En</small><strong>#tekstilBilgi.en# cm</strong></div>
-                        </cfif>
-                        <cfif len(tekstilBilgi.gramaj)>
-                        <div class="col-6 col-sm-4"><small class="text-muted d-block">Gramaj</small><strong>#tekstilBilgi.gramaj# g/m²</strong></div>
-                        </cfif>
-                        <cfif len(tekstilBilgi.isi)>
-                        <div class="col-6 col-sm-4"><small class="text-muted d-block">Isı</small><strong>#tekstilBilgi.isi# °C</strong></div>
-                        </cfif>
-                        <cfif len(tekstilBilgi.hiz)>
-                        <div class="col-6 col-sm-4"><small class="text-muted d-block">Hız</small><strong>#tekstilBilgi.hiz# m/dak</strong></div>
-                        </cfif>
-                        <cfif len(tekstilBilgi.besleme_avans)>
-                        <div class="col-6 col-sm-4"><small class="text-muted d-block">Besleme Avans</small><strong>#tekstilBilgi.besleme_avans#</strong></div>
-                        </cfif>
-                        <cfif len(tekstilBilgi.tuse)>
-                        <div class="col-6 col-sm-4"><small class="text-muted d-block">Tuşe</small><strong>#xmlFormat(tekstilBilgi.tuse)#</strong></div>
-                        </cfif>
-                        <cfif len(tekstilBilgi.cekme)>
-                        <div class="col-6 col-sm-4"><small class="text-muted d-block">Çekme</small><strong>#xmlFormat(tekstilBilgi.cekme)#</strong></div>
-                        </cfif>
-                        </cfoutput>
+                        <div class="col-6 col-sm-4">
+                            <label class="form-label fw-semibold small mb-1">Kumaş Tipi</label>
+                            <input type="text" class="form-control form-control-sm" id="txt_kumas_tipi"
+                                   value="#xmlFormat(sonPartiTekstil.kumas_tipi)#" placeholder="Kumaş tipi...">
+                        </div>
+                        <div class="col-6 col-sm-4">
+                            <label class="form-label fw-semibold small mb-1">En (cm)</label>
+                            <input type="number" step="0.01" class="form-control form-control-sm" id="txt_en"
+                                   value="#xmlFormat(sonPartiTekstil.en)#" placeholder="0">
+                        </div>
+                        <div class="col-6 col-sm-4">
+                            <label class="form-label fw-semibold small mb-1">Gramaj (g/m²)</label>
+                            <input type="number" step="0.01" class="form-control form-control-sm" id="txt_gramaj"
+                                   value="#xmlFormat(sonPartiTekstil.gramaj)#" placeholder="0">
+                        </div>
+                        <div class="col-6 col-sm-4">
+                            <label class="form-label fw-semibold small mb-1">Isı (°C)</label>
+                            <input type="number" step="0.1" class="form-control form-control-sm" id="txt_isi"
+                                   value="#xmlFormat(sonPartiTekstil.isi)#" placeholder="0">
+                        </div>
+                        <div class="col-6 col-sm-4">
+                            <label class="form-label fw-semibold small mb-1">Hız (m/dak)</label>
+                            <input type="number" step="0.1" class="form-control form-control-sm" id="txt_hiz"
+                                   value="#xmlFormat(sonPartiTekstil.hiz)#" placeholder="0">
+                        </div>
+                        <div class="col-6 col-sm-4">
+                            <label class="form-label fw-semibold small mb-1">Besleme Avans</label>
+                            <input type="number" step="0.01" class="form-control form-control-sm" id="txt_besleme_avans"
+                                   value="#xmlFormat(sonPartiTekstil.besleme_avans)#" placeholder="0">
+                        </div>
+                        <div class="col-6 col-sm-4">
+                            <label class="form-label fw-semibold small mb-1">Tuşe</label>
+                            <input type="text" class="form-control form-control-sm" id="txt_tuse"
+                                   value="#xmlFormat(sonPartiTekstil.tuse)#" placeholder="Tuşe...">
+                        </div>
+                        <div class="col-6 col-sm-4">
+                            <label class="form-label fw-semibold small mb-1">Çekme</label>
+                            <input type="text" class="form-control form-control-sm" id="txt_cekme"
+                                   value="#xmlFormat(sonPartiTekstil.cekme)#" placeholder="Çekme...">
+                        </div>
                     </div>
+                    </cfoutput>
                 </div>
             </div>
-            </cfif>
             <!--- Ek İşlemler kartı --->
             <div class="grid-card">
                 <div class="grid-card-header">
@@ -776,6 +827,14 @@ function saveParti() {
         order_status:   '1',
         sarim_sekli:    parseInt(document.getElementById('sarim_sekli').value) || 0,
         ambalaj:        parseInt(document.getElementById('ambalaj').value) || 0,
+        kumas_tipi:     document.getElementById('txt_kumas_tipi').value || '',
+        en:             parseFloat(document.getElementById('txt_en').value) || 0,
+        gramaj:         parseFloat(document.getElementById('txt_gramaj').value) || 0,
+        isi:            parseFloat(document.getElementById('txt_isi').value) || 0,
+        hiz:            parseFloat(document.getElementById('txt_hiz').value) || 0,
+        besleme_avans:  parseFloat(document.getElementById('txt_besleme_avans').value) || 0,
+        tuse:           document.getElementById('txt_tuse').value || '',
+        cekme:          document.getElementById('txt_cekme').value || '',
         rows:           JSON.stringify(rows)
     };
 
