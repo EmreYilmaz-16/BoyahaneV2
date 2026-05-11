@@ -497,9 +497,13 @@
 
                     <!--- Ek İşlemler --->
                     <div class="border rounded p-2 mb-0" id="mprt_ekIslemSection" style="background:##f8f9fa;">
-                        <div class="small fw-semibold text-muted mb-2">
-                            <i class="fas fa-cogs me-1"></i>Ek İşlemler
-                            <small class="fw-normal">(seçilen her ek işlem aynı miktarla eklenir)</small>
+                        <div class="small fw-semibold text-muted mb-2 d-flex align-items-center gap-2">
+                            <span><i class="fas fa-cogs me-1"></i>Ek İşlemler
+                            <small class="fw-normal">(seçilen her ek işlem aynı miktarla eklenir)</small></span>
+                            <button type="button" class="btn btn-outline-primary py-0 px-2 ms-auto" style="font-size:.7rem;line-height:1.6"
+                                    onclick="openMprtQuickEkIslem()" title="Hızlı Ek İşlem Ekle">
+                                <i class="fas fa-plus"></i>
+                            </button>
                         </div>
                         <div id="mprt_ekIslemList">
                             <span class="text-muted small"><i class="fas fa-spinner fa-spin me-1"></i>Yükleniyor...</span>
@@ -515,6 +519,45 @@
                 <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">İptal</button>
                 <button type="button" class="btn btn-sm btn-success d-none" id="mprt_saveBtn" onclick="savePartiModal()">
                     <i class="fas fa-cut me-1"></i>Parti Oluştur
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!--- ══════════════ MODAL: HIZLI EK İŞLEM (PARTİ MODAL İÇİN) ══════════════ --->
+<div class="modal fade" id="mprtQuickEkIslemModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title fw-semibold">
+                    <i class="fas fa-plus-circle me-2 text-primary"></i>Hızlı Ek İşlem Ekle
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-3">
+                <div class="alert alert-info py-2 mb-3 small" id="mprtQei_info"></div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold small mb-1">
+                        Ek İşlem Adı <span class="text-danger">*</span>
+                    </label>
+                    <input type="text" class="form-control form-control-sm" id="mprtQei_name"
+                           placeholder="Örn: Boyama, Apre, Kasarlama...">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold small mb-1">
+                        Kategori <span class="text-danger">*</span>
+                    </label>
+                    <select class="form-select form-select-sm" id="mprtQei_catid">
+                        <option value="0">-- Kategori Seçin --</option>
+                    </select>
+                </div>
+                <div id="mprtQei_error" class="text-danger small d-none"></div>
+            </div>
+            <div class="modal-footer py-2">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">İptal</button>
+                <button type="button" class="btn btn-sm btn-primary" id="mprtQei_saveBtn" onclick="mprtSaveQuickEkIslem()">
+                    <i class="fas fa-save me-1"></i>Kaydet
                 </button>
             </div>
         </div>
@@ -1407,6 +1450,7 @@ renderList(ALL_FIS);
 document.body.appendChild(document.getElementById('modalYeniFis'));
 document.body.appendChild(document.getElementById('modalYeniParti'));
 document.body.appendChild(document.getElementById('modalYeniUrunKarti'));
+document.body.appendChild(document.getElementById('mprtQuickEkIslemModal'));
 
 /* ════ Yeni Ürün Kartı Modalı ════ */
 var PRODUCT_CATS  = #serializeJSON(productCatsArr)#;
@@ -1556,6 +1600,105 @@ function saveUrunKarti() {
             errEl.classList.remove('d-none');
             btn.disabled = false;
             btn.innerHTML = '<i class="fas fa-save me-1"></i>Kaydet';
+        }
+    });
+}
+
+/* ════ Hızlı Ek İşlem (Parti Modalı için) ════ */
+var mprtQei_catsLoaded = false;
+
+function openMprtQuickEkIslem() {
+    var companyName = document.getElementById('mprt_companyLabel').textContent || '';
+    var unit        = document.getElementById('mprt_unit').value || 'mt';
+    var infoEl      = document.getElementById('mprtQei_info');
+    infoEl.innerHTML = '<i class="fas fa-building me-1"></i><strong>Şirket:</strong> ' + escHtml(companyName)
+        + ' &nbsp;&nbsp; <i class="fas fa-ruler me-1"></i><strong>Birim:</strong> ' + escHtml(unit);
+
+    /* Kategori seçeneğini bir kez doldur */
+    var sel = document.getElementById('mprtQei_catid');
+    if (!mprtQei_catsLoaded) {
+        sel.innerHTML = '<option value="0">-- Kategori Seçin --</option>';
+        PRODUCT_CATS.forEach(function(c) {
+            var o = document.createElement('option');
+            o.value = c.id; o.textContent = c.label;
+            o.setAttribute('data-cat-name', c.label.split(' - ').pop());
+            sel.appendChild(o);
+        });
+        sel.addEventListener('change', function() {
+            var opt = this.options[this.selectedIndex];
+            var catName = opt && this.value !== '0' ? opt.getAttribute('data-cat-name') : '';
+            var compName = document.getElementById('mprt_companyLabel').textContent || '';
+            if (catName) document.getElementById('mprtQei_name').value = catName + '-' + compName;
+        });
+        mprtQei_catsLoaded = true;
+    }
+    sel.value = '0';
+    document.getElementById('mprtQei_name').value = '';
+    var errEl = document.getElementById('mprtQei_error');
+    errEl.textContent = ''; errEl.classList.add('d-none');
+
+    var modalEl = document.getElementById('mprtQuickEkIslemModal');
+    new bootstrap.Modal(modalEl).show();
+}
+
+function mprtSaveQuickEkIslem() {
+    var name  = document.getElementById('mprtQei_name').value.trim();
+    var catid = parseInt(document.getElementById('mprtQei_catid').value) || 0;
+    var errEl = document.getElementById('mprtQei_error');
+    var btn   = document.getElementById('mprtQei_saveBtn');
+    errEl.classList.add('d-none');
+    if (!name)  { errEl.textContent = 'Ek işlem adı boş olamaz.'; errEl.classList.remove('d-none'); document.getElementById('mprtQei_name').focus(); return; }
+    if (!catid) { errEl.textContent = 'Kategori seçmelisiniz.';   errEl.classList.remove('d-none'); return; }
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Kaydediliyor...';
+
+    var companyId = parseInt(document.getElementById('mprt_company_id').value) || 0;
+
+    $.ajax({
+        url: '/product/cfc/product.cfc?method=saveProduct',
+        method: 'POST',
+        dataType: 'json',
+        data: {
+            product_name:   name,
+            product_catid:  catid,
+            company_id:     companyId,
+            is_ek_islem:    true,
+            is_purchase:    true,
+            product_status: true
+        },
+        success: function(res) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-save me-1"></i>Kaydet';
+            if (res.success) {
+                bootstrap.Modal.getInstance(document.getElementById('mprtQuickEkIslemModal')).hide();
+                /* Yeni ek işlemi parti modalının listesine ekle + işaretli getir */
+                var newStockId = res.stock_id  || 0;
+                var newProdId  = res.product_id || 0;
+                var listEl = document.getElementById('mprt_ekIslemList');
+                /* Eğer liste "tanımlı değil" mesajı içeriyorsa temizle */
+                if (listEl.querySelector('span.text-muted')) listEl.innerHTML = '';
+                var html = '<div class="form-check mb-1">'
+                    + '<input class="form-check-input mprt-ek-chk" type="checkbox"'
+                    + ' id="mprt_ek_' + newStockId + '" checked'
+                    + ' data-stock-id="' + newStockId + '"'
+                    + ' data-product-id="' + newProdId + '"'
+                    + ' data-product-name="' + name.replace(/"/g, '&quot;') + '">'
+                    + '<label class="form-check-label small" for="mprt_ek_' + newStockId + '">'
+                    + escHtml(name)
+                    + ' <span class="badge bg-success ms-1" style="font-size:.65rem">Yeni</span>'
+                    + '</label></div>';
+                listEl.insertAdjacentHTML('beforeend', html);
+            } else {
+                errEl.textContent = res.message || 'Kayıt hatası.';
+                errEl.classList.remove('d-none');
+            }
+        },
+        error: function() {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-save me-1"></i>Kaydet';
+            errEl.textContent = 'Sunucu hatası! Lütfen tekrar deneyin.';
+            errEl.classList.remove('d-none');
         }
     });
 }
