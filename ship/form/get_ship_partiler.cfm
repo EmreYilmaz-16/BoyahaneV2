@@ -39,6 +39,7 @@
         </cfswitch>
         <cfset arrayAppend(result, {
             "order_id":    val(order_id),
+            "ship_id":     shipId,
             "order_number": order_number ?: "",
             "order_stage": val(order_stage),
             "stage_label": stageLabel,
