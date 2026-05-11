@@ -269,7 +269,7 @@
                                 <i class="fas fa-undo-alt me-1 text-primary"></i>İade Nedeni
                             </label>
                             <select class="form-select" id="return_cat_id">
-                                <option value="0">-- İade Nedeni Seçin --</option>
+                                <option value="">-- İade Nedeni Seçin --</option>
                                 <cfloop query="qReturnCats">
                                 <cfoutput>
                                 <option value="#return_cat_id#"
