@@ -33,25 +33,6 @@
 </cfloop>
 
 <!--- Tüm stoklar: yeni ağaç açmak için select --->
-<cfquery name="getAllStocks" datasource="boyahane">
-    SELECT s.stock_id,
-           COALESCE(s.stock_code,'')    AS stock_code,
-           COALESCE(p.product_name,'')  AS product_name
-    FROM stocks s
-    LEFT JOIN product p ON s.product_id = p.product_id
-    WHERE COALESCE(s.stock_status, true) = true
-    ORDER BY s.stock_code
-</cfquery>
-
-<cfset allStocksArr = []>
-<cfloop query="getAllStocks">
-    <cfset arrayAppend(allStocksArr, {
-        "stock_id"    : val(stock_id),
-        "stock_code"  : stock_code   ?: "",
-        "product_name": product_name ?: ""
-    })>
-</cfloop>
-
 <div class="page-header">
     <div class="page-header-left">
         <div class="page-header-icon"><i class="fas fa-sitemap"></i></div>
@@ -91,23 +72,38 @@
 <cfoutput>
 <script>
 var ptData = #serializeJSON(ptArr)#;
-var allStocksData = #serializeJSON(allStocksArr)#;
 
 window.addEventListener('load', function() {
     if (typeof DevExpress !== 'undefined') DevExpress.localization.locale('tr');
 
+    /* Stok arama: CustomStore → AJAX (sayfada binlerce kayıt yüklenmiyor) */
+    var stockStore = new DevExpress.data.CustomStore({
+        key: 'stock_id',
+        load: function(opts) {
+            var q = (opts.searchValue || '').trim();
+            return $.getJSON('/product/api/search_stocks.cfm', { q: q, limit: 50 })
+                .then(function(data) { return { data: data, totalCount: data.length }; });
+        },
+        byKey: function(key) {
+            return $.getJSON('/product/api/search_stocks.cfm', { q: key, limit: 1 })
+                .then(function(data) { return data && data.length ? data[0] : null; });
+        }
+    });
+
     $('##selectStock').dxSelectBox({
-        dataSource   : allStocksData,
-        valueExpr    : 'stock_id',
-        displayExpr  : function(item) {
+        dataSource      : new DevExpress.data.DataSource({ store: stockStore, paginate: false }),
+        valueExpr       : 'stock_id',
+        displayExpr     : function(item) {
             return item ? item.stock_code + (item.product_name ? ' — ' + item.product_name : '') : '';
         },
-        searchEnabled: true,
-        searchExpr   : ['stock_code', 'product_name'],
-        minSearchLength: 0,
-        showClearButton: true,
-        placeholder  : 'Stok kodu veya adı ile ara...',
-        value        : null
+        searchEnabled   : true,
+        searchExpr      : 'stock_code',
+        minSearchLength : 1,
+        searchTimeout   : 300,
+        showClearButton : true,
+        placeholder     : 'Stok kodu yazın (en az 1 harf)...',
+        noDataText      : 'Sonuç bulunamadı.',
+        value           : null
     });
 
     $('##ptGrid').dxDataGrid({
