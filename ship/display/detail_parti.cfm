@@ -118,7 +118,7 @@
                 onclick="window.open('/ship/display/refakat_kart.cfm?order_id=#orderId#','_blank','width=900,height=780,scrollbars=yes')">
             <i class="fas fa-print me-1"></i>Refakat Kartı
         </button>
-        <a href="index.cfm?fuseaction=ship.add_parti&ship_id=#getShip.recordCount ? getShip.ship_id : 0#"
+        <a href="index.cfm?fuseaction=ship.edit_parti&order_id=#orderId#"
            class="btn btn-sm btn-outline-primary">
             <i class="fas fa-edit me-1"></i>Partiyi Düzenle
         </a>
