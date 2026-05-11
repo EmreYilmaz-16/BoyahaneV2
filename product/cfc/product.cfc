@@ -307,7 +307,7 @@
                 <cfset newProductId = insertProduct.product_id>
                 <cfset stockCode = len(trim(arguments.product_code)) gt 0 ? trim(arguments.product_code) : "STK-" & newProductId>
                 
-                <cfquery datasource="boyahane">
+                <cfquery datasource="boyahane" name="qInsertStock">
                     INSERT INTO stocks (
                         stock_code,
                         product_id,
@@ -327,12 +327,14 @@
                         1,
                         CURRENT_TIMESTAMP
                     )
+                    RETURNING stock_id
                 </cfquery>
                 
                 <cfset result = {
                     "success": true,
                     "message": "Ürün başarıyla eklendi",
-                    "product_id": newProductId
+                    "product_id": newProductId,
+                    "stock_id": qInsertStock.stock_id
                 }>
             </cfif>
             
