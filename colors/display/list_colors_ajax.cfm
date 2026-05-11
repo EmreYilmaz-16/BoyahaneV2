@@ -157,6 +157,11 @@
             <div class="modal-body p-4">
                 <div class="row g-2">
 
+                    <!--- Renk Kodu - Otomatik --->
+                    <div class="col-12">
+                        <label class="form-label fw-semibold"><i class="fas fa-tag me-1 text-primary"></i>Renk Kodu <small class="text-muted fw-normal">(Otomatik oluşur)</small></label>
+                        <input type="text" class="form-control form-control-lg bg-light text-center fw-bold" id="p_color_code" readonly placeholder="Müşteri / Renk No / Boya C. girince oluşacak...">
+                    </div>
                     <!--- Bağlantı --->
                     <div class="col-12"><div class="popup-section-label"><i class="fas fa-link"></i>Bağlantı</div></div>
                     <div class="col-md-6">
@@ -171,15 +176,11 @@
 
                     <!--- Renk Tanımı --->
                     <div class="col-12"><div class="popup-section-label"><i class="fas fa-fill-drip"></i>Renk Tanımı</div></div>
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <label class="form-label">Renk No</label>
-                        <input type="text" class="form-control" id="p_renk_no" maxlength="100" placeholder="Renk No">
+                        <input type="text" class="form-control" id="p_renk_no" maxlength="100" placeholder="Renk No" oninput="autoGeneratePopupColorCode()">
                     </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Renk Kodu</label>
-                        <input type="text" class="form-control" id="p_color_code" maxlength="100" placeholder="R.Kodu">
-                    </div>
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <label class="form-label">Renk Adı</label>
                         <input type="text" class="form-control" id="p_color_name" maxlength="255" placeholder="Renk adı">
                     </div>
@@ -203,7 +204,7 @@
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">Boya C.</label>
-                        <input type="text" class="form-control" id="p_boya_derecesi" maxlength="50">
+                        <input type="text" class="form-control" id="p_boya_derecesi" maxlength="50" oninput="autoGeneratePopupColorCode()">
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">Flote</label>
@@ -381,9 +382,22 @@ $('##modalAddColor').on('shown.bs.modal', function() {
         onValueChanged: function(e) {
             if (e.value) { loadPopupProducts(e.value); }
             else { clearPopupProducts(); }
+            autoGeneratePopupColorCode();
         }
     });
 });
+
+function autoGeneratePopupColorCode() {
+    var inst = $('##popupCompanySelect').data('dxSelectBox') ? $('##popupCompanySelect').dxSelectBox('instance') : null;
+    var compId = inst ? inst.option('value') : null;
+    var company = compId ? companiesData.find(function(c){ return (c.company_id || c.COMPANY_ID) == compId; }) : null;
+    var memberCode = company ? (company.member_code || company.MEMBER_CODE || '').trim() : '';
+    var renkNo  = (document.getElementById('p_renk_no')      || {}).value || '';
+    var boyaDer = (document.getElementById('p_boya_derecesi') || {}).value || '';
+    var parts = [memberCode, renkNo.trim(), boyaDer.trim()].filter(function(p){ return p !== ''; });
+    var el = document.getElementById('p_color_code');
+    if (el) el.value = parts.join('-');
+}
 
 function loadPopupProducts(companyId) {
     $.get('/colors/api/get_company_products.cfm', { company_id: companyId }, function(res) {

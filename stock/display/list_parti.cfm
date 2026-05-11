@@ -261,6 +261,10 @@
             </div>
             <div class="modal-body p-4">
                 <div class="row g-2">
+                    <div class="col-12">
+                        <label class="form-label fw-semibold"><i class="fas fa-tag me-1 text-primary"></i>Renk Kodu <small class="text-muted fw-normal">(Otomatik oluşur)</small></label>
+                        <input type="text" class="form-control form-control-lg bg-light text-center fw-bold" id="lp_color_code" readonly placeholder="Müşteri / Renk No / Boya C. girince oluşacak...">
+                    </div>
                     <div class="col-12"><div class="popup-section-label"><i class="fas fa-link me-1"></i>Bağlantı</div></div>
                     <div class="col-md-6">
                         <label class="form-label">Müşteri <span class="text-danger">*</span></label>
@@ -272,15 +276,11 @@
                         <div class="form-text text-muted" id="lpProductHint">Önce müşteri seçin.</div>
                     </div>
                     <div class="col-12"><div class="popup-section-label"><i class="fas fa-fill-drip me-1"></i>Renk Tanımı</div></div>
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <label class="form-label">Renk No</label>
-                        <input type="text" class="form-control" id="lp_renk_no" maxlength="100" placeholder="Renk No">
+                        <input type="text" class="form-control" id="lp_renk_no" maxlength="100" placeholder="Renk No" oninput="autoGenerateLpColorCode()">
                     </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Renk Kodu</label>
-                        <input type="text" class="form-control" id="lp_color_code" maxlength="100" placeholder="R.Kodu">
-                    </div>
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <label class="form-label">Renk Adı</label>
                         <input type="text" class="form-control" id="lp_color_name" maxlength="255" placeholder="Renk adı">
                     </div>
@@ -300,7 +300,7 @@
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">Boya C.</label>
-                        <input type="text" class="form-control" id="lp_boya_derecesi" maxlength="50">
+                        <input type="text" class="form-control" id="lp_boya_derecesi" maxlength="50" oninput="autoGenerateLpColorCode()">
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">Flote</label>
@@ -439,9 +439,11 @@ window.addEventListener('load', function() {
                 placeholder: 'M\u00fc\u015fteri se\u00e7in...',
                 value: null,
                 onValueChanged: function(e) {
-                    if (lpSkipProductLoad) return;
-                    if (e.value) loadLpProducts(e.value, null);
-                    else clearLpProducts();
+                    if (!lpSkipProductLoad) {
+                        if (e.value) loadLpProducts(e.value, null);
+                        else clearLpProducts();
+                    }
+                    autoGenerateLpColorCode();
                 }
             });
         }
@@ -456,6 +458,7 @@ window.addEventListener('load', function() {
         lpSkipProductLoad = false;
         if (compId) loadLpProducts(compId, prodId);
         else clearLpProducts();
+        autoGenerateLpColorCode();
     });
 
     if (typeof $ !== 'undefined' && $.fn.dxDataGrid) {
@@ -751,7 +754,18 @@ function openPartiAddColorModal(preCompanyId, preProductId) {
     if (modalEl.parentNode !== document.body) document.body.appendChild(modalEl);
     bootstrap.Modal.getOrCreateInstance(modalEl).show();
 }
-
+/* ─── Renk Kodu Otomatik ──────────────────────────────── */
+function autoGenerateLpColorCode() {
+    var inst = $('##lpCompanySelect').data('dxSelectBox') ? $('##lpCompanySelect').dxSelectBox('instance') : null;
+    var compId = inst ? inst.option('value') : null;
+    var company = compId ? companiesData.find(function(c){ return (c.company_id || c.COMPANY_ID) == compId; }) : null;
+    var memberCode = company ? (company.member_code || company.MEMBER_CODE || '').trim() : '';
+    var renkNo  = (document.getElementById('lp_renk_no')      || {}).value || '';
+    var boyaDer = (document.getElementById('lp_boya_derecesi') || {}).value || '';
+    var parts = [memberCode, renkNo.trim(), boyaDer.trim()].filter(function(p){ return p !== ''; });
+    var el = document.getElementById('lp_color_code');
+    if (el) el.value = parts.join('-');
+}
 /* ─── Müşteriye Göre Ürünleri Yükle ─────────────────────── */
 function loadLpProducts(companyId, preProductId) {
     if (!companyId) { clearLpProducts(); return; }
