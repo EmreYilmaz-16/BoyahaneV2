@@ -31,6 +31,7 @@
     <cfparam name="form.hiz"            default="0">
     <cfparam name="form.besleme_avans"  default="0">
     <cfparam name="form.cekme"          default="">
+    <cfparam name="form.top_adedi"      default="0">
 
     <cfset orderId      = val(form.order_id)>
     <cfset companyId    = val(form.company_id)>
@@ -136,6 +137,7 @@
                 hiz             = <cfqueryparam value="#val(form.hiz)#" cfsqltype="cf_sql_numeric" null="#val(form.hiz) eq 0#">,
                 besleme_avans   = <cfqueryparam value="#val(form.besleme_avans)#" cfsqltype="cf_sql_numeric" null="#val(form.besleme_avans) eq 0#">,
                 cekme           = <cfqueryparam value="#trim(form.cekme)#" cfsqltype="cf_sql_varchar" null="#NOT len(trim(form.cekme))#">,
+                top_adedi       = <cfqueryparam value="#val(form.top_adedi)#" cfsqltype="cf_sql_integer" null="#val(form.top_adedi) eq 0#">,
                 grosstotal      = <cfqueryparam value="#totalGross#" cfsqltype="cf_sql_numeric">,
                 discounttotal   = <cfqueryparam value="#totalDiscount#" cfsqltype="cf_sql_numeric">,
                 taxtotal        = <cfqueryparam value="#totalTax#" cfsqltype="cf_sql_numeric">,
@@ -151,7 +153,7 @@
                 purchase_sales, order_stage, order_number, order_head, order_detail, ref_no, ref_ship_id,
                 order_date, deliverdate, company_id, member_type, ref_company_id, paymethod, ship_method, order_currency,
                 order_status, sarim_sekli, ambalaj,
-                gramaj, en, kumas_tipi, tuse, isi, hiz, besleme_avans, cekme,
+                gramaj, en, kumas_tipi, tuse, isi, hiz, besleme_avans, cekme, top_adedi,
                 grosstotal, discounttotal, taxtotal, nettotal, record_date
             ) VALUES (
                 <cfqueryparam value="#form.purchase_sales eq 'true' OR form.purchase_sales eq true#" cfsqltype="cf_sql_boolean">,
@@ -180,6 +182,7 @@
                 <cfqueryparam value="#val(form.hiz)#" cfsqltype="cf_sql_numeric" null="#val(form.hiz) eq 0#">,
                 <cfqueryparam value="#val(form.besleme_avans)#" cfsqltype="cf_sql_numeric" null="#val(form.besleme_avans) eq 0#">,
                 <cfqueryparam value="#trim(form.cekme)#" cfsqltype="cf_sql_varchar" null="#NOT len(trim(form.cekme))#">,
+                <cfqueryparam value="#val(form.top_adedi)#" cfsqltype="cf_sql_integer" null="#val(form.top_adedi) eq 0#">,
                 <cfqueryparam value="#totalGross#" cfsqltype="cf_sql_numeric">,
                 <cfqueryparam value="#totalDiscount#" cfsqltype="cf_sql_numeric">,
                 <cfqueryparam value="#totalTax#" cfsqltype="cf_sql_numeric">,

@@ -410,7 +410,7 @@
 
                     <!--- Miktar --->
                     <div class="row g-2 mb-3">
-                        <div class="col-6">
+                        <div class="col-4">
                             <label class="form-label small mb-1 fw-semibold">
                                 Miktar (mt) <span class="text-danger">*</span>
                             </label>
@@ -418,10 +418,15 @@
                                    step="0.001" min="0.001" placeholder="0.000">
                             <div class="form-text" id="mprt_kalanText"></div>
                         </div>
-                        <div class="col-6">
+                        <div class="col-4">
                             <label class="form-label small mb-1 fw-semibold">Kg <span class="text-muted">(opsiyonel)</span></label>
                             <input type="number" class="form-control form-control-sm" id="mprt_kg"
                                    step="0.001" min="0" placeholder="0.000">
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label small mb-1 fw-semibold">Top Adedi</label>
+                            <input type="number" class="form-control form-control-sm" id="mprt_top"
+                                   step="1" min="0" placeholder="0">
                         </div>
                     </div>
 
@@ -1152,6 +1157,7 @@ function openYeniPartiModal(shipId) {
     document.getElementById('mprt_errorMsg').classList.add('d-none');
     document.getElementById('mprt_miktar').value    = '';
     document.getElementById('mprt_kg').value        = '';
+    document.getElementById('mprt_top').value       = '';
     document.getElementById('mprt_aciklama').value  = '';
     /* Tekstil sıfırla */
     ['mprt_gramaj','mprt_en','mprt_isi','mprt_hiz','mprt_besleme_avans'].forEach(function(id) {
@@ -1222,6 +1228,9 @@ function openYeniPartiModal(shipId) {
             /* Kg: son partiden */
             var sonKg = res.son_parti_kg || res.SON_PARTI_KG || 0;
             if (sonKg > 0) document.getElementById('mprt_kg').value = parseFloat(sonKg).toFixed(3);
+            /* Top Adedi: son partiden */
+            var sonTop = res.son_parti_top || res.SON_PARTI_TOP || 0;
+            if (sonTop > 0) document.getElementById('mprt_top').value = parseInt(sonTop);
             /* Açıklama: son partiden */
             var sonAciklama = res.son_parti_aciklama || res.SON_PARTI_ACIKLAMA || '';
             if (sonAciklama) document.getElementById('mprt_aciklama').value = sonAciklama;
@@ -1353,6 +1362,7 @@ function savePartiModal() {
             order_date:     new Date().toISOString().slice(0, 10),
             sarim_sekli:    document.getElementById('mprt_sarim_sekli').value || 0,
             ambalaj:        document.getElementById('mprt_ambalaj').value     || 0,
+            top_adedi:      parseInt(document.getElementById('mprt_top').value) || 0,
             gramaj:         document.getElementById('mprt_gramaj').value        || 0,
             en:             document.getElementById('mprt_en').value            || 0,
             isi:            document.getElementById('mprt_isi').value           || 0,

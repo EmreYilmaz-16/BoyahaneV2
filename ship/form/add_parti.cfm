@@ -59,7 +59,8 @@
 <!--- Son parti verileri (miktar/kg/açıklama/tekstil ön doldurma) --->
 <cfquery name="getSonPartiRec" datasource="boyahane">
     SELECT o.order_id, COALESCE(o.order_head, '') AS order_head,
-           o.en, o.gramaj, o.kumas_tipi, o.tuse, o.isi, o.hiz, o.besleme_avans, o.cekme
+           o.en, o.gramaj, o.kumas_tipi, o.tuse, o.isi, o.hiz, o.besleme_avans, o.cekme,
+           COALESCE(o.top_adedi, 0) AS top_adedi
     FROM orders o
     WHERE o.ref_ship_id = <cfqueryparam value="#shipId#" cfsqltype="cf_sql_integer">
     ORDER BY o.order_id DESC
@@ -68,6 +69,7 @@
 <cfset sonPartiMiktar   = "">
 <cfset sonPartiKg       = "">
 <cfset sonPartiAciklama = "">
+<cfset sonPartiTop      = "">
 <!--- Tekstil: önce ürün tanımından al, sonra son parti varsa üzerine yaz --->
 <cfset sonPartiTekstil = {
     "kumas_tipi":    tekstilBilgi.kumas_tipi    ?: "",
@@ -106,6 +108,9 @@
     </cfif>
     <cfif len(trim(getSonPartiRec.order_head ?: ""))>
         <cfset sonPartiAciklama = trim(getSonPartiRec.order_head)>
+    </cfif>
+    <cfif isNumeric(getSonPartiRec.top_adedi) AND val(getSonPartiRec.top_adedi) gt 0>
+        <cfset sonPartiTop = val(getSonPartiRec.top_adedi)>
     </cfif>
     <!--- Tekstil alanları son partizde dolu ise üzerine yaz --->
     <cfif isNumeric(getSonPartiRec.en) AND val(getSonPartiRec.en) gt 0>
@@ -410,6 +415,7 @@
                                 <i class="fas fa-boxes me-1 text-primary"></i>Top Adedi
                             </label>
                             <input type="number" step="1" class="form-control" id="main_top"
+                                   value="<cfoutput>#len(sonPartiTop) ? sonPartiTop : ''#</cfoutput>"
                                    placeholder="0">
                         </div>
                     </div>
@@ -827,6 +833,7 @@ function saveParti() {
         order_status:   '1',
         sarim_sekli:    parseInt(document.getElementById('sarim_sekli').value) || 0,
         ambalaj:        parseInt(document.getElementById('ambalaj').value) || 0,
+        top_adedi:      parseInt(document.getElementById('main_top').value) || 0,
         kumas_tipi:     document.getElementById('txt_kumas_tipi').value || '',
         en:             parseFloat(document.getElementById('txt_en').value) || 0,
         gramaj:         parseFloat(document.getElementById('txt_gramaj').value) || 0,

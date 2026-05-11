@@ -79,7 +79,8 @@
     <cfquery name="getSonParti" datasource="boyahane">
         SELECT o.order_id, o.sarim_sekli, o.ambalaj,
                o.gramaj, o.en, o.kumas_tipi, o.tuse, o.isi, o.hiz, o.besleme_avans, o.cekme,
-               COALESCE(o.order_head, '') AS order_head
+               COALESCE(o.order_head, '') AS order_head,
+               COALESCE(o.top_adedi, 0) AS top_adedi
         FROM orders o
         WHERE (o.ref_ship_id = <cfqueryparam value="#shipId#" cfsqltype="cf_sql_integer">
            OR (o.ref_ship_id IS NULL AND o.ref_no IS NOT NULL AND o.ref_no <> ''
@@ -176,6 +177,7 @@
         "son_parti_miktar":    (isDefined('getSonPartiMiktar') AND getSonPartiMiktar.recordCount AND isNumeric(getSonPartiMiktar.quantity)) ? val(getSonPartiMiktar.quantity) : 0,
         "son_parti_kg":        (isDefined('getSonPartiKg') AND getSonPartiKg.recordCount AND isNumeric(getSonPartiKg.quantity)) ? val(getSonPartiKg.quantity) : 0,
         "son_parti_aciklama":  (getSonParti.recordCount AND len(trim(getSonParti.order_head ?: ""))) ? trim(getSonParti.order_head) : "",
+        "son_parti_top":       (getSonParti.recordCount AND isNumeric(getSonParti.top_adedi) AND val(getSonParti.top_adedi) gt 0) ? val(getSonParti.top_adedi) : 0,
         "ek_islem":            ekIslemArr
     }>
 
