@@ -430,6 +430,17 @@
                         </div>
                     </div>
 
+                    <!--- Müşteri Renk / Açıklama --->                    
+                    <div class="row g-2 mb-3">
+                        <div class="col-12">
+                            <label class="form-label small mb-1 fw-semibold">
+                                <i class="fas fa-palette me-1 text-primary"></i>Müşteri Renk / Açıklama <span class="text-muted">(opsiyonel)</span>
+                            </label>
+                            <input type="text" class="form-control form-control-sm" id="mprt_color"
+                                   placeholder="Renk kodu, açıklama...">
+                        </div>
+                    </div>
+
                     <!--- Sarım Şekli + Ambalaj --->
                     <div class="row g-2 mb-3">
                         <div class="col-6">
@@ -1204,6 +1215,7 @@ function openYeniPartiModal(shipId) {
     document.getElementById('mprt_miktar').value    = '';
     document.getElementById('mprt_kg').value        = '';
     document.getElementById('mprt_top').value       = '';
+    document.getElementById('mprt_color').value     = '';
     document.getElementById('mprt_aciklama').value  = '';
     /* Tekstil sıfırla */
     ['mprt_gramaj','mprt_en','mprt_isi','mprt_hiz','mprt_besleme_avans'].forEach(function(id) {
@@ -1409,6 +1421,7 @@ function savePartiModal() {
             sarim_sekli:    document.getElementById('mprt_sarim_sekli').value || 0,
             ambalaj:        document.getElementById('mprt_ambalaj').value     || 0,
             top_adedi:      parseInt(document.getElementById('mprt_top').value) || 0,
+            main_color:     document.getElementById('mprt_color').value          || '',
             gramaj:         document.getElementById('mprt_gramaj').value        || 0,
             en:             document.getElementById('mprt_en').value            || 0,
             isi:            document.getElementById('mprt_isi').value           || 0,

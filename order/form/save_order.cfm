@@ -32,6 +32,7 @@
     <cfparam name="form.besleme_avans"  default="0">
     <cfparam name="form.cekme"          default="">
     <cfparam name="form.top_adedi"      default="0">
+    <cfparam name="form.main_color"      default="">
 
     <cfset orderId      = val(form.order_id)>
     <cfset companyId    = val(form.company_id)>
@@ -138,6 +139,7 @@
                 besleme_avans   = <cfqueryparam value="#val(form.besleme_avans)#" cfsqltype="cf_sql_numeric" null="#val(form.besleme_avans) eq 0#">,
                 cekme           = <cfqueryparam value="#trim(form.cekme)#" cfsqltype="cf_sql_varchar" null="#NOT len(trim(form.cekme))#">,
                 top_adedi       = <cfqueryparam value="#val(form.top_adedi)#" cfsqltype="cf_sql_integer" null="#val(form.top_adedi) eq 0#">,
+                main_color      = <cfqueryparam value="#trim(form.main_color)#" cfsqltype="cf_sql_varchar" null="#NOT len(trim(form.main_color))#">,
                 grosstotal      = <cfqueryparam value="#totalGross#" cfsqltype="cf_sql_numeric">,
                 discounttotal   = <cfqueryparam value="#totalDiscount#" cfsqltype="cf_sql_numeric">,
                 taxtotal        = <cfqueryparam value="#totalTax#" cfsqltype="cf_sql_numeric">,
@@ -154,6 +156,7 @@
                 order_date, deliverdate, company_id, member_type, ref_company_id, paymethod, ship_method, order_currency,
                 order_status, sarim_sekli, ambalaj,
                 gramaj, en, kumas_tipi, tuse, isi, hiz, besleme_avans, cekme, top_adedi,
+                main_color,
                 grosstotal, discounttotal, taxtotal, nettotal, record_date
             ) VALUES (
                 <cfqueryparam value="#form.purchase_sales eq 'true' OR form.purchase_sales eq true#" cfsqltype="cf_sql_boolean">,
@@ -183,6 +186,7 @@
                 <cfqueryparam value="#val(form.besleme_avans)#" cfsqltype="cf_sql_numeric" null="#val(form.besleme_avans) eq 0#">,
                 <cfqueryparam value="#trim(form.cekme)#" cfsqltype="cf_sql_varchar" null="#NOT len(trim(form.cekme))#">,
                 <cfqueryparam value="#val(form.top_adedi)#" cfsqltype="cf_sql_integer" null="#val(form.top_adedi) eq 0#">,
+                <cfqueryparam value="#trim(form.main_color)#" cfsqltype="cf_sql_varchar" null="#NOT len(trim(form.main_color))#">,
                 <cfqueryparam value="#totalGross#" cfsqltype="cf_sql_numeric">,
                 <cfqueryparam value="#totalDiscount#" cfsqltype="cf_sql_numeric">,
                 <cfqueryparam value="#totalTax#" cfsqltype="cf_sql_numeric">,

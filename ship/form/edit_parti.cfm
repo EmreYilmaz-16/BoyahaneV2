@@ -11,6 +11,7 @@
     SELECT o.order_id, o.order_number, o.order_detail, o.order_stage,
            o.deliverdate, o.sarim_sekli, o.ambalaj, o.top_adedi,
            o.kumas_tipi, o.en, o.gramaj, o.isi, o.hiz, o.besleme_avans, o.tuse, o.cekme,
+           o.main_color,
            o.ref_ship_id
     FROM orders o
     WHERE o.order_id = <cfqueryparam value="#editOrderId#" cfsqltype="cf_sql_integer">
@@ -51,6 +52,7 @@
 <cfset editSarimSekli  = val(getEditOrder.sarim_sekli ?: 0)>
 <cfset editAmbalaj     = val(getEditOrder.ambalaj ?: 0)>
 <cfset editMainTop     = isNumeric(getEditOrder.top_adedi) AND val(getEditOrder.top_adedi) gt 0 ? val(getEditOrder.top_adedi) : "">
+<cfset editMainColor   = getEditOrder.main_color ?: "">
 <cfset editTekstil     = {
     "kumas_tipi":    getEditOrder.kumas_tipi ?: "",
     "en":            isNumeric(getEditOrder.en) ? val(getEditOrder.en) : "",
@@ -350,6 +352,7 @@
                                 <i class="fas fa-palette me-1 text-primary"></i>Müşteri Renk / Açıklama
                             </label>
                             <input type="text" class="form-control" id="main_color"
+                                   value="<cfoutput>#xmlFormat(editMainColor)#</cfoutput>"
                                    placeholder="Renk kodu, açıklama...">
                         </div>
                         <div class="col-sm-6">
@@ -751,6 +754,7 @@ function saveParti() {
         sarim_sekli:    parseInt(document.getElementById('sarim_sekli').value) || 0,
         ambalaj:        parseInt(document.getElementById('ambalaj').value) || 0,
         top_adedi:      parseInt(document.getElementById('main_top').value) || 0,
+        main_color:     document.getElementById('main_color').value || '',
         kumas_tipi:     document.getElementById('txt_kumas_tipi').value || '',
         en:             parseFloat(document.getElementById('txt_en').value) || 0,
         gramaj:         parseFloat(document.getElementById('txt_gramaj').value) || 0,

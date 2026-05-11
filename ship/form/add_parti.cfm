@@ -838,6 +838,7 @@ function saveParti() {
         sarim_sekli:    parseInt(document.getElementById('sarim_sekli').value) || 0,
         ambalaj:        parseInt(document.getElementById('ambalaj').value) || 0,
         top_adedi:      parseInt(document.getElementById('main_top').value) || 0,
+        main_color:     document.getElementById('main_color').value || '',
         kumas_tipi:     document.getElementById('txt_kumas_tipi').value || '',
         en:             parseFloat(document.getElementById('txt_en').value) || 0,
         gramaj:         parseFloat(document.getElementById('txt_gramaj').value) || 0,
