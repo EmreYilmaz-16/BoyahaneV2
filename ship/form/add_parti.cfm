@@ -1,6 +1,8 @@
 ﻿
 <cfprocessingdirective pageEncoding="utf-8">
-<cfset shipId = isDefined("attributes.ship_id") AND isNumeric(attributes.ship_id) ? val(attributes.ship_id) : (isDefined("url.ship_id") AND isNumeric(url.ship_id) ? val(url.ship_id) : 0)>
+<cfset shipId     = isDefined("attributes.ship_id") AND isNumeric(attributes.ship_id) ? val(attributes.ship_id) : (isDefined("url.ship_id") AND isNumeric(url.ship_id) ? val(url.ship_id) : 0)>
+<cfset editOrderId = isDefined("attributes.order_id") AND isNumeric(attributes.order_id) ? val(attributes.order_id) : (isDefined("url.order_id") AND isNumeric(url.order_id) ? val(url.order_id) : 0)>
+<cfset isEditMode  = editOrderId gt 0>
 
 <cfif shipId lte 0>
     <div class="alert alert-warning m-3"><i class="fas fa-exclamation-triangle me-2"></i>Lütfen bir irsaliye seçin (ship_id gerekli).</div>
@@ -55,6 +57,72 @@
 </cfquery>
 <cfset partiNo   = countParts.c + 1>
 <cfset partiKodu = getShip.ship_number & "-P" & partiNo>
+
+<!--- Düzenle modu: mevcut parti yükleme --->
+<cfset editPartiKodu   = "">
+<cfset editOrderStage  = 1>
+<cfset editDeliverDate = "">
+<cfset editOrderDetail = "">
+<cfset editSarimSekli  = 0>
+<cfset editAmbalaj     = 0>
+<cfset editMainMetre   = "">
+<cfset editMainKg      = "">
+<cfset editMainTop     = "">
+<cfset editLotNo       = "">
+<cfset editEkIslemIds  = []>
+<cfset editTekstil     = {"kumas_tipi":"","en":"","gramaj":"","isi":"","hiz":"","besleme_avans":"","tuse":"","cekme":""}>
+
+<cfif isEditMode>
+    <cfquery name="getEditOrder" datasource="boyahane">
+        SELECT order_id, order_number, order_detail, order_stage,
+               deliverdate, sarim_sekli, ambalaj, top_adedi,
+               kumas_tipi, en, gramaj, isi, hiz, besleme_avans, tuse, cekme
+        FROM orders
+        WHERE order_id   = <cfqueryparam value="#editOrderId#" cfsqltype="cf_sql_integer">
+          AND ref_ship_id = <cfqueryparam value="#shipId#" cfsqltype="cf_sql_integer">
+    </cfquery>
+    <cfif NOT getEditOrder.recordCount>
+        <div class="alert alert-danger m-3"><i class="fas fa-exclamation-triangle me-2"></i>Parti bulunamadı (#editOrderId#).</div>
+        <cfabort>
+    </cfif>
+    <cfset editPartiKodu   = getEditOrder.order_number ?: "">
+    <cfset editOrderStage  = val(getEditOrder.order_stage ?: 1)>
+    <cfset editDeliverDate = isDate(getEditOrder.deliverdate) ? dateFormat(getEditOrder.deliverdate,"yyyy-mm-dd") : "">
+    <cfset editOrderDetail = getEditOrder.order_detail ?: "">
+    <cfset editSarimSekli  = val(getEditOrder.sarim_sekli ?: 0)>
+    <cfset editAmbalaj     = val(getEditOrder.ambalaj ?: 0)>
+    <cfset editMainTop     = isNumeric(getEditOrder.top_adedi) AND val(getEditOrder.top_adedi) gt 0 ? val(getEditOrder.top_adedi) : "">
+    <cfset editTekstil     = {
+        "kumas_tipi":    getEditOrder.kumas_tipi ?: "",
+        "en":            isNumeric(getEditOrder.en) ? val(getEditOrder.en) : "",
+        "gramaj":        isNumeric(getEditOrder.gramaj) ? val(getEditOrder.gramaj) : "",
+        "isi":           isNumeric(getEditOrder.isi) ? val(getEditOrder.isi) : "",
+        "hiz":           isNumeric(getEditOrder.hiz) ? val(getEditOrder.hiz) : "",
+        "besleme_avans": isNumeric(getEditOrder.besleme_avans) ? val(getEditOrder.besleme_avans) : "",
+        "tuse":          getEditOrder.tuse ?: "",
+        "cekme":         getEditOrder.cekme ?: ""
+    }>
+    <cfquery name="getEditRows" datasource="boyahane">
+        SELECT orw.stock_id, orw.quantity, orw.unit, orw.lot_no,
+               COALESCE(p.is_ek_islem, false) AS is_ek_islem
+        FROM order_row orw
+        LEFT JOIN stocks s  ON orw.stock_id  = s.stock_id
+        LEFT JOIN product p ON s.product_id  = p.product_id
+        WHERE orw.order_id = <cfqueryparam value="#editOrderId#" cfsqltype="cf_sql_integer">
+    </cfquery>
+    <cfloop query="getEditRows">
+        <cfif NOT getEditRows.is_ek_islem>
+            <cfif lCase(trim(getEditRows.unit)) eq 'kg'>
+                <cfset editMainKg = val(getEditRows.quantity)>
+            <cfelse>
+                <cfset editMainMetre = val(getEditRows.quantity)>
+            </cfif>
+            <cfset editLotNo = getEditRows.lot_no ?: "">
+        <cfelse>
+            <cfset arrayAppend(editEkIslemIds, val(getEditRows.stock_id))>
+        </cfif>
+    </cfloop>
+</cfif>
 
 <!--- Son parti verileri (miktar/kg/açıklama/tekstil ön doldurma) --->
 <cfquery name="getSonPartiRec" datasource="boyahane">
@@ -268,7 +336,7 @@
         <div class="page-header-icon"><i class="fas fa-cut"></i></div>
         <div class="page-header-title">
             <cfoutput>
-            <h1>Parti Oluştur <small class="text-muted fs-6">#partiKodu#</small></h1>
+            <h1><cfif isEditMode>Parti Güncelle <small class="text-muted fs-6">#editPartiKodu#</small><cfelse>Parti Oluştur <small class="text-muted fs-6">#partiKodu#</small></cfif></h1>
             <p>İrsaliye <strong>#getShip.ship_number#</strong> — <strong>#xmlFormat(getShip.company_name)#</strong></p>
             </cfoutput>
         </div>
@@ -297,7 +365,7 @@
                             <i class="fas fa-hashtag me-1 text-primary"></i>Parti Kodu
                         </label>
                         <input type="text" class="form-control" id="parti_kodu"
-                               value="<cfoutput>#xmlFormat(partiKodu)#</cfoutput>">
+                               value="<cfoutput>#xmlFormat(isEditMode ? editPartiKodu : partiKodu)#</cfoutput>">
                         <small class="text-muted">Varsayılan otomatik oluşturuldu, değiştirilebilir.</small>
                     </div>
 
@@ -306,14 +374,14 @@
                         <label class="form-label fw-semibold">
                             <i class="fas fa-tasks me-1 text-primary"></i>Aşama
                         </label>
-                        <select class="form-select" id="order_stage">
-                            <option value="1" selected>Beklemede</option>
-                            <option value="2">Onaylandı</option>
-                            <option value="3">Üretimde</option>
-                            <option value="4">Hazır</option>
-                            <option value="5">Sevk Edildi</option>
-                            <option value="6">Tamamlandı</option>
-                        </select>
+                        <cfoutput><select class="form-select" id="order_stage">
+                            <option value="1" <cfif NOT isEditMode OR editOrderStage eq 1>selected</cfif>>Beklemede</option>
+                            <option value="2" <cfif isEditMode AND editOrderStage eq 2>selected</cfif>>Onaylanış</option>
+                            <option value="3" <cfif isEditMode AND editOrderStage eq 3>selected</cfif>>Üretimde</option>
+                            <option value="4" <cfif isEditMode AND editOrderStage eq 4>selected</cfif>>Hazır</option>
+                            <option value="5" <cfif isEditMode AND editOrderStage eq 5>selected</cfif>>Sevk Edildi</option>
+                            <option value="6" <cfif isEditMode AND editOrderStage eq 6>selected</cfif>>Tamamlandı</option>
+                        </select></cfoutput>
                     </div>
 
                     <!--- Teslim Tarihi --->
@@ -321,7 +389,7 @@
                         <label class="form-label fw-semibold">
                             <i class="fas fa-calendar-alt me-1 text-primary"></i>Teslim Tarihi
                         </label>
-                        <input type="date" class="form-control" id="deliverdate">
+                        <input type="date" class="form-control" id="deliverdate" value="<cfoutput>#xmlFormat(editDeliverDate)#</cfoutput>">
                     </div>
 
                     <!--- Açıklama --->
@@ -330,7 +398,7 @@
                             <i class="fas fa-sticky-note me-1 text-primary"></i>Açıklama
                         </label>
                         <textarea class="form-control" id="order_detail" rows="3"
-                                  placeholder="Parti açıklaması..."><cfoutput>#xmlFormat(sonPartiAciklama)#</cfoutput></textarea>
+                                  placeholder="Parti açıklaması..."><cfoutput>#xmlFormat(isEditMode ? editOrderDetail : sonPartiAciklama)#</cfoutput></textarea>
                     </div>
 
                     <!--- Sarım ve Ambalaj --->
@@ -342,7 +410,7 @@
                             <select class="form-select" id="sarim_sekli">
                                 <option value="0">-- Seçiniz --</option>
                                 <cfoutput query="getSarimSekli">
-                                <option value="#sarim_sekli_id#">#xmlFormat(sarim_sekli_adi)#</option>
+                                <option value="#sarim_sekli_id#" <cfif isEditMode AND editSarimSekli eq val(sarim_sekli_id)>selected</cfif>>#xmlFormat(sarim_sekli_adi)#</option>
                                 </cfoutput>
                             </select>
                         </div>
@@ -353,7 +421,7 @@
                             <select class="form-select" id="ambalaj">
                                 <option value="0">-- Seçiniz --</option>
                                 <cfoutput query="getAmbalajTipleri">
-                                <option value="#ambalaj_id#">#xmlFormat(ambalaj_adi)#</option>
+                                <option value="#ambalaj_id#" <cfif isEditMode AND editAmbalaj eq val(ambalaj_id)>selected</cfif>>#xmlFormat(ambalaj_adi)#</option>
                                 </cfoutput>
                             </select>
                         </div>
@@ -362,7 +430,7 @@
                     <!--- Kaydet --->
                     <div class="d-grid mt-3">
                         <button type="button" class="btn btn-primary" id="saveBtn" onclick="saveParti()">
-                            <i class="fas fa-save me-2"></i>Parti Oluştur
+                            <i class="fas fa-save me-2"></i><cfoutput>#isEditMode ? 'Güncelle' : 'Parti Oluştur'#</cfoutput>
                         </button>
                     </div>
 
@@ -399,7 +467,7 @@
                                 <i class="fas fa-ruler me-1 text-primary"></i>Metre
                             </label>
                             <input type="number" step="0.0001" class="form-control" id="main_metre"
-                                   value="<cfoutput>#len(sonPartiMiktar) ? sonPartiMiktar : mainMetre#</cfoutput>"
+                                   value="<cfoutput>#isEditMode ? editMainMetre : (len(sonPartiMiktar) ? sonPartiMiktar : mainMetre)#</cfoutput>"
                                    placeholder="0.0000">
                         </div>
                         <div class="col-sm-4">
@@ -407,7 +475,7 @@
                                 <i class="fas fa-weight me-1 text-primary"></i>Kg
                             </label>
                             <input type="number" step="0.0001" class="form-control" id="main_kg"
-                                   value="<cfoutput>#len(sonPartiKg) ? sonPartiKg : mainKg#</cfoutput>"
+                                   value="<cfoutput>#isEditMode ? editMainKg : (len(sonPartiKg) ? sonPartiKg : mainKg)#</cfoutput>"
                                    placeholder="0.0000">
                         </div>
                         <div class="col-sm-4">
@@ -415,7 +483,7 @@
                                 <i class="fas fa-boxes me-1 text-primary"></i>Top Adedi
                             </label>
                             <input type="number" step="1" class="form-control" id="main_top"
-                                   value="<cfoutput>#len(sonPartiTop) ? sonPartiTop : ''#</cfoutput>"
+                                   value="<cfoutput>#isEditMode ? editMainTop : (len(sonPartiTop) ? sonPartiTop : '')#</cfoutput>"
                                    placeholder="0">
                         </div>
                     </div>
@@ -433,6 +501,7 @@
                                 <i class="fas fa-barcode me-1 text-primary"></i>Lot No
                             </label>
                             <input type="text" class="form-control" id="main_lot_no"
+                                   value="<cfoutput>#xmlFormat(editLotNo)#</cfoutput>"
                                    placeholder="Lot / Parti no">
                         </div>
                     </div>
@@ -453,42 +522,42 @@
                         <div class="col-6 col-sm-4">
                             <label class="form-label fw-semibold small mb-1">Kumaş Tipi</label>
                             <input type="text" class="form-control form-control-sm" id="txt_kumas_tipi"
-                                   value="#xmlFormat(sonPartiTekstil.kumas_tipi)#" placeholder="Kumaş tipi...">
+                                   value="#xmlFormat(isEditMode ? editTekstil.kumas_tipi : sonPartiTekstil.kumas_tipi)#" placeholder="Kumaş tipi...">
                         </div>
                         <div class="col-6 col-sm-4">
                             <label class="form-label fw-semibold small mb-1">En (cm)</label>
                             <input type="number" step="0.01" class="form-control form-control-sm" id="txt_en"
-                                   value="#xmlFormat(sonPartiTekstil.en)#" placeholder="0">
+                                   value="#xmlFormat(isEditMode ? editTekstil.en : sonPartiTekstil.en)#" placeholder="0">
                         </div>
                         <div class="col-6 col-sm-4">
                             <label class="form-label fw-semibold small mb-1">Gramaj (g/m²)</label>
                             <input type="number" step="0.01" class="form-control form-control-sm" id="txt_gramaj"
-                                   value="#xmlFormat(sonPartiTekstil.gramaj)#" placeholder="0">
+                                   value="#xmlFormat(isEditMode ? editTekstil.gramaj : sonPartiTekstil.gramaj)#" placeholder="0">
                         </div>
                         <div class="col-6 col-sm-4">
                             <label class="form-label fw-semibold small mb-1">Isı (°C)</label>
                             <input type="number" step="0.1" class="form-control form-control-sm" id="txt_isi"
-                                   value="#xmlFormat(sonPartiTekstil.isi)#" placeholder="0">
+                                   value="#xmlFormat(isEditMode ? editTekstil.isi : sonPartiTekstil.isi)#" placeholder="0">
                         </div>
                         <div class="col-6 col-sm-4">
                             <label class="form-label fw-semibold small mb-1">Hız (m/dak)</label>
                             <input type="number" step="0.1" class="form-control form-control-sm" id="txt_hiz"
-                                   value="#xmlFormat(sonPartiTekstil.hiz)#" placeholder="0">
+                                   value="#xmlFormat(isEditMode ? editTekstil.hiz : sonPartiTekstil.hiz)#" placeholder="0">
                         </div>
                         <div class="col-6 col-sm-4">
                             <label class="form-label fw-semibold small mb-1">Besleme Avans</label>
                             <input type="number" step="0.01" class="form-control form-control-sm" id="txt_besleme_avans"
-                                   value="#xmlFormat(sonPartiTekstil.besleme_avans)#" placeholder="0">
+                                   value="#xmlFormat(isEditMode ? editTekstil.besleme_avans : sonPartiTekstil.besleme_avans)#" placeholder="0">
                         </div>
                         <div class="col-6 col-sm-4">
                             <label class="form-label fw-semibold small mb-1">Tuşe</label>
                             <input type="text" class="form-control form-control-sm" id="txt_tuse"
-                                   value="#xmlFormat(sonPartiTekstil.tuse)#" placeholder="Tuşe...">
+                                   value="#xmlFormat(isEditMode ? editTekstil.tuse : sonPartiTekstil.tuse)#" placeholder="Tuşe...">
                         </div>
                         <div class="col-6 col-sm-4">
                             <label class="form-label fw-semibold small mb-1">Çekme</label>
                             <input type="text" class="form-control form-control-sm" id="txt_cekme"
-                                   value="#xmlFormat(sonPartiTekstil.cekme)#" placeholder="Çekme...">
+                                   value="#xmlFormat(isEditMode ? editTekstil.cekme : sonPartiTekstil.cekme)#" placeholder="Çekme...">
                         </div>
                     </div>
                     </cfoutput>
@@ -635,6 +704,7 @@ var QUICK_COMPANY_ID   = #getShip.company_id#;
 var QUICK_COMPANY_NAME = '#jsStringFormat(getShip.company_name)#';
 var QUICK_UNIT         = '#jsStringFormat(mainUnit)#';
 var QUICK_UNIT_ID      = #mainUnitId#;
+var EDIT_ORDER_ID      = #editOrderId#;
 
 function openQuickEkIslemModal() {
     var modalEl = document.getElementById('quickEkIslemModal');
@@ -758,6 +828,19 @@ document.querySelectorAll('.ek-chk').forEach(function(chk) {
     });
 });
 
+/* Düzenle modunda mevcut ek işlemleri işaretle */
+var EDIT_EK_ISLEM_IDS = #serializeJSON(editEkIslemIds)#;
+if (EDIT_EK_ISLEM_IDS.length) {
+    EDIT_EK_ISLEM_IDS.forEach(function(sid) {
+        var chk = document.querySelector('.ek-chk[data-stock-id="' + sid + '"]');
+        if (chk) {
+            chk.checked = true;
+            var row = document.getElementById('ek_row_' + sid);
+            if (row) row.classList.add('selected');
+        }
+    });
+}
+
 /* ─── Kaydet ─── */
 function saveParti() {
     var mainMetre = parseFloat(document.getElementById('main_metre').value) || 0;
@@ -814,7 +897,7 @@ function saveParti() {
     var todayStr = today.toISOString().slice(0, 10) + 'T' + today.toTimeString().slice(0, 5);
 
     var data = {
-        order_id:       0,
+        order_id:       EDIT_ORDER_ID,
         purchase_sales: 'true',
         order_stage:    document.getElementById('order_stage').value,
         order_number:   document.getElementById('parti_kodu').value,
