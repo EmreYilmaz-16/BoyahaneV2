@@ -267,7 +267,7 @@
             <div class="card-body p-3">
                 <div class="row g-3">
                     <div class="col-md-4">
-                        <label for="ozel_kod" class="form-label">Özel Kod 1</label>
+                        <label for="ozel_kod" class="form-label">Doruk ID</label>
                         <input type="text" class="form-control" id="ozel_kod" name="ozel_kod"
                                value="<cfif isDefined('form.ozel_kod')><cfoutput>#htmlEditFormat(form.ozel_kod)#</cfoutput></cfif>">
                     </div>
