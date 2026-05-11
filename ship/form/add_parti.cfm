@@ -56,6 +56,47 @@
 <cfset partiNo   = countParts.c + 1>
 <cfset partiKodu = getShip.ship_number & "-P" & partiNo>
 
+<!--- Son parti verileri (miktar/kg/açıklama ön doldurma) --->
+<cfquery name="getSonPartiRec" datasource="boyahane">
+    SELECT o.order_id, COALESCE(o.order_head, '') AS order_head
+    FROM orders o
+    WHERE o.ref_ship_id = <cfqueryparam value="#shipId#" cfsqltype="cf_sql_integer">
+    ORDER BY o.order_id DESC
+    LIMIT 1
+</cfquery>
+<cfset sonPartiMiktar   = "">
+<cfset sonPartiKg       = "">
+<cfset sonPartiAciklama = "">
+<cfif getSonPartiRec.recordCount AND val(getSonPartiRec.order_id) gt 0>
+    <cfquery name="getSonPartiMiktar" datasource="boyahane">
+        SELECT orw.quantity
+        FROM order_row orw
+        JOIN stocks st ON orw.stock_id = st.stock_id
+        WHERE orw.order_id = <cfqueryparam value="#getSonPartiRec.order_id#" cfsqltype="cf_sql_integer">
+          AND COALESCE(st.is_main_stock, true) = true
+          AND LOWER(TRIM(orw.unit)) IN ('mt','mtr','m','metre')
+        ORDER BY orw.order_row_id
+        LIMIT 1
+    </cfquery>
+    <cfquery name="getSonPartiKg" datasource="boyahane">
+        SELECT orw.quantity
+        FROM order_row orw
+        WHERE orw.order_id = <cfqueryparam value="#getSonPartiRec.order_id#" cfsqltype="cf_sql_integer">
+          AND LOWER(TRIM(orw.unit)) = 'kg'
+        ORDER BY orw.order_row_id
+        LIMIT 1
+    </cfquery>
+    <cfif getSonPartiMiktar.recordCount AND isNumeric(getSonPartiMiktar.quantity) AND val(getSonPartiMiktar.quantity) gt 0>
+        <cfset sonPartiMiktar = val(getSonPartiMiktar.quantity)>
+    </cfif>
+    <cfif getSonPartiKg.recordCount AND isNumeric(getSonPartiKg.quantity) AND val(getSonPartiKg.quantity) gt 0>
+        <cfset sonPartiKg = val(getSonPartiKg.quantity)>
+    </cfif>
+    <cfif len(trim(getSonPartiRec.order_head ?: ""))>
+        <cfset sonPartiAciklama = trim(getSonPartiRec.order_head)>
+    </cfif>
+</cfif>
+
 <!--- Ek işlem ürünleri (bu firmaya ait) --->
 <cfquery name="getEkIslem" datasource="boyahane">
     SELECT s.stock_id, s.stock_code, p.product_id, p.product_name, p.product_code
@@ -247,7 +288,7 @@
                             <i class="fas fa-sticky-note me-1 text-primary"></i>Açıklama
                         </label>
                         <textarea class="form-control" id="order_detail" rows="3"
-                                  placeholder="Parti açıklaması..."></textarea>
+                                  placeholder="Parti açıklaması..."><cfoutput>#xmlFormat(sonPartiAciklama)#</cfoutput></textarea>
                     </div>
 
                     <!--- Sarım ve Ambalaj --->
@@ -316,7 +357,7 @@
                                 <i class="fas fa-ruler me-1 text-primary"></i>Metre
                             </label>
                             <input type="number" step="0.0001" class="form-control" id="main_metre"
-                                   value="<cfoutput>#mainMetre#</cfoutput>"
+                                   value="<cfoutput>#len(sonPartiMiktar) ? sonPartiMiktar : mainMetre#</cfoutput>"
                                    placeholder="0.0000">
                         </div>
                         <div class="col-sm-4">
@@ -324,7 +365,7 @@
                                 <i class="fas fa-weight me-1 text-primary"></i>Kg
                             </label>
                             <input type="number" step="0.0001" class="form-control" id="main_kg"
-                                   value="<cfoutput>#mainKg#</cfoutput>"
+                                   value="<cfoutput>#len(sonPartiKg) ? sonPartiKg : mainKg#</cfoutput>"
                                    placeholder="0.0000">
                         </div>
                         <div class="col-sm-4">
