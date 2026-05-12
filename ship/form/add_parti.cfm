@@ -24,14 +24,14 @@
 
 <!--- Sarım şekli ve ambalaj tipleri --->
 <cfquery name="getSarimSekli" datasource="boyahane">
-    SELECT sarim_sekli_id, sarim_sekli_adi
+    SELECT sarim_sekli_id, sarim_sekli_adi, COALESCE(is_default, false) AS is_default
     FROM setup_sarim_sekli
     WHERE is_active = true
     ORDER BY sort_order, sarim_sekli_adi
 </cfquery>
 
 <cfquery name="getAmbalajTipleri" datasource="boyahane">
-    SELECT ambalaj_id, ambalaj_adi
+    SELECT ambalaj_id, ambalaj_adi, COALESCE(is_default, false) AS is_default
     FROM setup_ambalaj
     WHERE is_active = true
     ORDER BY sort_order, ambalaj_adi
@@ -344,7 +344,7 @@
                             <select class="form-select" id="sarim_sekli">
                                 <option value="0">-- Seçiniz --</option>
                                 <cfoutput query="getSarimSekli">
-                                <option value="#sarim_sekli_id#">#xmlFormat(sarim_sekli_adi)#</option>
+                                <option value="#sarim_sekli_id#"<cfif is_default> selected</cfif>>#xmlFormat(sarim_sekli_adi)#</option>
                                 </cfoutput>
                             </select>
                         </div>
@@ -355,7 +355,7 @@
                             <select class="form-select" id="ambalaj">
                                 <option value="0">-- Seçiniz --</option>
                                 <cfoutput query="getAmbalajTipleri">
-                                <option value="#ambalaj_id#">#xmlFormat(ambalaj_adi)#</option>
+                                <option value="#ambalaj_id#"<cfif is_default> selected</cfif>>#xmlFormat(ambalaj_adi)#</option>
                                 </cfoutput>
                             </select>
                         </div>

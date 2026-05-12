@@ -52,20 +52,22 @@
 
 <!--- Sarım şekli ve ambalaj (parti modalı için) --->
 <cfquery name="getSarimSekli" datasource="boyahane">
-    SELECT sarim_sekli_id, sarim_sekli_adi FROM setup_sarim_sekli
+    SELECT sarim_sekli_id, sarim_sekli_adi, COALESCE(is_default, false) AS is_default
+    FROM setup_sarim_sekli
     WHERE is_active = true ORDER BY sort_order, sarim_sekli_adi
 </cfquery>
 <cfquery name="getAmbalaj" datasource="boyahane">
-    SELECT ambalaj_id, ambalaj_adi FROM setup_ambalaj
+    SELECT ambalaj_id, ambalaj_adi, COALESCE(is_default, false) AS is_default
+    FROM setup_ambalaj
     WHERE is_active = true ORDER BY sort_order, ambalaj_adi
 </cfquery>
 <cfset sarimArr = []>
 <cfloop query="getSarimSekli">
-    <cfset arrayAppend(sarimArr, {"id": val(sarim_sekli_id), "label": sarim_sekli_adi ?: ""})>
+    <cfset arrayAppend(sarimArr, {"id": val(sarim_sekli_id), "label": sarim_sekli_adi ?: "", "is_default": isBoolean(is_default) ? is_default : false})>
 </cfloop>
 <cfset ambalajArr = []>
 <cfloop query="getAmbalaj">
-    <cfset arrayAppend(ambalajArr, {"id": val(ambalaj_id), "label": ambalaj_adi ?: ""})>
+    <cfset arrayAppend(ambalajArr, {"id": val(ambalaj_id), "label": ambalaj_adi ?: "", "is_default": isBoolean(is_default) ? is_default : false})>
 </cfloop>
 
 <cfquery name="getProductCats" datasource="boyahane">
@@ -1244,7 +1246,11 @@ function openYeniPartiModal(shipId) {
             opt.value = a.id; opt.textContent = a.label; ab.appendChild(opt);
         });
     }
-    ss.value = '0'; ab.value = '0';
+    /* Varsayılan değerleri seç */
+    var defSarim   = ALL_SARIM.find(function(s)  { return s.is_default; });
+    var defAmbalaj = ALL_AMBALAJ.find(function(a) { return a.is_default; });
+    ss.value = defSarim   ? String(defSarim.id)   : '0';
+    ab.value = defAmbalaj ? String(defAmbalaj.id) : '0';
 
     var modal = new bootstrap.Modal(document.getElementById('modalYeniParti'));
     modal.show();
