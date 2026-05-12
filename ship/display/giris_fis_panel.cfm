@@ -1028,18 +1028,19 @@ function mfis_filterCompany(q) {
     if (!q || q.length < 1) { dd.classList.add('d-none'); return; }
     q = q.toLowerCase();
     var results = mfis_allCompanies.filter(function(c) {
-        return ((c.display_name || c.fullname || '') + ' ' + (c.nickname || '') + ' ' + (c.member_code || '')).toLowerCase().includes(q);
+        return ((c.display_name || '') + ' ' + (c.member_code || '') + ' ' + (c.company_code || '')).toLowerCase().includes(q);
     }).slice(0, 20);
     if (!results.length) { dd.innerHTML = '<div class="search-item text-muted">Sonuç yok</div>'; dd.classList.remove('d-none'); return; }
     dd.innerHTML = '';
     results.forEach(function(c) {
         var div = document.createElement('div');
         div.className = 'search-item';
-        div.innerHTML = '<div>' + escHtml(c.display_name || c.nickname || c.fullname) + '</div>' +
-                        '<div class="item-code">' + escHtml(c.member_code || '') + '</div>';
+        var label = c.member_code ? '[' + escHtml(c.member_code) + '] ' + escHtml(c.display_name) : escHtml(c.display_name || '');
+        div.innerHTML = '<div>' + label + '</div>';
         div.addEventListener('click', function() {
             dd.classList.add('d-none');
-            document.getElementById('mfis_companySearch').value  = c.display_name || c.nickname || c.fullname;
+            var searchVal = c.member_code ? '[' + c.member_code + '] ' + (c.display_name || '') : (c.display_name || '');
+            document.getElementById('mfis_companySearch').value  = searchVal;
             document.getElementById('mfis_company_id').value     = c.company_id;
             document.getElementById('mfis_company_code').value   = c.company_code || c.nickname || '';
             mfis_updatePartiNo();
@@ -1505,18 +1506,19 @@ function mukm_filterCompany(q) {
     if (!q || q.length < 1) { dd.classList.add('d-none'); return; }
     q = q.toLowerCase();
     var results = mukm_allCompanies.filter(function(c) {
-        return ((c.display_name || c.fullname || '') + ' ' + (c.nickname || '') + ' ' + (c.member_code || '')).toLowerCase().includes(q);
+        return ((c.display_name || '') + ' ' + (c.member_code || '') + ' ' + (c.company_code || '')).toLowerCase().includes(q);
     }).slice(0, 20);
     if (!results.length) { dd.innerHTML = '<div class="search-item text-muted">Sonuç yok</div>'; dd.classList.remove('d-none'); return; }
     dd.innerHTML = '';
     results.forEach(function(c) {
         var div = document.createElement('div');
         div.className = 'search-item';
-        div.innerHTML = '<div>' + escHtml(c.display_name || c.nickname || c.fullname) + '</div>' +
-                        '<div class="item-code">' + escHtml(c.member_code || '') + '</div>';
+        var label = c.member_code ? '[' + escHtml(c.member_code) + '] ' + escHtml(c.display_name) : escHtml(c.display_name || '');
+        div.innerHTML = '<div>' + label + '</div>';
         div.addEventListener('click', function() {
             dd.classList.add('d-none');
-            document.getElementById('mukm_companySearch').value = c.display_name || c.nickname || c.fullname;
+            var searchVal = c.member_code ? '[' + c.member_code + '] ' + (c.display_name || '') : (c.display_name || '');
+            document.getElementById('mukm_companySearch').value = searchVal;
             document.getElementById('mukm_company_id').value = c.company_id;
         });
         dd.appendChild(div);
