@@ -165,7 +165,7 @@
     FROM product_cat
     <cfif structKeyExists(params, "ek_islem_kategori_ids") AND len(trim(params.ek_islem_kategori_ids))>
         where product_catid IN (
-            <cfqueryparam value="#params.ek_islem_kategori_ids#" cfsqltype="cf_sql_varchar" list="true">
+            <cfqueryparam value="#params.ek_islem_kategori_ids#" cfsqltype="cf_sql_integer" list="true">
         )
     </cfif>
     ORDER BY hierarchy, product_cat
