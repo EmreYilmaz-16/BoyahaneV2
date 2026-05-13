@@ -344,9 +344,16 @@
             </div>
             <div class="modal-body">
                 <p class="text-muted small mb-3" id="colorPickerProductName"></p>
+                <div class="mb-3" id="colorPickerSearchWrap">
+                    <input type="text" class="form-control form-control-sm" id="colorPickerSearch"
+                           placeholder="Renk adı veya kodu ara..." autocomplete="off">
+                </div>
                 <div id="colorOptionsList" class="d-flex flex-wrap gap-2"></div>
                 <div class="mt-3" id="noColorMsg" style="display:none;">
                     <div class="alert alert-info py-2 mb-0">Bu ürün için tanımlı renk varyantı bulunmuyor.</div>
+                </div>
+                <div class="mt-2" id="noColorSearchMsg" style="display:none;">
+                    <div class="alert alert-warning py-2 mb-0 small">Arama kriterine uyan renk bulunamadı.</div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -892,34 +899,79 @@ function openColorPicker(rowData, productId) {
     $('##colorPickerProductName').text(name);
     $('##colorPickerSaveBtn').prop('disabled', true).html('<i class="fas fa-check me-1"></i>Kaydet');
 
-    var $list = $('##colorOptionsList').empty();
     $('##noColorMsg').hide();
+    $('##noColorSearchMsg').hide();
+
+    /* Arama kutusunu sıfırla ve event bağla */
+    var $searchInput = $('##colorPickerSearch');
+    $searchInput.val('');
+    $searchInput.off('input.colorFilter').on('input.colorFilter', function() {
+        filterColorOptions($(this).val());
+    });
+    $('##colorPickerSearchWrap').toggle(variants.length > 0);
 
     if (variants.length === 0) {
         $('##noColorMsg').show();
     } else {
-        variants.forEach(function(v, idx) {
-            var label = v.property || v.stock_code_2 || v.stock_code;
-            var bg    = getBg(idx);
-            var $opt  = $('<div>').addClass('color-option').attr('data-stock-id', v.stock_id)
-                .html('<span class="color-dot" style="background:' + bg + '"></span>' +
-                      '<span>' + $('<span>').text(label).html() +
-                      (v.stock_code_2 ? ' <small class="text-muted">(' + $('<span>').text(v.stock_code_2).html() + ')</small>' : '') +
-                      '</span>');
-            $opt.on('click', function() {
-                $list.find('.color-option').removeClass('active');
-                $(this).addClass('active');
-                colorPickerSelected = v;
-                $('##colorPickerSaveBtn').prop('disabled', false);
-            });
-            $list.append($opt);
-        });
+        renderColorOptions(variants);
     }
 
     /* Renk picker'ı body'e taşı, üstte aç */
     var cpEl = document.getElementById('colorPickerModal');
     if (cpEl.parentNode !== document.body) document.body.appendChild(cpEl);
-    bootstrap.Modal.getOrCreateInstance(cpEl).show();
+    var cpModal = bootstrap.Modal.getOrCreateInstance(cpEl);
+    cpModal.show();
+    /* Modal açıldığında arama kutusuna odaklan */
+    cpEl.addEventListener('shown.bs.modal', function onShown() {
+        cpEl.removeEventListener('shown.bs.modal', onShown);
+        if (variants.length > 0) document.getElementById('colorPickerSearch').focus();
+    });
+}
+
+function renderColorOptions(list) {
+    var $list = $('##colorOptionsList').empty();
+    $('##noColorSearchMsg').hide();
+    if (!list.length) {
+        $('##noColorSearchMsg').show();
+        return;
+    }
+    list.forEach(function(v, idx) {
+        var label = v.property || v.stock_code_2 || v.stock_code;
+        var bg    = getBg(idx);
+        var $opt  = $('<div>').addClass('color-option').attr('data-stock-id', v.stock_id)
+            .html('<span class="color-dot" style="background:' + bg + '"></span>' +
+                  '<span>' + $('<span>').text(label).html() +
+                  (v.stock_code_2 ? ' <small class="text-muted">(' + $('<span>').text(v.stock_code_2).html() + ')</small>' : '') +
+                  '</span>');
+        $opt.on('click', function() {
+            $('##colorOptionsList .color-option').removeClass('active');
+            $(this).addClass('active');
+            colorPickerSelected = v;
+            $('##colorPickerSaveBtn').prop('disabled', false);
+        });
+        /* Önceki seçim varsa işaretle */
+        if (colorPickerSelected && colorPickerSelected.stock_id === v.stock_id) {
+            $opt.addClass('active');
+        }
+        $list.append($opt);
+    });
+}
+
+function filterColorOptions(q) {
+    var variants = colorMap[colorPickerPartiRow
+        ? (colorPickerPartiRow.FIRST_PRODUCT_ID || colorPickerPartiRow.first_product_id)
+        : 0] || [];
+    if (!q || !q.trim()) {
+        renderColorOptions(variants);
+        return;
+    }
+    q = q.toLowerCase();
+    var filtered = variants.filter(function(v) {
+        return ((v.property     || '') + ' ' +
+                (v.stock_code_2 || '') + ' ' +
+                (v.stock_code   || '')).toLowerCase().includes(q);
+    });
+    renderColorOptions(filtered);
 }
 </script>
 </cfoutput>
