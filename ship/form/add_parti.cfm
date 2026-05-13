@@ -140,6 +140,13 @@
         <cfset sonPartiTekstil.cekme = trim(getSonPartiRec.cekme)>
     </cfif>
 </cfif>
+<cfset params=structNew()>
+<cfquery name="getParams" datasource="boyahene">
+    SELECT * from boyahane_params 
+</cfquery>
+<cfloop query="getParams">
+    <cfset "params.#parametre_adi# = #deger#">
+</cfloop>
 
 <!--- Ek işlem ürünleri (bu firmaya ait) --->
 <cfquery name="getEkIslem" datasource="boyahane">
@@ -156,6 +163,11 @@
 <cfquery name="getProductCats" datasource="boyahane">
     SELECT product_catid, product_cat, hierarchy
     FROM product_cat
+    <cfif structKeyExists("params", "ek_islem_kategori_ids") AND len(trim(params.ek_islem_kategori_ids))>
+        where product_catid IN (
+            <cfqueryparam value="#params.ek_islem_kategori_ids#" cfsqltype="cf_sql_varchar" list="true">
+        )
+    </cfif>
     ORDER BY hierarchy, product_cat
 </cfquery>
 
