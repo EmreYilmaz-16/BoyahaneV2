@@ -1706,8 +1706,8 @@ function mprtSaveQuickEkIslem() {
                 var newStockId = res.stock_id  || 0;
                 var newProdId  = res.product_id || 0;
                 var listEl = document.getElementById('mprt_ekIslemList');
-                /* Eğer liste "tanımlı değil" mesajı içeriyorsa temizle */
-                if (listEl.querySelector('span.text-muted')) listEl.innerHTML = '';
+                /* Eğer liste "tanımlı değil" mesajı içeriyorsa temizle (checkbox yoksa) */
+                if (!listEl.querySelector('.mprt-ek-chk')) listEl.innerHTML = '';
                 var html = '<div class="form-check mb-1">'
                     + '<input class="form-check-input mprt-ek-chk" type="checkbox"'
                     + ' id="mprt_ek_' + newStockId + '" checked'
