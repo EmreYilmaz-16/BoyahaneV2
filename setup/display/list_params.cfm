@@ -121,7 +121,7 @@ function buildGrid() {
             {
                 dataField:'parametre_adi', caption:'Parametre Adı', minWidth:180,
                 cellTemplate: function(c,o) {
-                    $('<code style="font-size:.85rem;color:#1967d2">' + escHtml(o.value) + '</code>').appendTo(c);
+                    $('<code style="font-size:.85rem;color:##1967d2">' + escHtml(o.value) + '</code>').appendTo(c);
                 }
             },
             { dataField:'deger',         caption:'Değer',          minWidth:200 },
