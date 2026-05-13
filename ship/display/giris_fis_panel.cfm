@@ -69,10 +69,15 @@
 <cfloop query="getAmbalaj">
     <cfset arrayAppend(ambalajArr, {"id": val(ambalaj_id), "label": ambalaj_adi ?: "", "is_default": isBoolean(is_default) ? is_default : false})>
 </cfloop>
-
+<cfset params = application.siteParams>
 <cfquery name="getProductCats" datasource="boyahane">
     SELECT product_catid, product_cat, COALESCE(hierarchy,'') AS hierarchy
-    FROM product_cat
+     <cfif structKeyExists(params, "ek_islem_kategori_ids") AND len(trim(params.ek_islem_kategori_ids))>
+        where product_catid IN (
+            <cfqueryparam value="#params.ek_islem_kategori_ids#" cfsqltype="cf_sql_integer" list="true">
+        )
+    </cfif>
+    FROM product_cat 
     ORDER BY hierarchy, product_cat
 </cfquery>
 <cfset productCatsArr = []>
