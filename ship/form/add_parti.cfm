@@ -141,7 +141,7 @@
     </cfif>
 </cfif>
 <cfset params=structNew()>
-<cfquery name="getParams" datasource="boyahene">
+<cfquery name="getParams" datasource="boyahane">
     SELECT * from boyahane_params 
 </cfquery>
 <cfloop query="getParams">
