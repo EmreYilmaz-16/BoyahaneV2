@@ -58,7 +58,26 @@ Description			:
 	<cffunction name="OnApplicationStart" access="public" returntype="boolean" output="false" hint="Uygulama başladığı anda çalıştırılacak kodlar. Tek defa çalıştırır.">
 		<!--- Application başlatma işlemleri buraya eklenebilir --->
 		<cfset application.userFavoritesTableReady = false>
+		<cfset loadSiteParams()>
 		<cfreturn true />
+	</cffunction>
+
+	<cffunction name="loadSiteParams" access="public" returntype="void" output="false"
+			hint="boyahane_params tablosunu application.siteParams struct'ına yükler. Her application restart'ta ve gerektiğinde çağrılır.">
+		<cflock scope="application" type="exclusive" timeout="10">
+			<cfset application.siteParams = structNew()>
+			<cftry>
+				<cfquery name="qParams" datasource="#this.datasource#">
+					SELECT parametre_adi, deger FROM boyahane_params
+				</cfquery>
+				<cfloop query="qParams">
+					<cfset application.siteParams[parametre_adi] = deger>
+				</cfloop>
+				<cfcatch type="any">
+					<cflog file="application" type="warning" text="boyahane_params yüklenemedi: #cfcatch.message#">
+				</cfcatch>
+			</cftry>
+		</cflock>
 	</cffunction>
 
 	<cffunction name="ensureUserFavoritesTable" access="private" returntype="void" output="false" hint="Favoriler tablosu yoksa oluşturur.">
@@ -141,6 +160,9 @@ Description			:
 		<cfsetting showdebugoutput="no">
 		<cfif NOT structKeyExists(application, "userFavoritesTableReady") OR NOT application.userFavoritesTableReady>
 			<cfset ensureUserFavoritesTable()>
+		</cfif>
+		<cfif NOT structKeyExists(application, "siteParams")>
+			<cfset loadSiteParams()>
 		</cfif>
 			<cfscript>
                 attributes=structNew();
