@@ -140,15 +140,13 @@
         <cfset sonPartiTekstil.cekme = trim(getSonPartiRec.cekme)>
     </cfif>
 </cfif>
-<cfset params=structNew()>
+<cfset params = structNew()>
 <cfquery name="getParams" datasource="boyahane">
-    SELECT * from boyahane_params 
+    SELECT parametre_adi, deger FROM boyahane_params
 </cfquery>
 <cfloop query="getParams">
-    <cfset "params.#parametre_adi# = #deger#">
+    <cfset params[parametre_adi] = deger>
 </cfloop>
-<cfdump var="#getParams#" label="Params Query">
-<cfdump var="#params#" label="Params Struct">
 
 <!--- Ek işlem ürünleri (bu firmaya ait) --->
 <cfquery name="getEkIslem" datasource="boyahane">
