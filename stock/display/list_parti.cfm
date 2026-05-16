@@ -14,6 +14,9 @@
            o.taxtotal,
            o.record_date,
            COALESCE(c.nickname, c.fullname, '') AS company_name,
+           COALESCE(c.member_code, '')          AS member_code,
+           COALESCE(o.main_color, '')           AS main_color,
+           COALESCE(o.top_adedi, 0)             AS top_adedi,
            COALESCE(s.ship_id, 0)              AS ship_id,
            COALESCE(s.hk_metre, 0)             AS hk_metre
     FROM orders o
@@ -73,6 +76,46 @@
             "property":     property     ?: "",
             "product_id":   val(product_id)
         })>
+    </cfloop>
+</cfif>
+
+<!--- Ürün kumaş tipi haritası: product_id -> kumas_tipi --->
+<cfset productKumasTipiMap = {}>
+<cfif arrayLen(rowProductIds) gt 0>
+    <cfquery name="getProductKumas" datasource="boyahane">
+        SELECT product_id, COALESCE(kumas_tipi, '') AS kumas_tipi
+        FROM product
+        WHERE product_id IN (<cfqueryparam value="#arrayToList(rowProductIds)#" cfsqltype="cf_sql_integer" list="true">)
+    </cfquery>
+    <cfloop query="getProductKumas">
+        <cfset productKumasTipiMap[val(product_id)] = kumas_tipi ?: "">
+    </cfloop>
+</cfif>
+
+<!--- Renk seçili olan stok ID'lerini topla → color_info sorgusu --->
+<cfset colorStockIds = []>
+<cfloop query="getPartiRows">
+    <cfif NOT isBoolean(is_main_stock) ? true : is_main_stock EQ false>
+        <cfif isNumeric(stock_id) AND val(stock_id) GT 0 AND NOT arrayContains(colorStockIds, val(stock_id))>
+            <cfset arrayAppend(colorStockIds, val(stock_id))>
+        </cfif>
+    </cfif>
+</cfloop>
+
+<cfset colorInfoMap = {}>
+<cfif arrayLen(colorStockIds) gt 0>
+    <cfquery name="getColorInfoData" datasource="boyahane">
+        SELECT stock_id,
+               COALESCE(kartela_no, '')                     AS kartela_no,
+               COALESCE(TO_CHAR(kartela_date,'DD/MM/YYYY'),'') AS kartela_date
+        FROM color_info
+        WHERE stock_id IN (<cfqueryparam value="#arrayToList(colorStockIds)#" cfsqltype="cf_sql_integer" list="true">)
+    </cfquery>
+    <cfloop query="getColorInfoData">
+        <cfset colorInfoMap[val(stock_id)] = {
+            "kartela_no":   kartela_no   ?: "",
+            "kartela_date": kartela_date ?: ""
+        }>
     </cfloop>
 </cfif>
 
@@ -136,6 +179,9 @@
         "hk_metre":           isNumeric(hk_metre) ? val(hk_metre) : 0,
         "company_id":         val(company_id),
         "company_name":       company_name ?: "",
+        "member_code":        member_code  ?: "",
+        "main_color":         main_color   ?: "",
+        "top_adedi":          isNumeric(top_adedi) ? val(top_adedi) : 0,
         "order_date":         isDate(order_date)  ? dateFormat(order_date,  "dd/mm/yyyy") : "",
         "deliverdate":        isDate(deliverdate) ? dateFormat(deliverdate, "dd/mm/yyyy") : "",
         "nettotal":           isNumeric(nettotal)   ? val(nettotal)   : 0,
@@ -152,7 +198,10 @@
         "first_qty":          fr.first_qty,
         "first_unit":         fr.first_unit,
         "parti_metre":        fr.parti_metre,
-        "parti_kg":           fr.parti_kg
+        "parti_kg":           fr.parti_kg,
+        "kumas_tipi":         structKeyExists(productKumasTipiMap, fr.first_product_id) ? productKumasTipiMap[fr.first_product_id] : "",
+        "kartela_no":         (NOT fr.first_is_main AND structKeyExists(colorInfoMap, fr.first_stock_id)) ? colorInfoMap[fr.first_stock_id].kartela_no   : "",
+        "kartela_date":       (NOT fr.first_is_main AND structKeyExists(colorInfoMap, fr.first_stock_id)) ? colorInfoMap[fr.first_stock_id].kartela_date  : ""
     })>
 </cfloop>
 
@@ -505,7 +554,8 @@ window.addEventListener('load', function() {
                             .appendTo(c);
                     }
                 },
-                { dataField:'company_name', caption:'Müşteri',    minWidth:160 },
+                { dataField:'company_name', caption:'Müşteri',    minWidth:140 },
+                { dataField:'member_code',  caption:'Üye Kodu',   width:100 },
                 { dataField:'ref_no',       caption:'İrsaliye No', width:150 },
                 { dataField:'stage_label',  caption:'Aşama',      width:130,
                     cellTemplate: function(c,o){
@@ -552,6 +602,16 @@ window.addEventListener('load', function() {
                         wrap.appendTo(c);
                     }
                 },
+                { dataField:'main_color',  caption:'Renk (Metin)', width:130 },
+                { dataField:'top_adedi',   caption:'Top',          width:70, alignment:'right', dataType:'number',
+                    cellTemplate: function(c,o) {
+                        if (o.value) $('<span>').text(o.value).appendTo(c);
+                        else $('<span>').addClass('text-muted').text('—').appendTo(c);
+                    }
+                },
+                { dataField:'kumas_tipi',  caption:'Kumaş Tipi',   width:120 },
+                { dataField:'kartela_no',  caption:'Kartela No',    width:120 },
+                { dataField:'kartela_date',caption:'Kartela Tar.',  width:105 },
                 { dataField:'parti_metre', caption:'Part. Metre', width:110, alignment:'right', dataType:'number', format:{type:'fixedPoint',precision:2} },
                 { dataField:'parti_kg',    caption:'Part. KG',    width:90,  alignment:'right', dataType:'number', format:{type:'fixedPoint',precision:2} },
                 { dataField:'hk_metre',   caption:'İrs. Metre', width:110, alignment:'right', dataType:'number', format:{type:'fixedPoint',precision:2} },
