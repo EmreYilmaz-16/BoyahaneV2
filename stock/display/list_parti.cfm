@@ -638,6 +638,9 @@ window.addEventListener('load', function() {
             paging: { pageSize: 50 },
             filterRow: { visible: true },
             sorting: { mode: 'multiple' },
+            columnChooser: { enabled: true, mode: 'select', title: 'Kolon Seçimi' },
+            groupPanel: { visible: true, emptyPanelText: 'Gruplamak için kolon başlığını buraya sürükleyin' },
+            grouping: { autoExpandAll: true },
             export: { enabled: true, fileName: 'partiler' },
             onExporting: function(e) {
                 var workbook = new ExcelJS.Workbook();
