@@ -85,8 +85,6 @@
     </div>
 </div>
 
-<div id="deleteConfirmContainer"></div>
-
 <script>
 var paramData = #serializeJSON(paramArr)#;
 
@@ -201,27 +199,21 @@ function saveParam() {
 }
 
 function deleteParam(id, label) {
-    $('##deleteConfirmContainer').dxDialog({
-        title: 'Sil',
-        messageHtml: '<b>' + escHtml(label) + '</b> parametresini silmek istiyor musunuz?',
-        buttons: [
-            {
-                text: 'Evet, Sil', type: 'danger',
-                onClick: function() {
-                    $.post('/setup/form/delete_param.cfm', { param_id: id }, function(res) {
-                        if (res && res.success) {
-                            paramData = paramData.filter(function(x){ return x.param_id != id; });
-                            $('##paramGrid').dxDataGrid('instance').option('dataSource', paramData);
-                            DevExpress.ui.notify('Silindi.', 'success', 2000);
-                        } else {
-                            DevExpress.ui.notify((res && res.message) || 'Silinemedi.', 'error', 3000);
-                        }
-                    }, 'json').fail(function(){ DevExpress.ui.notify('Sunucu hatası.', 'error', 3000); });
-                }
-            },
-            { text: 'Vazgeç' }
-        ]
-    }).dxDialog('instance').show();
+    DevExpress.ui.dialog.confirm(
+        '<b>' + escHtml(label) + '</b> parametresini silmek istiyor musunuz?',
+        'Sil'
+    ).done(function(confirmed) {
+        if (!confirmed) return;
+        $.post('/setup/form/delete_param.cfm', { param_id: id }, function(res) {
+            if (res && res.success) {
+                paramData = paramData.filter(function(x){ return x.param_id != id; });
+                $('##paramGrid').dxDataGrid('instance').option('dataSource', paramData);
+                DevExpress.ui.notify('Silindi.', 'success', 2000);
+            } else {
+                DevExpress.ui.notify((res && res.message) || 'Silinemedi.', 'error', 3000);
+            }
+        }, 'json').fail(function(){ DevExpress.ui.notify('Sunucu hatası.', 'error', 3000); });
+    });
 }
 
 function escHtml(str) {
