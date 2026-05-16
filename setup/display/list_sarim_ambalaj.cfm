@@ -131,8 +131,6 @@
     </div>
 </div>
 
-<div id="deleteConfirmContainer"></div>
-
 <script>
 var sarimData   = #serializeJSON(sarimArr)#;
 var ambalajData = #serializeJSON(ambalajArr)#;
@@ -269,34 +267,26 @@ function saveRow() {
 }
 
 function deleteRow(tableType, d) {
-    var label = d.adi;
-    $('##deleteConfirmContainer').dxDialog({
-        title: 'Sil',
-        messageHtml: '<b>' + label + '</b> kaydını silmek istiyor musunuz?',
-        buttons: [
-            {
-                text: 'Evet, Sil', type: 'danger',
-                onClick: function() {
-                    $.post('/setup/form/delete_sarim_ambalaj.cfm', { table_type: tableType, row_id: d.row_id }, function(res) {
-                        if (res && res.success) {
-                            var gridSel = tableType === 'sarim' ? '##sarimGrid' : '##ambalajGrid';
-                            if (tableType === 'sarim') {
-                                sarimData = sarimData.filter(function(x){ return x.row_id != d.row_id; });
-                                $('##sarimGrid').dxDataGrid('instance').option('dataSource', sarimData);
-                            } else {
-                                ambalajData = ambalajData.filter(function(x){ return x.row_id != d.row_id; });
-                                $('##ambalajGrid').dxDataGrid('instance').option('dataSource', ambalajData);
-                            }
-                            DevExpress.ui.notify('Silindi.', 'success', 2000);
-                        } else {
-                            DevExpress.ui.notify((res && res.message) || 'Silinemedi.', 'error', 3000);
-                        }
-                    }, 'json').fail(function(){ DevExpress.ui.notify('Sunucu hatası.', 'error', 3000); });
+    DevExpress.ui.dialog.confirm(
+        '<b>' + escHtml(d.adi) + '</b> kaydını silmek istiyor musunuz?',
+        'Sil'
+    ).done(function(confirmed) {
+        if (!confirmed) return;
+        $.post('/setup/form/delete_sarim_ambalaj.cfm', { table_type: tableType, row_id: d.row_id }, function(res) {
+            if (res && res.success) {
+                if (tableType === 'sarim') {
+                    sarimData = sarimData.filter(function(x){ return x.row_id != d.row_id; });
+                    $('##sarimGrid').dxDataGrid('instance').option('dataSource', sarimData);
+                } else {
+                    ambalajData = ambalajData.filter(function(x){ return x.row_id != d.row_id; });
+                    $('##ambalajGrid').dxDataGrid('instance').option('dataSource', ambalajData);
                 }
-            },
-            { text: 'Vazgeç' }
-        ]
-    }).dxDialog('instance').show();
+                DevExpress.ui.notify('Silindi.', 'success', 2000);
+            } else {
+                DevExpress.ui.notify((res && res.message) || 'Silinemedi.', 'error', 3000);
+            }
+        }, 'json').fail(function(){ DevExpress.ui.notify('Sunucu hatası.', 'error', 3000); });
+    });
 }
 </script>
 </cfoutput>
