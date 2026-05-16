@@ -640,7 +640,7 @@ window.addEventListener('load', function() {
             sorting: { mode: 'multiple' },
             columnChooser: { enabled: true, mode: 'select', title: 'Kolon Seçimi' },
             groupPanel: { visible: true, emptyPanelText: 'Gruplamak için kolon başlığını buraya sürükleyin' },
-            grouping: { autoExpandAll: true },
+            grouping: { autoExpandAll: false },
             export: { enabled: true, fileName: 'partiler' },
             onExporting: function(e) {
                 var workbook = new ExcelJS.Workbook();
