@@ -533,6 +533,7 @@
 ##colorPickerModal  { z-index: 99999 !important; }
 ##partiRowModal     { z-index: 99990 !important; }
 ##lpModalAddColor   { z-index: 99995 !important; }
+##receteModal       { z-index: 99997 !important; }
 .modal-backdrop     { z-index: 99988 !important; }
 /* Renk seçenekleri */
 ##colorPickerModal .color-option { cursor:pointer; border:2px solid ##e5e7eb; border-radius:8px; padding:8px 12px; transition:.15s; display:flex; align-items:center; gap:8px; }
