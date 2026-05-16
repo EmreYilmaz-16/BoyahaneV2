@@ -17,6 +17,7 @@
            COALESCE(c.member_code, '')          AS member_code,
            COALESCE(o.main_color, '')           AS main_color,
            COALESCE(o.top_adedi, 0)             AS top_adedi,
+           COALESCE(o.kumas_tipi, '')           AS order_kumas_tipi,
            COALESCE(s.ship_id, 0)              AS ship_id,
            COALESCE(s.hk_metre, 0)             AS hk_metre
     FROM orders o
@@ -215,7 +216,7 @@
         "first_unit":         fr.first_unit,
         "parti_metre":        fr.parti_metre,
         "parti_kg":           fr.parti_kg,
-        "kumas_tipi":         structKeyExists(productKumasTipiMap, fr.first_product_id) ? productKumasTipiMap[fr.first_product_id] : "",
+        "kumas_tipi":         len(trim(order_kumas_tipi ?: "")) ? trim(order_kumas_tipi) : (structKeyExists(productKumasTipiMap, fr.first_product_id) ? productKumasTipiMap[fr.first_product_id] : ""),
         "kartela_no":         (NOT fr.first_is_main AND structKeyExists(colorInfoMap, fr.first_stock_id)) ? colorInfoMap[fr.first_stock_id].kartela_no    : "",
         "kartela_date":       (NOT fr.first_is_main AND structKeyExists(colorInfoMap, fr.first_stock_id)) ? colorInfoMap[fr.first_stock_id].kartela_date   : "",
         "color_id":           (NOT fr.first_is_main AND structKeyExists(colorInfoMap, fr.first_stock_id)) ? colorInfoMap[fr.first_stock_id].color_id       : 0,
