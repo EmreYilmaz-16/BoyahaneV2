@@ -106,15 +106,31 @@
 <cfif arrayLen(colorStockIds) gt 0>
     <cfquery name="getColorInfoData" datasource="boyahane">
         SELECT stock_id,
-               COALESCE(kartela_no, '')                     AS kartela_no,
-               COALESCE(TO_CHAR(kartela_date,'DD/MM/YYYY'),'') AS kartela_date
+               color_id,
+               COALESCE(color_code, '')                        AS color_code,
+               COALESCE(color_name, '')                        AS color_name,
+               COALESCE(renk_no, '')                           AS renk_no,
+               COALESCE(kartela_no, '')                        AS kartela_no,
+               COALESCE(TO_CHAR(kartela_date,'DD/MM/YYYY'),'') AS kartela_date,
+               COALESCE(renk_tonu, 0)                          AS renk_tonu,
+               COALESCE(boya_derecesi, '')                     AS boya_derecesi,
+               COALESCE(flote, 0)                              AS flote,
+               COALESCE(information, '')                       AS information
         FROM color_info
         WHERE stock_id IN (<cfqueryparam value="#arrayToList(colorStockIds)#" cfsqltype="cf_sql_integer" list="true">)
     </cfquery>
     <cfloop query="getColorInfoData">
         <cfset colorInfoMap[val(stock_id)] = {
-            "kartela_no":   kartela_no   ?: "",
-            "kartela_date": kartela_date ?: ""
+            "color_id":      val(color_id),
+            "color_code":    color_code    ?: "",
+            "color_name":    color_name    ?: "",
+            "renk_no":       renk_no       ?: "",
+            "kartela_no":    kartela_no    ?: "",
+            "kartela_date":  kartela_date  ?: "",
+            "renk_tonu":     isNumeric(renk_tonu) ? val(renk_tonu) : 0,
+            "boya_derecesi": boya_derecesi ?: "",
+            "flote":         isNumeric(flote) ? val(flote) : 0,
+            "information":   information   ?: ""
         }>
     </cfloop>
 </cfif>
@@ -200,8 +216,16 @@
         "parti_metre":        fr.parti_metre,
         "parti_kg":           fr.parti_kg,
         "kumas_tipi":         structKeyExists(productKumasTipiMap, fr.first_product_id) ? productKumasTipiMap[fr.first_product_id] : "",
-        "kartela_no":         (NOT fr.first_is_main AND structKeyExists(colorInfoMap, fr.first_stock_id)) ? colorInfoMap[fr.first_stock_id].kartela_no   : "",
-        "kartela_date":       (NOT fr.first_is_main AND structKeyExists(colorInfoMap, fr.first_stock_id)) ? colorInfoMap[fr.first_stock_id].kartela_date  : ""
+        "kartela_no":         (NOT fr.first_is_main AND structKeyExists(colorInfoMap, fr.first_stock_id)) ? colorInfoMap[fr.first_stock_id].kartela_no    : "",
+        "kartela_date":       (NOT fr.first_is_main AND structKeyExists(colorInfoMap, fr.first_stock_id)) ? colorInfoMap[fr.first_stock_id].kartela_date   : "",
+        "color_id":           (NOT fr.first_is_main AND structKeyExists(colorInfoMap, fr.first_stock_id)) ? colorInfoMap[fr.first_stock_id].color_id       : 0,
+        "color_code":         (NOT fr.first_is_main AND structKeyExists(colorInfoMap, fr.first_stock_id)) ? colorInfoMap[fr.first_stock_id].color_code     : "",
+        "color_name":         (NOT fr.first_is_main AND structKeyExists(colorInfoMap, fr.first_stock_id)) ? colorInfoMap[fr.first_stock_id].color_name     : "",
+        "renk_no":            (NOT fr.first_is_main AND structKeyExists(colorInfoMap, fr.first_stock_id)) ? colorInfoMap[fr.first_stock_id].renk_no        : "",
+        "renk_tonu":          (NOT fr.first_is_main AND structKeyExists(colorInfoMap, fr.first_stock_id)) ? colorInfoMap[fr.first_stock_id].renk_tonu      : 0,
+        "boya_derecesi":      (NOT fr.first_is_main AND structKeyExists(colorInfoMap, fr.first_stock_id)) ? colorInfoMap[fr.first_stock_id].boya_derecesi  : "",
+        "flote":              (NOT fr.first_is_main AND structKeyExists(colorInfoMap, fr.first_stock_id)) ? colorInfoMap[fr.first_stock_id].flote           : 0,
+        "recete_not":         (NOT fr.first_is_main AND structKeyExists(colorInfoMap, fr.first_stock_id)) ? colorInfoMap[fr.first_stock_id].information     : ""
     })>
 </cfloop>
 
@@ -378,6 +402,90 @@
                 <button type="button" class="btn btn-primary btn-sm" id="lpBtnSave" onclick="saveLpNewColor()">
                     <i class="fas fa-save me-1"></i>Kaydet ve Reçeteye Git
                 </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!--- ─── Reçete Modal ─── --->
+<div class="modal fade" id="receteModal" tabindex="-1" aria-labelledby="receteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header py-2" style="background:#f0f4ff;">
+                <h6 class="modal-title fw-bold" id="receteModalLabel">
+                    <i class="fas fa-flask me-2 text-primary"></i>R E Ç E T E
+                </h6>
+                <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-3">
+                <!--- Satır 1: Renk Kodu / Renk No / Renk Adı / Açıklama --->
+                <div class="row g-2 mb-2">
+                    <div class="col-md-3">
+                        <label class="form-label form-label-sm fw-semibold mb-1">Renk Kodu</label>
+                        <div id="rc_color_code" class="form-control form-control-sm bg-light"></div>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label form-label-sm fw-semibold mb-1">Renk No</label>
+                        <div id="rc_renk_no" class="form-control form-control-sm bg-light"></div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label form-label-sm fw-semibold mb-1">Renk Adı</label>
+                        <div id="rc_color_name" class="form-control form-control-sm bg-light"></div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label form-label-sm fw-semibold mb-1">Açıklama</label>
+                        <div id="rc_information" class="form-control form-control-sm bg-light"></div>
+                    </div>
+                </div>
+                <!--- Satır 2: Renk # / Kartela Tar / Kartela No / Ton / Boya °C / Müşteri Kodu / Müşteri Adı --->
+                <div class="row g-2 mb-2">
+                    <div class="col-md-1">
+                        <label class="form-label form-label-sm fw-semibold mb-1">Renk #</label>
+                        <div id="rc_color_id" class="form-control form-control-sm bg-light"></div>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label form-label-sm fw-semibold mb-1">Kartela Tarihi</label>
+                        <div id="rc_kartela_date" class="form-control form-control-sm bg-light"></div>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label form-label-sm fw-semibold mb-1">Kartela No</label>
+                        <div id="rc_kartela_no" class="form-control form-control-sm bg-light"></div>
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label form-label-sm fw-semibold mb-1">Ton</label>
+                        <div id="rc_renk_tonu" class="form-control form-control-sm bg-light"></div>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label form-label-sm fw-semibold mb-1">Boya °C</label>
+                        <div id="rc_boya_derecesi" class="form-control form-control-sm bg-light"></div>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label form-label-sm fw-semibold mb-1">Müşteri Kodu</label>
+                        <div id="rc_member_code" class="form-control form-control-sm bg-light"></div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label form-label-sm fw-semibold mb-1">Müşteri Adı</label>
+                        <div id="rc_company_name" class="form-control form-control-sm bg-light fw-bold"></div>
+                    </div>
+                </div>
+                <!--- Satır 3: Kumaş Cinsi / Reçete Not / Flote --->
+                <div class="row g-2">
+                    <div class="col-md-4">
+                        <label class="form-label form-label-sm fw-semibold mb-1">Kumaş Cinsi</label>
+                        <div id="rc_kumas_tipi" class="form-control form-control-sm bg-light"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label form-label-sm fw-semibold mb-1">Reçete Not</label>
+                        <div id="rc_recete_not" class="form-control form-control-sm bg-light" style="min-height:36px;"></div>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label form-label-sm fw-semibold mb-1">Flote</label>
+                        <div id="rc_flote" class="form-control form-control-sm bg-light"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer py-2">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Kapat</button>
             </div>
         </div>
     </div>
@@ -635,6 +743,12 @@ window.addEventListener('load', function() {
                         $('<button>').addClass('btn btn-sm btn-outline-success').attr('title','Üretime Gönder')
                             .html('<i class="fas fa-industry"></i>')
                             .on('click', function(e2){ e2.stopPropagation(); partiSendToProduction(o.data.ORDER_ID||o.data.order_id); }).appendTo(g);
+                        var isMainRow = o.data.FIRST_IS_MAIN !== undefined ? o.data.FIRST_IS_MAIN : o.data.first_is_main;
+                        if (isMainRow === false || isMainRow === 'false' || isMainRow === 0) {
+                            $('<button>').addClass('btn btn-sm btn-outline-info').attr('title','Reçete')
+                                .html('<i class="fas fa-flask"></i>')
+                                .on('click', function(e2){ e2.stopPropagation(); openRecete(o.data); }).appendTo(g);
+                        }
                         g.appendTo(c);
                     }
                 }
@@ -945,6 +1059,33 @@ function partiSendToProduction(orderId) {
             DevExpress.ui.notify({ message: 'Sunucu hatası oluştu.', width: 400 }, 'error', 4000);
         }
     });
+}
+
+/* ─── Reçete Modal ─────────────────────────────────────────── */
+function openRecete(d) {
+    var set = function(id, val) {
+        var el = document.getElementById(id);
+        if (el) el.textContent = val || '—';
+    };
+    set('rc_color_code',    d.COLOR_CODE    || d.color_code    || '');
+    set('rc_renk_no',       d.RENK_NO       || d.renk_no       || '');
+    set('rc_color_name',    d.COLOR_NAME    || d.color_name    || '');
+    set('rc_information',   d.INFORMATION   || d.information   || d.recete_not || '');
+    set('rc_color_id',      d.COLOR_ID      || d.color_id      || '');
+    set('rc_kartela_date',  d.KARTELA_DATE  || d.kartela_date  || '');
+    set('rc_kartela_no',    d.KARTELA_NO    || d.kartela_no    || '');
+    var ton = d.RENK_TONU || d.renk_tonu || 0;
+    set('rc_renk_tonu',     ton > 0 ? ton : '');
+    set('rc_boya_derecesi', d.BOYA_DERECESI || d.boya_derecesi || '');
+    set('rc_member_code',   d.MEMBER_CODE   || d.member_code   || '');
+    set('rc_company_name',  d.COMPANY_NAME  || d.company_name  || '');
+    set('rc_kumas_tipi',    d.KUMAS_TIPI    || d.kumas_tipi    || '');
+    set('rc_recete_not',    d.RECETE_NOT    || d.recete_not    || '');
+    var flote = d.FLOTE || d.flote || 0;
+    set('rc_flote', flote > 0 ? flote : '');
+    var rcEl = document.getElementById('receteModal');
+    if (rcEl.parentNode !== document.body) document.body.appendChild(rcEl);
+    bootstrap.Modal.getOrCreateInstance(rcEl).show();
 }
 
 /* ─── Renk Seçim Popup ─────────────────────────────────────── */
