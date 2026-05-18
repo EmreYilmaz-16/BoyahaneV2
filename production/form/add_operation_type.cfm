@@ -261,16 +261,16 @@ $(document).ready(function(){
                                 } else {
                                     DevExpress.ui.notify('Operasyon kaydedildi, ürün kartı oluşturulamadı: ' + ((pRes && pRes.message) || ''), 'warning', 4000);
                                 }
-                                setTimeout(function(){ window.location.href = redirectUrl; }, 1200);
+                               // setTimeout(function(){ window.location.href = redirectUrl; }, 1200);
                             },
                             error: function() {
                                 DevExpress.ui.notify('Operasyon kaydedildi, ürün kartı oluşturulamadı.', 'warning', 4000);
-                                setTimeout(function(){ window.location.href = redirectUrl; }, 1200);
+                                //setTimeout(function(){ window.location.href = redirectUrl; }, 1200);
                             }
                         });
                     } else {
                         DevExpress.ui.notify('Operasyon tipi kaydedildi.', 'success', 2500);
-                        setTimeout(function(){ window.location.href = redirectUrl; }, 900);
+                        //setTimeout(function(){ window.location.href = redirectUrl; }, 900);
                     }
                 } else {
                     DevExpress.ui.notify((res && res.message) || 'Kayıt başarısız.', 'error', 4000);
