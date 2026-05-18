@@ -159,6 +159,20 @@
                     </div>
                 </div>
 
+                <cfif NOT editMode>
+                <div class="row g-3 mt-2">
+                    <div class="col-12">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="f_create_product" checked>
+                            <label class="form-check-label fw-semibold" for="f_create_product">
+                                <i class="fas fa-box me-1 text-success"></i>Ürün kartı da oluştur
+                                <small class="text-muted fw-normal">(Operasyon adı → Ürün adı, Operasyon kodu → Ürün kodu)</small>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                </cfif>
+
                 <div class="row mt-4">
                     <div class="col-12 d-flex gap-2">
                         <button type="submit" class="btn-save" id="btnSave">
@@ -218,10 +232,46 @@ $(document).ready(function(){
             dataType: 'json',
             success: function(res){
                 if (res && res.success) {
-                    DevExpress.ui.notify('Operasyon tipi kaydedildi.', 'success', 2500);
-                    setTimeout(function(){
-                        window.location.href = 'index.cfm?fuseaction=production.list_operation_types&success=' + (res.mode || 'added');
-                    }, 900);
+                    var createProduct = $('##f_create_product').length && $('##f_create_product').is(':checked');
+                    var redirectUrl = 'index.cfm?fuseaction=production.list_operation_types&success=' + (res.mode || 'added');
+                    if (createProduct) {
+                        $.ajax({
+                            url: '/product/cfc/product.cfc?method=saveProduct',
+                            method: 'POST',
+                            data: {
+                                product_name  : $('##f_operation_type').val().trim(),
+                                product_code  : $('##f_operation_code').val().trim(),
+                                is_ek_islem   : true,
+                                product_status: true,
+                                is_sales      : false,
+                                is_purchase   : false,
+                                tax           : 0,
+                                brand_id      : 0,
+                                en            : 0,
+                                isi           : 0,
+                                hiz           : 0,
+                                gramaj        : 0,
+                                besleme_avans : 0,
+                                kullanilan_kimyassal: 0
+                            },
+                            dataType: 'json',
+                            success: function(pRes) {
+                                if (pRes && pRes.success) {
+                                    DevExpress.ui.notify('Operasyon tipi ve ürün kartı kaydedildi.', 'success', 2500);
+                                } else {
+                                    DevExpress.ui.notify('Operasyon kaydedildi, ürün kartı oluşturulamadı: ' + ((pRes && pRes.message) || ''), 'warning', 4000);
+                                }
+                                setTimeout(function(){ window.location.href = redirectUrl; }, 1200);
+                            },
+                            error: function() {
+                                DevExpress.ui.notify('Operasyon kaydedildi, ürün kartı oluşturulamadı.', 'warning', 4000);
+                                setTimeout(function(){ window.location.href = redirectUrl; }, 1200);
+                            }
+                        });
+                    } else {
+                        DevExpress.ui.notify('Operasyon tipi kaydedildi.', 'success', 2500);
+                        setTimeout(function(){ window.location.href = redirectUrl; }, 900);
+                    }
                 } else {
                     DevExpress.ui.notify((res && res.message) || 'Kayıt başarısız.', 'error', 4000);
                     $('##btnSave').prop('disabled', false).html('<i class="fas fa-save me-1"></i>Kaydet');
