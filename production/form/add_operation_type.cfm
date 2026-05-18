@@ -252,7 +252,8 @@ $(document).ready(function(){
                                 hiz           : 0,
                                 gramaj        : 0,
                                 besleme_avans : 0,
-                                kullanilan_kimyassal: 0
+                                kullanilan_kimyassal: 0,
+                                product_catid : 71
                             },
                             dataType: 'json',
                             success: function(pRes) {
