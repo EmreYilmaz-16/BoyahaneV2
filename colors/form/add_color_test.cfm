@@ -81,12 +81,14 @@
                 <i class="fas fa-sitemap"></i>
                 Renk Kaydet / Güncelle
             </div>
-            <button class="btn-add" onclick="saveTree()">
-                <i class="fas fa-save"></i> Kaydet
-            </button>
-            <a href="/index.cfm?fuseaction=production.add_operation_type" target="_blank" class="btn-add" style="text-decoration:none;margin-left:6px;">
-                <i class="fas fa-plus-circle"></i> Operasyon Ekle
-            </a>
+            <div style="display:flex;gap:0;margin-left:auto;">
+                <button class="btn-add" onclick="saveTree()" style="border-radius:8px 0 0 8px;border-right:1px solid rgba(255,255,255,0.25);">
+                    <i class="fas fa-save"></i> Kaydet
+                </button>
+                <a href="/index.cfm?fuseaction=production.add_operation_type" target="_blank" class="btn-add" style="text-decoration:none;border-radius:0 8px 8px 0;">
+                    <i class="fas fa-plus-circle"></i> Operasyon Ekle
+                </a>
+            </div>
         </div>
         <div style="position:relative;">
             <input type="text" id="opSearchInput" class="form-control mt-2" onkeydown="searchOperations(this,event)" placeholder="Operasyon ara... (Enter ile ara)" autocomplete="off">
