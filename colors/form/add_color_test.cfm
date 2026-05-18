@@ -84,6 +84,9 @@
             <button class="btn-add" onclick="saveTree()">
                 <i class="fas fa-save"></i> Kaydet
             </button>
+            <a href="/index.cfm?fuseaction=production.add_operation_type" target="_blank" class="btn-add" style="text-decoration:none;margin-left:6px;">
+                <i class="fas fa-plus-circle"></i> Operasyon Ekle
+            </a>
         </div>
         <div style="position:relative;">
             <input type="text" id="opSearchInput" class="form-control mt-2" onkeydown="searchOperations(this,event)" placeholder="Operasyon ara... (Enter ile ara)" autocomplete="off">
