@@ -257,21 +257,45 @@ $(document).ready(function(){
                             },
                             dataType: 'json',
                             success: function(pRes) {
-                                if (pRes && pRes.success) {
-                                    DevExpress.ui.notify('Operasyon tipi ve ürün kartı kaydedildi.', 'success', 2500);
+                                if (pRes && pRes.success && pRes.stock_id) {
+                                    // Ürün ağacına operasyonu ekle
+                                    $.ajax({
+                                        url: '/product/form/save_product_tree_row.cfm',
+                                        method: 'POST',
+                                        data: {
+                                            root_stock_id    : pRes.stock_id,
+                                            row_type         : 'operasyon',
+                                            operation_type_id: res.operation_type_id,
+                                            amount           : 1,
+                                            line_number      : 10
+                                        },
+                                        dataType: 'json',
+                                        success: function(tRes) {
+                                            if (tRes && tRes.success) {
+                                                DevExpress.ui.notify('Operasyon tipi, ürün kartı ve ürün ağacı kaydedildi.', 'success', 2500);
+                                            } else {
+                                                DevExpress.ui.notify('Ürün kartı oluşturuldu, ürün ağacına eklenemedi: ' + ((tRes && tRes.message) || ''), 'warning', 4000);
+                                            }
+                                            setTimeout(function(){ window.location.href = redirectUrl; }, 1200);
+                                        },
+                                        error: function() {
+                                            DevExpress.ui.notify('Ürün kartı oluşturuldu, ürün ağacına eklenemedi.', 'warning', 4000);
+                                            setTimeout(function(){ window.location.href = redirectUrl; }, 1200);
+                                        }
+                                    });
                                 } else {
                                     DevExpress.ui.notify('Operasyon kaydedildi, ürün kartı oluşturulamadı: ' + ((pRes && pRes.message) || ''), 'warning', 4000);
+                                    setTimeout(function(){ window.location.href = redirectUrl; }, 1200);
                                 }
-                               // setTimeout(function(){ window.location.href = redirectUrl; }, 1200);
                             },
                             error: function() {
                                 DevExpress.ui.notify('Operasyon kaydedildi, ürün kartı oluşturulamadı.', 'warning', 4000);
-                                //setTimeout(function(){ window.location.href = redirectUrl; }, 1200);
+                                setTimeout(function(){ window.location.href = redirectUrl; }, 1200);
                             }
                         });
                     } else {
                         DevExpress.ui.notify('Operasyon tipi kaydedildi.', 'success', 2500);
-                        //setTimeout(function(){ window.location.href = redirectUrl; }, 900);
+                        setTimeout(function(){ window.location.href = redirectUrl; }, 900);
                     }
                 } else {
                     DevExpress.ui.notify((res && res.message) || 'Kayıt başarısız.', 'error', 4000);
