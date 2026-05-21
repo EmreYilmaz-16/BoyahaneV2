@@ -345,7 +345,7 @@
                     <!--- Ek Açıklama --->
                     <div class="mb-3">
                         <label class="form-label fw-semibold">
-                            <i class="fas fa-comment-alt me-1 text-primary"></i>Sarım Paketleme Açıklaması
+                            <i class="fas fa-comment-alt me-1 text-primary"></i>Sarım Paketleme Açıklaması <span class="text-muted">(opsiyonel)</span>
                         </label>
                         <textarea class="form-control" id="ek_aciklama" rows="2"
                                   placeholder="Ek açıklama, not..."></textarea>
@@ -806,6 +806,8 @@ function saveParti() {
         unit_id:      #mainUnitId#,
         tax:          mainPriceInfo.tax,
         discount_1:   0,
+        amount2:      (mainMetre > 0 && mainKg > 0) ? mainKg : 0,
+        unit2:        (mainMetre > 0 && mainKg > 0) ? 'kg' : '',
         lot_no:       document.getElementById('main_lot_no').value || ''
     }];
 

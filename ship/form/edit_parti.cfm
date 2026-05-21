@@ -73,6 +73,7 @@
 
 <cfquery name="getEditRows" datasource="boyahane">
     SELECT orw.stock_id, orw.quantity, orw.unit, orw.lot_no,
+           orw.amount2, orw.unit2,
            COALESCE(p.is_ek_islem, false) AS is_ek_islem
     FROM order_row orw
     LEFT JOIN stocks s  ON orw.stock_id  = s.stock_id
@@ -82,10 +83,15 @@
 
 <cfloop query="getEditRows">
     <cfif NOT getEditRows.is_ek_islem>
-        <cfif lCase(trim(getEditRows.unit)) eq 'kg'>
-            <cfset editMainKg = val(getEditRows.quantity)>
-        <cfelse>
+        <cfif lCase(trim(getEditRows.unit)) neq 'kg'>
             <cfset editMainMetre = val(getEditRows.quantity)>
+            <!--- Yeni format: kg amount2'de saklanıyor --->  
+            <cfif isNumeric(getEditRows.amount2) AND val(getEditRows.amount2) gt 0>
+                <cfset editMainKg = val(getEditRows.amount2)>
+            </cfif>
+        <cfelse>
+            <!--- Eski veri: kg ayrı satırda saklanmış (geriye dönük uyumluluk) --->
+            <cfset editMainKg = val(getEditRows.quantity)>
         </cfif>
         <cfset editLotNo = getEditRows.lot_no ?: "">
     <cfelse>
@@ -717,6 +723,8 @@ function saveParti() {
         unit_id:      #mainUnitId#,
         tax:          mainPriceInfo.tax,
         discount_1:   0,
+        amount2:      (mainMetre > 0 && mainKg > 0) ? mainKg : 0,
+        unit2:        (mainMetre > 0 && mainKg > 0) ? 'kg' : '',
         lot_no:       document.getElementById('main_lot_no').value || ''
     }];
 

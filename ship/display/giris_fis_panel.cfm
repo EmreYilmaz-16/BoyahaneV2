@@ -1388,6 +1388,8 @@ function savePartiModal() {
         errEl.textContent = 'Giriş fişine ait ürün bilgisi bulunamadı.'; errEl.classList.remove('d-none'); return;
     }
 
+    var kgVal = parseFloat(document.getElementById('mprt_kg').value) || 0;
+
     var rowObj = {
         stock_id:      stockId,
         product_id:    productId,
@@ -1395,27 +1397,14 @@ function savePartiModal() {
         quantity:      miktar,
         unit:          document.getElementById('mprt_unit').value || 'mt',
         unit_id:       parseInt(document.getElementById('mprt_unit_id').value) || 0,
+        amount2:       kgVal > 0 ? kgVal : 0,
+        unit2:         kgVal > 0 ? 'kg' : '',
         price:         0, tax: 0, discount_1: 0,
         grosstotal:    0, nettotal: 0, taxtotal: 0
     };
 
-    /* Kg satırı — opsiyonel olarak kaydet */
-    var kgVal = parseFloat(document.getElementById('mprt_kg').value) || 0;
-
     /* Ek işlem satırları */
     var rows = [rowObj];
-    if (kgVal > 0) {
-        rows.push({
-            stock_id:     stockId,
-            product_id:   productId,
-            product_name: document.getElementById('mprt_product_name').value,
-            quantity:     kgVal,
-            unit:         'kg',
-            unit_id:      0,
-            price:        0, tax: 0, discount_1: 0,
-            grosstotal:   0, nettotal: 0, taxtotal: 0
-        });
-    }
     document.querySelectorAll('.mprt-ek-chk:checked').forEach(function(chk) {
         rows.push({
             stock_id:     parseInt(chk.dataset.stockId)   || 0,

@@ -233,6 +233,8 @@
         <cfset rUnitIdRaw = isNumeric(row.unit_id)    ? val(row.unit_id)   : 0>
         <cfset rUnitId    = (rUnitIdRaw gt 0 AND listFind(validUnitIdList, rUnitIdRaw)) ? rUnitIdRaw : 0>
         <cfset rLotNo     = isDefined("row.lot_no")   ? trim(row.lot_no)   : "">
+        <cfset rAmount2   = (isDefined("row.amount2") AND isNumeric(row.amount2) AND val(row.amount2) gt 0) ? val(row.amount2) : 0>
+        <cfset rUnit2     = isDefined("row.unit2") ? trim(row.unit2) : "">
 
         <cfset rGross   = rQty * rPrc>
         <cfset rDiscAmt = rGross * (rDisc1 / 100)>
@@ -242,7 +244,7 @@
         <cfquery datasource="boyahane">
             INSERT INTO order_row (
                 order_id, stock_id, product_id, product_name, product_name2,
-                quantity, price, unit, unit_id, tax, discount_1, nettotal, lot_no
+                quantity, price, unit, unit_id, tax, discount_1, nettotal, lot_no, amount2, unit2
             ) VALUES (
                 <cfqueryparam value="#orderId#" cfsqltype="cf_sql_integer">,
                 <cfqueryparam value="#rStockId#" cfsqltype="cf_sql_integer" null="#rStockId eq 0#">,
@@ -256,7 +258,9 @@
                 <cfqueryparam value="#rTaxR#" cfsqltype="cf_sql_numeric">,
                 <cfqueryparam value="#rDisc1#" cfsqltype="cf_sql_numeric">,
                 <cfqueryparam value="#rNet#" cfsqltype="cf_sql_numeric">,
-                <cfqueryparam value="#rLotNo#" cfsqltype="cf_sql_varchar" null="#NOT len(rLotNo)#">
+                <cfqueryparam value="#rLotNo#" cfsqltype="cf_sql_varchar" null="#NOT len(rLotNo)#">,
+                <cfqueryparam value="#rAmount2#" cfsqltype="cf_sql_numeric" null="#rAmount2 eq 0#">,
+                <cfqueryparam value="#rUnit2#" cfsqltype="cf_sql_varchar" null="#NOT len(rUnit2)#">
             )
         </cfquery>
     </cfloop>
