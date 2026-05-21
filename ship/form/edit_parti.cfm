@@ -11,7 +11,7 @@
     SELECT o.order_id, o.order_number, o.order_detail, o.order_stage,
            o.deliverdate, o.sarim_sekli, o.ambalaj, o.top_adedi,
            o.kumas_tipi, o.en, o.gramaj, o.isi, o.hiz, o.besleme_avans, o.tuse, o.cekme,
-           o.main_color,
+           o.main_color, o.ek_aciklama,
            o.ref_ship_id
     FROM orders o
     WHERE o.order_id = <cfqueryparam value="#editOrderId#" cfsqltype="cf_sql_integer">
@@ -53,6 +53,7 @@
 <cfset editAmbalaj     = val(getEditOrder.ambalaj ?: 0)>
 <cfset editMainTop     = isNumeric(getEditOrder.top_adedi) AND val(getEditOrder.top_adedi) gt 0 ? val(getEditOrder.top_adedi) : "">
 <cfset editMainColor   = getEditOrder.main_color ?: "">
+<cfset editEkAciklama  = getEditOrder.ek_aciklama ?: "">
 <cfset editTekstil     = {
     "kumas_tipi":    getEditOrder.kumas_tipi ?: "",
     "en":            isNumeric(getEditOrder.en) ? val(getEditOrder.en) : "",
@@ -259,7 +260,14 @@
                                   placeholder="Parti açıklaması..."><cfoutput>#xmlFormat(editOrderDetail)#</cfoutput></textarea>
                     </div>
 
-                    <!--- Sarım ve Ambalaj --->
+                    <!--- Ek Açıklama --->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">
+                            <i class="fas fa-comment-alt me-1 text-primary"></i>Ek Açıklama
+                        </label>
+                        <textarea class="form-control" id="ek_aciklama" rows="2"
+                                  placeholder="Ek açıklama, not..."><cfoutput>#xmlFormat(editEkAciklama)#</cfoutput></textarea>
+                    </div>
                     <div class="row g-2 mb-3">
                         <div class="col-6">
                             <label class="form-label fw-semibold">
@@ -742,7 +750,7 @@ function saveParti() {
         ref_no:         '#jsStringFormat(getShip.ship_number)#',
         ref_ship_id:    #shipId#,
         order_detail:   document.getElementById('order_detail').value,
-        order_date:     todayStr,
+        ek_aciklama:    document.getElementById('ek_aciklama').value   || '',     todayStr,
         deliverdate:    document.getElementById('deliverdate').value || '',
         company_id:     #getShip.company_id#,
         member_type:    3,

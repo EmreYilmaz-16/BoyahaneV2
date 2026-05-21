@@ -342,7 +342,14 @@
                                   placeholder="Parti açıklaması..."><cfoutput>#xmlFormat(sonPartiAciklama)#</cfoutput></textarea>
                     </div>
 
-                    <!--- Sarım ve Ambalaj --->
+                    <!--- Ek Açıklama --->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">
+                            <i class="fas fa-comment-alt me-1 text-primary"></i>Ek Açıklama
+                        </label>
+                        <textarea class="form-control" id="ek_aciklama" rows="2"
+                                  placeholder="Ek açıklama, not..."></textarea>
+                    </div>
                     <div class="row g-2 mb-3">
                         <div class="col-6">
                             <label class="form-label fw-semibold">
@@ -833,7 +840,7 @@ function saveParti() {
         ref_no:         '#jsStringFormat(getShip.ship_number)#',
         ref_ship_id:    #shipId#,
         order_detail:   document.getElementById('order_detail').value,
-        order_date:     todayStr,
+        ek_aciklama:    document.getElementById('ek_aciklama').value   || '',     todayStr,
         deliverdate:    document.getElementById('deliverdate').value || '',
         company_id:     #getShip.company_id#,
         member_type:    3,

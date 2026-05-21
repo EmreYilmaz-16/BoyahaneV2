@@ -472,7 +472,12 @@
                                placeholder="Parti notu...">
                     </div>
 
-                    <!--- Tekstil Özellikleri --->
+                    <!--- Ek Açıklama --->
+                    <div class="mb-3">
+                        <label class="form-label small mb-1 fw-semibold">Ek Açıklama <span class="text-muted">(opsiyonel)</span></label>
+                        <textarea class="form-control form-control-sm" id="mprt_ek_aciklama" rows="2"
+                                  placeholder="Ek açıklama, not..."></textarea>
+                    </div>
                     <div class="border rounded p-2 mb-3" style="background:##f8f9fa;">
                         <div class="small fw-semibold text-muted mb-2">
                             <i class="fas fa-tshirt me-1"></i>Tekstil Özellikleri
@@ -1443,6 +1448,7 @@ function savePartiModal() {
             kumas_tipi:     document.getElementById('mprt_kumas_tipi').value    || '',
             tuse:           document.getElementById('mprt_tuse').value          || '',
             cekme:          document.getElementById('mprt_cekme').value         || '',
+            ek_aciklama:    document.getElementById('mprt_ek_aciklama').value   || '',
             rows:           JSON.stringify(rows)
         },
         success: function(res) {
