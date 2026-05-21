@@ -1,5 +1,5 @@
 <cfprocessingdirective pageEncoding="utf-8">
-
+<cfset params = application.siteParams>
 
 <!--- Giriş Fişi listesi (sol panel için) --->
 <cfquery name="getFisler" datasource="boyahane">
@@ -77,7 +77,7 @@
 <cfloop query="getAmbalaj">
     <cfset arrayAppend(ambalajArr, {"id": val(ambalaj_id), "label": ambalaj_adi ?: "", "is_default": isBoolean(is_default) ? is_default : false})>
 </cfloop>
-<cfset params = application.siteParams>
+
 <cfquery name="getProductCats" datasource="boyahane">
     SELECT product_catid, product_cat, COALESCE(hierarchy,'') AS hierarchy
    
