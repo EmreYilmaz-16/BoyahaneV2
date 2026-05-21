@@ -31,7 +31,7 @@
                   ORDER BY sr2.ship_row_id LIMIT 1
               )
                <cfif structKeyExists(params, "ek_islem_kategori_ids") AND len(trim(params.ek_islem_kategori_ids))>
-        where product_catid IN (
+        and p.product_catid  not IN (
             <cfqueryparam value="#params.ek_islem_kategori_ids#" cfsqltype="cf_sql_integer" list="true">
         )
     </cfif>
