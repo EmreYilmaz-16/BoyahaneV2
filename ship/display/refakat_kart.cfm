@@ -16,6 +16,7 @@
            o.order_date, o.order_stage,
            o.ref_no, o.ref_ship_id,
            o.sarim_sekli, o.ambalaj,
+           o.top_adedi,
            o.gramaj, o.en, o.kumas_tipi, o.tuse, o.isi, o.hiz, o.besleme_avans, o.cekme,
            COALESCE(c.nickname, c.fullname, '') AS company_name,
            COALESCE(ss.sarim_sekli_adi, '')     AS sarim_sekli_adi,
@@ -40,13 +41,26 @@
     WHERE s.ship_id = <cfqueryparam value="#val(getOrder.ref_ship_id)#" cfsqltype="cf_sql_integer">
 </cfquery>
 
-<!--- Ana ürün (kumaş cinsi) --->
+<!--- Ana ürün (kumaş cinsi + parti metre/kg) --->
 <cfquery name="getMainRow" datasource="boyahane">
-    SELECT orw.product_name
+    SELECT orw.product_name, orw.quantity, orw.amount2, orw.unit2
     FROM order_row orw
     LEFT JOIN stocks st ON orw.stock_id = st.stock_id
     WHERE orw.order_id = <cfqueryparam value="#orderId#" cfsqltype="cf_sql_integer">
       AND COALESCE(st.is_main_stock, true) = true
+    ORDER BY orw.order_row_id
+    LIMIT 1
+</cfquery>
+
+<!--- Eski format: ayrı kg satırı (geriye dönük uyumluluk) --->
+<cfquery name="getKgRow" datasource="boyahane">
+    SELECT orw.quantity AS kg_qty
+    FROM order_row orw
+    JOIN stocks  st ON orw.stock_id  = st.stock_id
+    JOIN product  p ON st.product_id = p.product_id
+    WHERE orw.order_id = <cfqueryparam value="#orderId#" cfsqltype="cf_sql_integer">
+      AND LOWER(TRIM(orw.unit)) = 'kg'
+      AND COALESCE(p.is_ek_islem, false) = false
     ORDER BY orw.order_row_id
     LIMIT 1
 </cfquery>
@@ -108,9 +122,19 @@
 <cfset vMusteri   = getOrder.company_name ?: "">
 <cfset vRenk      = getOrder.order_head   ?: "">
 <cfset vKumasCins = getMainRow.recordCount ? (getMainRow.product_name ?: "") : "">
-<cfset vMetre     = (getShip.recordCount AND isNumeric(getShip.hk_metre)     AND getShip.hk_metre     gt 0) ? numberFormat(getShip.hk_metre,    '0.00') : "">
-<cfset vKg        = (getShip.recordCount AND isNumeric(getShip.hk_kg)        AND getShip.hk_kg        gt 0) ? numberFormat(getShip.hk_kg,       '0.00') : "">
-<cfset vTop       = (getShip.recordCount AND isNumeric(getShip.hk_top_adedi) AND getShip.hk_top_adedi gt 0) ? val(getShip.hk_top_adedi) : "">
+<!--- Parti metre: ana satır quantity --->
+<cfset vMetre = (getMainRow.recordCount AND isNumeric(getMainRow.quantity) AND val(getMainRow.quantity) gt 0)
+              ? numberFormat(val(getMainRow.quantity), '0.000') : "">
+<!--- Parti kg: önce amount2 (yeni format), yoksa ayrı kg satırı (eski format) --->
+<cfif getMainRow.recordCount AND isNumeric(getMainRow.amount2) AND val(getMainRow.amount2) gt 0>
+    <cfset vKg = numberFormat(val(getMainRow.amount2), '0.000')>
+<cfelseif getKgRow.recordCount AND isNumeric(getKgRow.kg_qty) AND val(getKgRow.kg_qty) gt 0>
+    <cfset vKg = numberFormat(val(getKgRow.kg_qty), '0.000')>
+<cfelse>
+    <cfset vKg = "">
+</cfif>
+<!--- Parti top adedi: orders.top_adedi --->
+<cfset vTop = (isNumeric(getOrder.top_adedi) AND val(getOrder.top_adedi) gt 0) ? val(getOrder.top_adedi) : "">
 <cfset vAmbalaj   = getOrder.ambalaj_adi   ?: "">
 <cfset vSarim     = getOrder.sarim_sekli_adi ?: "">
 <cfset vAciklama  = trim(getOrder.order_detail ?: "")>
