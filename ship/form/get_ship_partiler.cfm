@@ -13,9 +13,11 @@
                COALESCE((
                    SELECT SUM(orw2.quantity)
                    FROM order_row orw2
-                   JOIN stocks st2 ON orw2.stock_id = st2.stock_id
+                   JOIN stocks st2  ON orw2.stock_id  = st2.stock_id
+                   JOIN product p2  ON st2.product_id = p2.product_id
                    WHERE orw2.order_id = o.order_id
-                     AND st2.is_main_stock = true
+                     AND COALESCE(p2.is_ek_islem, false) = false
+                     AND COALESCE(LOWER(TRIM(orw2.unit)), '') <> 'kg'
                ), 0) AS ana_miktar
         FROM orders o
         JOIN ship s ON s.ship_id = <cfqueryparam value="#shipId#" cfsqltype="cf_sql_integer">
