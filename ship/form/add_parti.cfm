@@ -345,7 +345,7 @@
                     <!--- Ek Açıklama --->
                     <div class="mb-3">
                         <label class="form-label fw-semibold">
-                            <i class="fas fa-comment-alt me-1 text-primary"></i>Ek Açıklama
+                            <i class="fas fa-comment-alt me-1 text-primary"></i>Sarım Paketleme Açıklaması
                         </label>
                         <textarea class="form-control" id="ek_aciklama" rows="2"
                                   placeholder="Ek açıklama, not..."></textarea>

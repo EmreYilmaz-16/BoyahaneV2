@@ -1,5 +1,6 @@
 <cfprocessingdirective pageEncoding="utf-8">
 
+
 <!--- Giriş Fişi listesi (sol panel için) --->
 <cfquery name="getFisler" datasource="boyahane">
     SELECT
@@ -21,6 +22,7 @@
             SELECT SUM(orw.quantity)
             FROM orders o
             JOIN order_row orw ON o.order_id = orw.order_id
+            JOIN product p ON orw.product_id = p.product_id
             WHERE (o.ref_ship_id = s.ship_id
                OR (o.ref_ship_id IS NULL AND o.ref_no IS NOT NULL AND o.ref_no <> '' AND o.ref_no = s.ship_number))
               AND orw.product_id = (
@@ -28,6 +30,11 @@
                   WHERE sr2.ship_id = s.ship_id
                   ORDER BY sr2.ship_row_id LIMIT 1
               )
+               <cfif structKeyExists(params, "ek_islem_kategori_ids") AND len(trim(params.ek_islem_kategori_ids))>
+        where product_catid IN (
+            <cfqueryparam value="#params.ek_islem_kategori_ids#" cfsqltype="cf_sql_integer" list="true">
+        )
+    </cfif>
         ), 0) AS parti_metre
     FROM ship s
     LEFT JOIN company c ON s.company_id = c.company_id
@@ -38,6 +45,7 @@
               SELECT SUM(orw.quantity)
               FROM orders o
               JOIN order_row orw ON o.order_id = orw.order_id
+              
               WHERE (o.ref_ship_id = s.ship_id
                  OR (o.ref_ship_id IS NULL AND o.ref_no IS NOT NULL AND o.ref_no <> '' AND o.ref_no = s.ship_number))
                 AND orw.product_id = (
@@ -474,7 +482,7 @@
 
                     <!--- Ek Açıklama --->
                     <div class="mb-3">
-                        <label class="form-label small mb-1 fw-semibold">Ek Açıklama <span class="text-muted">(opsiyonel)</span></label>
+                        <label class="form-label small mb-1 fw-semibold">Sarım Paketleme Açıklama <span class="text-muted">(opsiyonel)</span></label>
                         <textarea class="form-control form-control-sm" id="mprt_ek_aciklama" rows="2"
                                   placeholder="Ek açıklama, not..."></textarea>
                     </div>

@@ -263,7 +263,7 @@
                     <!--- Ek Açıklama --->
                     <div class="mb-3">
                         <label class="form-label fw-semibold">
-                            <i class="fas fa-comment-alt me-1 text-primary"></i>Ek Açıklama
+                            <i class="fas fa-comment-alt me-1 text-primary"></i>Sarım Paketleme Açıklaması <span class="text-muted">(opsiyonel)</span>
                         </label>
                         <textarea class="form-control" id="ek_aciklama" rows="2"
                                   placeholder="Ek açıklama, not..."><cfoutput>#xmlFormat(editEkAciklama)#</cfoutput></textarea>
