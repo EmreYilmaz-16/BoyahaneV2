@@ -35,7 +35,28 @@
             <cfqueryparam value="#params.ek_islem_kategori_ids#" cfsqltype="cf_sql_integer" list="true">
         )
     </cfif>
-        ), 0) AS parti_metre
+        ), 0) AS parti_metre,
+        COALESCE((
+            SELECT SUM(
+                CASE
+                    WHEN COALESCE(LOWER(TRIM(orw.unit)), '') = 'kg' THEN orw.quantity
+                    ELSE COALESCE(orw.amount2, 0)
+                END
+            )
+            FROM orders o
+            JOIN order_row orw ON o.order_id = orw.order_id
+            JOIN stocks st ON orw.stock_id = st.stock_id
+            JOIN product p  ON st.product_id = p.product_id
+            WHERE (o.ref_ship_id = s.ship_id
+               OR (o.ref_ship_id IS NULL AND o.ref_no IS NOT NULL AND o.ref_no <> '' AND o.ref_no = s.ship_number))
+              AND COALESCE(p.is_ek_islem, false) = false
+        ), 0) AS parti_kg,
+        COALESCE((
+            SELECT SUM(COALESCE(o.top_adedi, 0))
+            FROM orders o
+            WHERE o.ref_ship_id = s.ship_id
+               OR (o.ref_ship_id IS NULL AND o.ref_no IS NOT NULL AND o.ref_no <> '' AND o.ref_no = s.ship_number)
+        ), 0) AS parti_top
     FROM ship s
     LEFT JOIN company c ON s.company_id = c.company_id
     WHERE s.ship_type = 5
@@ -115,6 +136,8 @@
         "is_ship_iptal": (is_ship_iptal EQ true OR is_ship_iptal EQ "true" OR is_ship_iptal EQ "YES"),
         "parti_count":  val(parti_count),
         "parti_metre":  isNumeric(parti_metre)  ? val(parti_metre)  : 0,
+        "parti_kg":     isNumeric(parti_kg)     ? val(parti_kg)     : 0,
+        "parti_top":    isNumeric(parti_top)    ? val(parti_top)    : 0,
         "record_date":  isDate(record_date) ? dateFormat(record_date, "dd/mm/yyyy") : ""
     })>
 </cfloop>
@@ -737,7 +760,10 @@
 var ALL_FIS        = #serializeJSON(fisArr)#;
 var ALL_SARIM      = #serializeJSON(sarimArr)#;
 var ALL_AMBALAJ    = #serializeJSON(ambalajArr)#;
-var selectedShipId = 0;
+var selectedShipId   = 0;
+var mprt_kalan_metre = Infinity;
+var mprt_kalan_kg    = Infinity;
+var mprt_kalan_top   = Infinity;
 
 /* ════ Sol liste render ════ */
 function renderList(items) {
@@ -1297,15 +1323,21 @@ function openYeniPartiModal(shipId) {
             document.getElementById('mprt_parti_kodu').value   = res.parti_kodu;
             document.getElementById('mprt_fisLabel').textContent    = res.ship_number;
             document.getElementById('mprt_companyLabel').textContent = fis ? fis.company_name : '';
-            /* Kalan metre */
+            /* Kalan metre, kg, top */
+            mprt_kalan_metre = (fis && fis.hk_metre > 0)     ? Math.max(0, fis.hk_metre     - fis.parti_metre) : Infinity;
+            mprt_kalan_kg    = (fis && fis.hk_kg > 0)        ? Math.max(0, fis.hk_kg        - fis.parti_kg)    : Infinity;
+            mprt_kalan_top   = (fis && fis.hk_top_adedi > 0) ? Math.max(0, fis.hk_top_adedi - fis.parti_top)   : Infinity;
+
             if (fis && fis.hk_metre > 0) {
-                var kalan = Math.max(0, fis.hk_metre - fis.parti_metre);
-                document.getElementById('mprt_kalanText').textContent =
-                    'Toplam: ' + fis.hk_metre.toFixed(2) + ' mt · Kalan: ' + kalan.toFixed(2) + ' mt';
+                var kalanParts = ['Kalan: ' + mprt_kalan_metre.toFixed(2) + ' mt'];
+                if (fis.hk_kg > 0)        kalanParts.push(mprt_kalan_kg.toFixed(2) + ' kg');
+                if (fis.hk_top_adedi > 0) kalanParts.push(mprt_kalan_top + ' top');
+                document.getElementById('mprt_kalanText').textContent = kalanParts.join(' · ');
                 /* Miktar: son partiden varsa onu kullan, yoksa kalan */
                 var sonMiktar = res.son_parti_miktar || res.SON_PARTI_MIKTAR || 0;
-                document.getElementById('mprt_miktar').value = sonMiktar > 0 ? parseFloat(sonMiktar).toFixed(3) : (kalan > 0 ? kalan.toFixed(3) : '');
+                document.getElementById('mprt_miktar').value = sonMiktar > 0 ? parseFloat(sonMiktar).toFixed(3) : (mprt_kalan_metre > 0 && isFinite(mprt_kalan_metre) ? mprt_kalan_metre.toFixed(3) : '');
             } else {
+                document.getElementById('mprt_kalanText').textContent = '';
                 var sonMiktar = res.son_parti_miktar || res.SON_PARTI_MIKTAR || 0;
                 if (sonMiktar > 0) document.getElementById('mprt_miktar').value = parseFloat(sonMiktar).toFixed(3);
             }
@@ -1388,7 +1420,25 @@ function savePartiModal() {
         errEl.textContent = 'Giriş fişine ait ürün bilgisi bulunamadı.'; errEl.classList.remove('d-none'); return;
     }
 
-    var kgVal = parseFloat(document.getElementById('mprt_kg').value) || 0;
+    var kgVal  = parseFloat(document.getElementById('mprt_kg').value)  || 0;
+    var topVal = parseInt(document.getElementById('mprt_top').value)    || 0;
+
+    /* Kalan değer kontrolleri */
+    var fisCur = ALL_FIS.find(function(f) { return f.ship_id === shipId; });
+    if (fisCur) {
+        if (fisCur.hk_metre > 0 && miktar > mprt_kalan_metre + 0.001) {
+            errEl.textContent = 'Girilen miktar kalan metreden (' + (isFinite(mprt_kalan_metre) ? mprt_kalan_metre.toFixed(3) : '—') + ' mt) fazla olamaz.';
+            errEl.classList.remove('d-none'); return;
+        }
+        if (fisCur.hk_kg > 0 && kgVal > 0 && kgVal > mprt_kalan_kg + 0.001) {
+            errEl.textContent = 'Girilen kg kalan değerden (' + (isFinite(mprt_kalan_kg) ? mprt_kalan_kg.toFixed(3) : '—') + ' kg) fazla olamaz.';
+            errEl.classList.remove('d-none'); return;
+        }
+        if (fisCur.hk_top_adedi > 0 && topVal > mprt_kalan_top) {
+            errEl.textContent = 'Top adedi kalan değerden (' + (isFinite(mprt_kalan_top) ? mprt_kalan_top : '—') + ' adet) fazla olamaz.';
+            errEl.classList.remove('d-none'); return;
+        }
+    }
 
     var rowObj = {
         stock_id:      stockId,
@@ -1459,6 +1509,8 @@ function savePartiModal() {
                 if (fis) {
                     fis.parti_count++;
                     fis.parti_metre += miktar;
+                    fis.parti_kg    += kgVal;
+                    fis.parti_top   += topVal;
                     renderList(ALL_FIS);
                     /* Toolbar butonunu duruma göre güncelle */
                     var full = fis.hk_metre > 0 && fis.parti_metre >= fis.hk_metre;
