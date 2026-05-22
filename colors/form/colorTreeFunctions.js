@@ -116,7 +116,7 @@ function addProductToCard(product) {
     node.id = nodeId;
     node.className = 'tree-node';
     node.dataset.productId = product.product_id;
-    node.dataset.relatedId = product.product_id;
+    node.dataset.relatedId = product.stock_id;
     node.dataset.lineNumber = list.children.length + 1;
     node.dataset.productcatId = product.productcat_id ?? 0;
     node.innerHTML = `
