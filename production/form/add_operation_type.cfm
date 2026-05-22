@@ -267,7 +267,7 @@ $(document).ready(function(){
                                             row_type         : 'operasyon',
                                             operation_type_id: res.operation_type_id,
                                             amount           : 1,
-                                            line_number      : 10
+                                            line_number      : 1
                                         },
                                         dataType: 'json',
                                         success: function(tRes) {
