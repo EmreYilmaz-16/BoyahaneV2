@@ -167,7 +167,8 @@
 <cfquery name="getCompStocks" datasource="boyahane">
     SELECT s.stock_id,
            COALESCE(s.stock_code,'')    AS stock_code,
-           COALESCE(p3.product_name,'') AS product_name
+           COALESCE(p3.product_name,'') AS product_name,
+           COALESCE(p3.unit_id, 0)      AS unit_id
     FROM stocks s
     LEFT JOIN product p3 ON s.product_id = p3.product_id
     WHERE COALESCE(s.stock_status, true) = true
@@ -179,7 +180,8 @@
     <cfset arrayAppend(compStocksArr, {
         "stock_id"    : val(stock_id),
         "stock_code"  : stock_code   ?: "",
-        "product_name": product_name ?: ""
+        "product_name": product_name ?: "",
+        "unit_id"     : isNumeric(unit_id) ? val(unit_id) : 0
     })>
 </cfloop>
 
@@ -677,6 +679,10 @@ function filterCompStock(q) {
             document.getElementById('f_component_stock_id').value     = s.stock_id;
             document.getElementById('f_comp_stock_label').textContent = label;
             document.getElementById('f_comp_stock_selected').classList.remove('d-none');
+            /* Ürün kartındaki ana birim — otomatik doldur ve kilitle */
+            var unitSel = document.getElementById('f_unit_id');
+            unitSel.value    = s.unit_id || 0;
+            unitSel.disabled = true;
         });
         dd.appendChild(div);
     });
@@ -692,6 +698,10 @@ function resetForm() {
     document.getElementById('f_component_stock_id').value = '0';
     document.getElementById('f_comp_stock_selected').classList.add('d-none');
     document.getElementById('f_component_stock_dropdown').classList.add('d-none');
+    /* Birim kilidini aç */
+    var unitSel = document.getElementById('f_unit_id');
+    unitSel.value    = 0;
+    unitSel.disabled = false;
     /* Malzeme seçili başlat */
     document.getElementById('rt_malzeme').checked = true;
     toggleRowType('malzeme');
@@ -733,6 +743,7 @@ function openEditModal(row) {
         }
         document.getElementById('f_amount').value                 = row.amount || 1;
         document.getElementById('f_unit_id').value                = row.unit_id || 0;
+        document.getElementById('f_unit_id').disabled             = row.unit_id > 0;
         document.getElementById('f_fire_amount').value            = row.fire_amount || 0;
         document.getElementById('f_fire_rate').value              = row.fire_rate || 0;
     }
