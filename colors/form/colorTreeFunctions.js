@@ -137,6 +137,10 @@ function addProductToCard(product) {
                     style="width:54px;padding:2px 4px;font-size:0.72rem;font-weight:600;border:1px solid #dde3ec;border-radius:5px;text-align:right;color:#1e293b;background:#f8fafc;flex-shrink:0;"
                     onclick="event.stopPropagation();">
             </div>
+            <button onclick="removeTreeNode('${nodeId}')" title="Sil"
+                style="width:22px;height:22px;background:#fee2e2;border:none;border-radius:4px;color:#e53e3e;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.65rem;flex-shrink:0;">
+                <i class="fas fa-times"></i>
+            </button>
     `;
     list.appendChild(node);
 
@@ -258,6 +262,10 @@ function AddOperationToTree(pid, sid) {
                             title="Miktar"
                             style="width:54px;padding:2px 4px;font-size:0.72rem;font-weight:600;border:1px solid #dde3ec;border-radius:5px;text-align:right;color:#1e293b;background:#f8fafc;flex-shrink:0;"
                             onclick="event.stopPropagation();">
+                        <button onclick="removeTreeNode('${nodeId}')" title="Sil"
+                            style="width:22px;height:22px;background:#fee2e2;border:none;border-radius:4px;color:#e53e3e;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.65rem;flex-shrink:0;">
+                            <i class="fas fa-times"></i>
+                        </button>
                     `;
                     currentList.appendChild(node);
                     itemCount++;
@@ -395,6 +403,10 @@ function LoadColorTree(stockId) {
                             title="Miktar"
                             style="width:54px;padding:2px 4px;font-size:0.72rem;font-weight:600;border:1px solid #dde3ec;border-radius:5px;text-align:right;color:#1e293b;background:#f8fafc;flex-shrink:0;"
                             onclick="event.stopPropagation();">
+                        <button onclick="removeTreeNode('${nodeId}')" title="Sil"
+                            style="width:22px;height:22px;background:#fee2e2;border:none;border-radius:4px;color:#e53e3e;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.65rem;flex-shrink:0;">
+                            <i class="fas fa-times"></i>
+                        </button>
                     `;
                     list.appendChild(node);
                 });
@@ -417,6 +429,17 @@ function LoadColorTree(stockId) {
         });
 }
 // ─────────────────────────────────────────────────────────
+function removeTreeNode(nodeId) {
+    const node = document.getElementById(nodeId);
+    if (!node) return;
+    const card = node.closest('.grid-card');
+    node.remove();
+    if (card) {
+        const countEl = card.querySelector('.record-count');
+        if (countEl) countEl.textContent = card.querySelectorAll('.tree-node').length;
+    }
+}
+
 function get_elements_by_productcatid(productcat_id) {
     return Array.from(document.querySelectorAll('.tree-node'))
         .filter(node => parseInt(node.dataset.productcatId) === parseInt(productcat_id));
