@@ -318,7 +318,7 @@
 
 <!--- Ekleme / Düzenleme Modal --->
 <div class="modal fade" id="rowModal" tabindex="-1" aria-labelledby="rowModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="rowModalLabel"><i class="fas fa-plus-circle me-2"></i>Satır Ekle</h5>
@@ -374,11 +374,11 @@
                             </div>
                         </div>
                         <div class="row g-3 mt-1">
-                            <div class="col-md-3">
+                            <div class="col-md-6">
                                 <label class="form-label">Miktar <span class="text-danger">*</span></label>
                                 <input type="number" step="0.000001" min="0" class="form-control" id="f_amount" value="1">
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-6">
                                 <label class="form-label">Birim</label>
                                 <select class="form-select" id="f_unit_id">
                                     <option value="0">-</option>
@@ -389,11 +389,11 @@
                                     </cfoutput>
                                 </select>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-3" style="display:none">
                                 <label class="form-label">Fire Miktarı</label>
                                 <input type="number" step="0.000001" min="0" class="form-control" id="f_fire_amount" value="0">
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-3" style="display:none">
                                 <label class="form-label">Fire Oranı (%)</label>
                                 <input type="number" step="0.01" min="0" max="100" class="form-control" id="f_fire_rate" value="0">
                             </div>
@@ -423,7 +423,7 @@
                     </div>
 
                     <!--- ─── Ortak alanlar ─── --->
-                    <div class="modal-section section-common">
+                    <div class="modal-section section-common" style="display:none">
                         <div class="modal-section-title"><i class="fas fa-sliders-h"></i>Ortak Bilgiler</div>
                         <div class="row g-3">
                             <div class="col-md-4">
@@ -453,7 +453,7 @@
                     </div>
 
                     <!--- ─── Bayraklar ─── --->
-                    <div class="modal-section section-flags">
+                    <div class="modal-section section-flags" style="display:none">
                         <div class="modal-section-title"><i class="fas fa-tags"></i>Özellikler</div>
                         <div class="row g-3">
                             <div class="col-md-4 d-flex align-items-center">
