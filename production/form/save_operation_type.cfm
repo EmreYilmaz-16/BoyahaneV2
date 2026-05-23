@@ -35,6 +35,20 @@
         <cfabort>
     </cfif>
 
+    <!--- Aynı kod ve aynı ad ile kayıt var mı kontrol et --->
+    <cfquery name="chkDuplicate" datasource="boyahane">
+        SELECT operation_type_id FROM operation_types
+        WHERE LOWER(TRIM(operation_type)) = LOWER(TRIM(<cfqueryparam value="#opName#" cfsqltype="cf_sql_varchar">))
+          AND LOWER(TRIM(COALESCE(operation_code,''))) = LOWER(TRIM(<cfqueryparam value="#trim(form.operation_code)#" cfsqltype="cf_sql_varchar">))
+          AND operation_type_id <> <cfqueryparam value="#opId#" cfsqltype="cf_sql_integer">
+        LIMIT 1
+    </cfquery>
+    <cfif chkDuplicate.recordCount gt 0>
+        <cfset response.message = "Bu operasyon kodu ve adıyla zaten bir kayıt mevcut.">
+        <cfoutput>#serializeJSON(response)#</cfoutput>
+        <cfabort>
+    </cfif>
+
     <cfif opId gt 0>
         <!--- UPDATE --->
         <cfquery datasource="boyahane">
