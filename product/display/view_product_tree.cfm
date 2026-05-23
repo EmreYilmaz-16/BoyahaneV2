@@ -173,7 +173,7 @@
                FROM product_unit pu
                JOIN setup_unit su ON LOWER(TRIM(su.unit_code)) = LOWER(TRIM(pu.main_unit))
                                   OR LOWER(TRIM(su.unit))      = LOWER(TRIM(pu.main_unit))
-               WHERE pu.product_unit_id = s.product_unit_id
+               WHERE pu.product_id = s.product_id
                  AND COALESCE(pu.is_main, false) = true
                LIMIT 1
            ), (
@@ -181,7 +181,7 @@
                FROM product_unit pu
                JOIN setup_unit su ON LOWER(TRIM(su.unit_code)) = LOWER(TRIM(pu.main_unit))
                                   OR LOWER(TRIM(su.unit))      = LOWER(TRIM(pu.main_unit))
-               WHERE pu.product_unit_id = s.product_unit_id
+               WHERE pu.product_id = s.product_id
                ORDER BY pu.product_unit_id
                LIMIT 1
            ), 0) AS unit_id
