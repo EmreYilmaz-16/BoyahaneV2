@@ -96,11 +96,11 @@
                 </div>
 
                 <div class="row g-3 mt-1">
-                    <div class="col-md-3">
+                    <div class="col-md-3" style="display:none">
                         <label class="form-label">Maliyet</label>
                         <cfoutput><input type="number" step="0.01" class="form-control" id="f_operation_cost" value="#fOpCost#"></cfoutput>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-3" style="display:none">
                         <label class="form-label">Para Birimi</label>
                         <select class="form-select" id="f_money">
                             <option value="">Seçiniz...</option>
@@ -111,29 +111,29 @@
                             </cfoutput>
                         </select>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-6">
                         <label class="form-label">Süre — Saat</label>
                         <cfoutput><input type="number" min="0" class="form-control" id="f_o_hour" value="#fOHour#"></cfoutput>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-6">
                         <label class="form-label">Süre — Dakika</label>
                         <cfoutput><input type="number" min="0" max="59" class="form-control" id="f_o_minute" value="#fOMinute#"></cfoutput>
                     </div>
                 </div>
 
                 <div class="row g-3 mt-1">
-                    <div class="col-md-6">
+                    <div class="col-md-12">
                         <label class="form-label">Açıklama 1</label>
                         <cfoutput><input type="text" class="form-control" id="f_comment" value="#htmlEditFormat(fComment)#"></cfoutput>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-6" style="display:none">
                         <label class="form-label">Açıklama 2</label>
                         <cfoutput><input type="text" class="form-control" id="f_comment2" value="#htmlEditFormat(fComment2)#"></cfoutput>
                     </div>
                 </div>
 
-                <hr class="my-3">
-                <div class="row g-3">
+                <hr class="my-3" style="display:none">
+                <div class="row g-3" style="display:none">
                     <div class="col-md-4">
                         <label class="form-label">Bağlı Stok (Opsiyonel)</label>
                         <select class="form-select" id="f_stock_id">
