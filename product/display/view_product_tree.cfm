@@ -168,7 +168,23 @@
     SELECT s.stock_id,
            COALESCE(s.stock_code,'')    AS stock_code,
            COALESCE(p3.product_name,'') AS product_name,
-           COALESCE(p3.unit_id, 0)      AS unit_id
+           COALESCE((
+               SELECT su.unit_id
+               FROM product_unit pu
+               JOIN setup_unit su ON LOWER(TRIM(su.unit_code)) = LOWER(TRIM(pu.main_unit))
+                                  OR LOWER(TRIM(su.unit))      = LOWER(TRIM(pu.main_unit))
+               WHERE pu.product_unit_id = s.product_unit_id
+                 AND COALESCE(pu.is_main, false) = true
+               LIMIT 1
+           ), (
+               SELECT su.unit_id
+               FROM product_unit pu
+               JOIN setup_unit su ON LOWER(TRIM(su.unit_code)) = LOWER(TRIM(pu.main_unit))
+                                  OR LOWER(TRIM(su.unit))      = LOWER(TRIM(pu.main_unit))
+               WHERE pu.product_unit_id = s.product_unit_id
+               ORDER BY pu.product_unit_id
+               LIMIT 1
+           ), 0) AS unit_id
     FROM stocks s
     LEFT JOIN product p3 ON s.product_id = p3.product_id
     WHERE COALESCE(s.stock_status, true) = true
