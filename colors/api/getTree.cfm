@@ -10,7 +10,7 @@ left join product p on p.product_id=s.product_id
 left join product_cat pc on pc.product_catid=p.product_catid
 left join operation_types  ot on ot.operation_type_id=pt.operation_type_id
  where pt.stock_id=<cfqueryparam value="#url.stock_id#" cfsqltype="cf_sql_integer">
-order  by pt.line_number
+order  by pt.line_number desc
 </cfquery>
 <cfset arr = []>
 <cfloop query="getProductTree">
