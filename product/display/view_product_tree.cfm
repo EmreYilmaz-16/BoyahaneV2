@@ -551,6 +551,7 @@ function initTree() {
         rowAlternationEnabled: true, columnAutoWidth: true,
         allowColumnReordering: true, allowColumnResizing: true, columnResizingMode: 'widget',
         autoExpandAll: true,
+        treeColumnIndex: 1,
         paging: { enabled: false },
         filterRow: { visible: true },
         headerFilter: { visible: true },
