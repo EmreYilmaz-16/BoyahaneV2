@@ -332,6 +332,17 @@
 /* ── Modal z-index ── */
 #rowModal { z-index: 9500 !important; }
 .modal-backdrop { z-index: 9400 !important; }
+/* ── Satır içi sıra no input ── */
+.ln-input {
+    width: 48px; border: 1px solid transparent; background: transparent;
+    text-align: center; border-radius: 4px; padding: 2px 2px;
+    font-size: 0.83rem; font-weight: 600; color: #374151;
+    -moz-appearance: textfield;
+}
+.ln-input::-webkit-inner-spin-button,
+.ln-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.ln-input:hover { border-color: #93c5fd; background: #eff6ff; }
+.ln-input:focus { border-color: #3b82f6; background: #fff; outline: none; box-shadow: 0 0 0 2px #bfdbfe; }
 </style>
 
 <!--- Ekleme / Düzenleme Modal --->
@@ -554,7 +565,24 @@ function initTree() {
         columns: [
             { dataField: 'line_number',
               caption: '##',
-              width: 55, alignment: 'center', dataType: 'number'
+              width: 65, alignment: 'center', dataType: 'number',
+              allowSorting: true, allowFiltering: true,
+              cellTemplate: function(container, options) {
+                  var d = options.data;
+                  if (d.is_sub_bom) {
+                      $('<span>').addClass('text-muted small').text(d.line_number || '').appendTo(container);
+                      return;
+                  }
+                  var inp = $('<input>').attr({ type: 'number', min: 0, value: d.line_number || 0 })
+                                       .addClass('ln-input')
+                                       .on('click', function(e) { e.stopPropagation(); this.select(); })
+                                       .on('change', function() {
+                                           var val = parseInt(this.value) || 0;
+                                           if (val < 0) { this.value = 0; val = 0; }
+                                           saveLineNumber(d.product_tree_id, val, this);
+                                       });
+                  container.append(inp);
+              }
             },
             {
                 caption: 'Satır',
@@ -850,6 +878,22 @@ function saveRow() {
         btn.innerHTML = '<i class="fas fa-save me-1"></i>Kaydet';
         DevExpress.ui.notify('Sunucu hatası.', 'error', 3000);
     });
+}
+
+function saveLineNumber(id, val, inputEl) {
+    $.post('/product/form/save_line_number.cfm', { product_tree_id: id, line_number: val }, function(res) {
+        if (res && res.success) {
+            var idx = treeData.findIndex(function(x) { return x.product_tree_id === id; });
+            if (idx >= 0) treeData[idx].line_number = val;
+            DevExpress.ui.notify('Sıra güncellendi.', 'success', 1500);
+        } else {
+            DevExpress.ui.notify((res && res.message) || 'Güncelleme başarısız.', 'error', 3000);
+            if (inputEl) {
+                var orig = (treeData.find(function(x){ return x.product_tree_id === id; }) || {}).line_number || 0;
+                inputEl.value = orig;
+            }
+        }
+    }, 'json').fail(function() { DevExpress.ui.notify('Sunucu hatası.', 'error', 3000); });
 }
 
 function deleteRow(id) {
