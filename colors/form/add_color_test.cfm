@@ -8,6 +8,22 @@
 
 <cfoutput>
 <link rel="stylesheet" href="/colors/form/productTree.css">
+<style>
+.ci-input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 2px 0;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #1e293b;
+    outline: none;
+    font-family: inherit;
+}
+.ci-input:focus { border-bottom-color: var(--accent); }
+select.ci-input { cursor: pointer; }
+</style>
 
 <cfif NOT getColors.recordCount>
     <div class="alert alert-warning"><i class="fas fa-exclamation-triangle me-2"></i>Renk bulunamadı.</div>
@@ -20,54 +36,79 @@
 
     <!--- COL-2: Renk Bilgi Paneli --->
     <div class="col-2">
-        <div class="color-side-panel">
+        <div class="color-side-panel" style="display:flex;flex-direction:column;">
 
             <div class="color-side-header">
                 <div class="color-side-header-icon"><i class="fas fa-palette"></i></div>
                 <div style="overflow:hidden;">
-                    <div class="color-side-header-title">#htmlEditFormat(getColors.color_code)#</div>
-                    <div class="color-side-header-sub">#htmlEditFormat(getColors.color_name)#</div>
+                    <div class="color-side-header-title" id="sidePanelCode">#htmlEditFormat(getColors.color_code)#</div>
+                    <div class="color-side-header-sub" id="sidePanelName">#htmlEditFormat(getColors.color_name)#</div>
+                </div>
+            </div>
+
+            <input type="hidden" id="ci_stock_id" value="#val(getColors.stock_id)#">
+
+            <div class="color-side-row">
+                <div class="csr-label"><i class="fas fa-hashtag"></i>Renk Kodu</div>
+                <div class="csr-value">
+                    <input type="text" id="ci_color_code" class="ci-input" value="#htmlEditFormat(getColors.color_code)#"
+                           oninput="document.getElementById('sidePanelCode').textContent=this.value">
                 </div>
             </div>
 
             <div class="color-side-row">
-                <div class="csr-label"><i class="fas fa-hashtag"></i>Renk Kodu</div>
-                <div class="csr-value">#htmlEditFormat(getColors.color_code)#</div>
-            </div>
-
-            <div class="color-side-row">
                 <div class="csr-label"><i class="fas fa-tag"></i>Renk Adı</div>
-                <div class="csr-value">#htmlEditFormat(getColors.color_name)#</div>
+                <div class="csr-value">
+                    <input type="text" id="ci_color_name" class="ci-input" value="#htmlEditFormat(getColors.color_name)#"
+                           oninput="document.getElementById('sidePanelName').textContent=this.value">
+                </div>
             </div>
 
             <div class="color-side-row">
                 <div class="csr-label"><i class="fas fa-swatchbook"></i>Kartela No</div>
-                <div class="csr-value">#htmlEditFormat(getColors.kartela_no)#</div>
+                <div class="csr-value">
+                    <input type="text" id="ci_kartela_no" class="ci-input" value="#htmlEditFormat(getColors.kartela_no)#">
+                </div>
             </div>
 
             <div class="color-side-row">
                 <div class="csr-label"><i class="fas fa-calendar-alt"></i>Kartela Tarihi</div>
-                <div class="csr-value">#dateFormat(getColors.kartela_date, "DD.MM.YYYY")#</div>
+                <div class="csr-value">
+                    <input type="date" id="ci_kartela_date" class="ci-input"
+                           value="#len(trim(getColors.kartela_date)) ? dateFormat(getColors.kartela_date,'YYYY-MM-DD') : ''#">
+                </div>
             </div>
 
             <div class="color-side-row">
                 <div class="csr-label"><i class="fas fa-fill-drip"></i>Renk Tonu</div>
-                <div class="csr-value" id="renkTonu">#htmlEditFormat(getColors.renk_tonu)#</div>
+                <div class="csr-value">
+                    <input type="number" id="ci_renk_tonu" class="ci-input" min="0" value="#val(getColors.renk_tonu)#">
+                </div>
             </div>
 
             <div class="color-side-row">
                 <div class="csr-label"><i class="fas fa-thermometer-half"></i>Boya Derecesi</div>
-                <div class="csr-value">#htmlEditFormat(getColors.boya_derecesi)#</div>
+                <div class="csr-value">
+                    <input type="text" id="ci_boya_derecesi" class="ci-input" value="#htmlEditFormat(getColors.boya_derecesi)#">
+                </div>
             </div>
 
             <div class="color-side-row">
                 <div class="csr-label"><i class="fas fa-check-circle"></i>Durum</div>
                 <div class="csr-value">
-                    <span class="status-badge #isReady ? 'status-active' : 'status-passive'#">
-                        <i class="fas fa-#isReady ? 'check' : 'hourglass-half'#"></i>
-                        #isReady ? 'Hazır' : 'Beklemede'#
-                    </span>
+                    <select id="ci_is_ready" class="ci-input">
+                        <option value="true"  #isReady ? 'selected' : ''#>Hazır</option>
+                        <option value="false" #isReady ? '' : 'selected'#>Beklemede</option>
+                    </select>
                 </div>
+            </div>
+
+            <div style="padding:10px 14px;margin-top:auto;border-top:1px solid ##f1f5f9;">
+                <button type="button" id="ci_saveBtn" onclick="saveColorInfo()"
+                        style="width:100%;background:var(--accent);border:none;border-radius:7px;color:#fff;font-size:0.78rem;font-weight:700;padding:8px 0;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+                    <i class="fas fa-save"></i> Bilgileri Güncelle
+                </button>
+                <div id="ci_msg" style="display:none;font-size:0.72rem;text-align:center;margin-top:6px;padding:4px 8px;border-radius:5px;"></div>
             </div>
 
         </div>
@@ -135,6 +176,53 @@ document.addEventListener('DOMContentLoaded', function() {
         LoadColorTree(stockId);
     }
 });
+
+function saveColorInfo() {
+    var btn  = document.getElementById('ci_saveBtn');
+    var msgEl = document.getElementById('ci_msg');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Kaydediliyor...';
+    msgEl.style.display = 'none';
+
+    $.ajax({
+        url: '/colors/form/upd_color_info.cfm',
+        method: 'POST',
+        dataType: 'json',
+        data: {
+            stock_id:      document.getElementById('ci_stock_id').value,
+            color_code:    document.getElementById('ci_color_code').value,
+            color_name:    document.getElementById('ci_color_name').value,
+            kartela_no:    document.getElementById('ci_kartela_no').value,
+            kartela_date:  document.getElementById('ci_kartela_date').value,
+            renk_tonu:     document.getElementById('ci_renk_tonu').value,
+            boya_derecesi: document.getElementById('ci_boya_derecesi').value,
+            is_ready:      document.getElementById('ci_is_ready').value
+        },
+        success: function(res) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-save"></i> Bilgileri Güncelle';
+            msgEl.style.display = 'block';
+            if (res.success) {
+                msgEl.style.background = '#dcfce7';
+                msgEl.style.color = '#166534';
+                msgEl.textContent = res.message;
+            } else {
+                msgEl.style.background = '#fee2e2';
+                msgEl.style.color = '#991b1b';
+                msgEl.textContent = res.message || 'Kayıt hatası';
+            }
+            setTimeout(function() { msgEl.style.display = 'none'; }, 3000);
+        },
+        error: function() {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-save"></i> Bilgileri Güncelle';
+            msgEl.style.display = 'block';
+            msgEl.style.background = '#fee2e2';
+            msgEl.style.color = '#991b1b';
+            msgEl.textContent = 'Sunucu hatası';
+        }
+    });
+}
 </script>
 
 </cfoutput>
