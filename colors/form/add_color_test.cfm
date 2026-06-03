@@ -13,11 +13,11 @@
     width: 100%;
     background: transparent;
     border: none;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid ##e2e8f0;
     padding: 2px 0;
     font-size: 0.82rem;
     font-weight: 600;
-    color: #1e293b;
+    color: ##1e293b;
     outline: none;
     font-family: inherit;
 }
