@@ -208,7 +208,10 @@ function AddOperationToTree(pid, sid) {
                                     style="width:26px;height:26px;background:var(--accent);border:none;border-radius:6px;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.75rem;flex-shrink:0;">
                                     <i class="fas fa-plus"></i>
                                 </button>
-
+                                <button onclick="removeCard('${cardId}')" title="Kartı Sil"
+                                    style="width:26px;height:26px;background:#fee2e2;border:none;border-radius:6px;color:#e53e3e;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.72rem;flex-shrink:0;">
+                                    <i class="fas fa-trash"></i>
+                                </button>
                             </div>
                         </div>
                     `;
@@ -231,6 +234,10 @@ function AddOperationToTree(pid, sid) {
                                     <button class="btn-add-product" onclick="openProductPicker('${defCardId}')" title="Ürün Ekle"
                                         style="width:26px;height:26px;background:var(--accent);border:none;border-radius:6px;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.75rem;flex-shrink:0;">
                                         <i class="fas fa-plus"></i>
+                                    </button>
+                                    <button onclick="removeCard('${defCardId}')" title="Kartı Sil"
+                                        style="width:26px;height:26px;background:#fee2e2;border:none;border-radius:6px;color:#e53e3e;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.72rem;flex-shrink:0;">
+                                        <i class="fas fa-trash"></i>
                                     </button>
                                 </div>
                             </div>
@@ -372,6 +379,10 @@ function LoadColorTree(stockId) {
                                 style="width:26px;height:26px;background:var(--accent);border:none;border-radius:6px;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.75rem;flex-shrink:0;">
                                 <i class="fas fa-plus"></i>
                             </button>
+                            <button onclick="removeCard('${cardId}')" title="Kartı Sil"
+                                style="width:26px;height:26px;background:#fee2e2;border:none;border-radius:6px;color:#e53e3e;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.72rem;flex-shrink:0;">
+                                <i class="fas fa-trash"></i>
+                            </button>
                         </div>
                     </div>
                 `;
@@ -429,6 +440,11 @@ function LoadColorTree(stockId) {
         });
 }
 // ─────────────────────────────────────────────────────────
+function removeCard(cardId) {
+    const card = document.getElementById(cardId);
+    if (card) card.remove();
+}
+
 function removeTreeNode(nodeId) {
     const node = document.getElementById(nodeId);
     if (!node) return;
