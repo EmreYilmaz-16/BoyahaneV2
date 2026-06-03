@@ -203,12 +203,12 @@ function saveColorInfo() {
             btn.innerHTML = '<i class="fas fa-save"></i> Bilgileri Güncelle';
             msgEl.style.display = 'block';
             if (res.success) {
-                msgEl.style.background = '#dcfce7';
-                msgEl.style.color = '#166534';
+                msgEl.style.background = '##dcfce7';
+                msgEl.style.color = '##166534';
                 msgEl.textContent = res.message;
             } else {
-                msgEl.style.background = '#fee2e2';
-                msgEl.style.color = '#991b1b';
+                msgEl.style.background = '##fee2e2';
+                msgEl.style.color = '##991b1b';
                 msgEl.textContent = res.message || 'Kayıt hatası';
             }
             setTimeout(function() { msgEl.style.display = 'none'; }, 3000);
@@ -217,8 +217,8 @@ function saveColorInfo() {
             btn.disabled = false;
             btn.innerHTML = '<i class="fas fa-save"></i> Bilgileri Güncelle';
             msgEl.style.display = 'block';
-            msgEl.style.background = '#fee2e2';
-            msgEl.style.color = '#991b1b';
+            msgEl.style.background = '##fee2e2';
+            msgEl.style.color = '##991b1b';
             msgEl.textContent = 'Sunucu hatası';
         }
     });
