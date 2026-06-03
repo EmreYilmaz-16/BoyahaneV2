@@ -459,7 +459,11 @@ function renkTonuHesapla() {
     var RenkTonu = 1;
     if (OranToplami < 0.2) { } else if (OranToplami < 0.5) { RenkTonu = 2 } else if (OranToplami < 1) { RenkTonu = 3 } else if (OranToplami < 2) { RenkTonu = 4 } else if (OranToplami < 3) { RenkTonu = 5 } else if (OranToplami > 3) { RenkTonu = 6 }
     console.log(RenkTonu)
-    document.getElementById("renkTonu").textContent = RenkTonu
+    var renkTonuEl = document.getElementById("renkTonu") || document.getElementById("ci_renk_tonu");
+    if (renkTonuEl) {
+        if (renkTonuEl.tagName === "INPUT") { renkTonuEl.value = RenkTonu; }
+        else { renkTonuEl.textContent = RenkTonu; }
+    }
     return RenkTonu;
 
 }
