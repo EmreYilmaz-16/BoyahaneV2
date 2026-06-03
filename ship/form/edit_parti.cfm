@@ -24,6 +24,17 @@
 
 <cfset shipId = val(getEditOrder.ref_ship_id ?: 0)>
 
+<!--- Dönüş URL'i: nereden gelindiğine göre belirlenir --->  
+<cfset fromParam    = isDefined("url.from") ? trim(url.from) : "">
+<cfset returnShipId = (isDefined("url.return_ship_id") AND isNumeric(url.return_ship_id)) ? val(url.return_ship_id) : 0>
+<cfif fromParam eq "giris_fis_panel">
+    <cfset backUrl     = "index.cfm?fuseaction=ship.giris_fis_panel&selected_ship_id=#returnShipId#">
+    <cfset backLabel   = "Giriş Fişi Paneli">
+<cfelse>
+    <cfset backUrl     = "index.cfm?fuseaction=ship.list_partiler&ship_id=#shipId#">
+    <cfset backLabel   = "Parti Listesi">
+</cfif>
+
 <cfif shipId lte 0>
     <div class="alert alert-danger m-3"><i class="fas fa-exclamation-triangle me-2"></i>Bu parti bir irsaliyeye bağlı değil.</div>
     <cfabort>
@@ -204,8 +215,8 @@
         </div>
     </div>
     <cfoutput>
-    <a href="index.cfm?fuseaction=ship.list_partiler&ship_id=#shipId#" class="btn-back">
-        <i class="fas fa-arrow-left"></i>Parti Listesi
+    <a href="#backUrl#" class="btn-back">
+        <i class="fas fa-arrow-left"></i>#backLabel#
     </a>
     </cfoutput>
 </div>
@@ -793,7 +804,7 @@ function saveParti() {
         dataType: 'json',
         success: function(res) {
             if (res.success) {
-                window.location.href = 'index.cfm?fuseaction=ship.list_partiler&ship_id=#shipId#';
+                window.location.href = '#backUrl#';
             } else {
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-save me-2"></i>Güncelle';

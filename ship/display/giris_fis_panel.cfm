@@ -1,5 +1,7 @@
 <cfprocessingdirective pageEncoding="utf-8">
 <cfset params = application.siteParams>
+<cfparam name="url.selected_ship_id" type="integer" default="0">
+<cfset autoSelectShipId = val(url.selected_ship_id)>
 
 <!--- Giriş Fişi listesi (sol panel için) --->
 <cfquery name="getFisler" datasource="boyahane">
@@ -760,7 +762,8 @@
 var ALL_FIS        = #serializeJSON(fisArr)#;
 var ALL_SARIM      = #serializeJSON(sarimArr)#;
 var ALL_AMBALAJ    = #serializeJSON(ambalajArr)#;
-var selectedShipId   = 0;
+var selectedShipId     = 0;
+var autoSelectShipId   = #autoSelectShipId#;
 var mprt_kalan_metre = Infinity;
 var mprt_kalan_kg    = Infinity;
 var mprt_kalan_top   = Infinity;
@@ -994,7 +997,7 @@ function renderPartiler(list) {
             '<a href="index.cfm?fuseaction=ship.detail_parti&order_id=' + p.order_id + '" ' +
             'class="btn btn-xs btn-outline-secondary btn-sm py-0 px-2 me-1" style="font-size:.72rem" title="Detay">' +
             '<i class="fas fa-eye"></i></a>' +
-            '<a href="index.cfm?fuseaction=ship.edit_parti&order_id=' + p.order_id + '" ' +
+            '<a href="index.cfm?fuseaction=ship.edit_parti&order_id=' + p.order_id + '&from=giris_fis_panel&return_ship_id=' + selectedShipId + '" ' +
             'class="btn btn-xs btn-outline-primary btn-sm py-0 px-2 me-1" style="font-size:.72rem" title="Düzenle">' +
             '<i class="fas fa-edit"></i></a>' +
             '<button type="button" onclick="window.open(\'/ship/display/refakat_kart.cfm?order_id=' + p.order_id + '\',\'_blank\',\'width=900,height=780,scrollbars=yes\')" ' +
@@ -1530,6 +1533,7 @@ function savePartiModal() {
 
 /* ════ Init ════ */
 renderList(ALL_FIS);
+if (autoSelectShipId > 0) { selectFis(autoSelectShipId); }
 /* Modalleri body'e taşı — overflow/stacking context sorununu giderir */
 document.body.appendChild(document.getElementById('modalYeniFis'));
 document.body.appendChild(document.getElementById('modalYeniParti'));
