@@ -16,7 +16,7 @@
            o.order_date, o.order_stage,
            o.ref_no, o.ref_ship_id,
            o.sarim_sekli, o.ambalaj,
-           o.top_adedi,
+           o.top_adedi, o.main_color,
            o.gramaj, o.en, o.kumas_tipi, o.tuse, o.isi, o.hiz, o.besleme_avans, o.cekme,
            COALESCE(c.nickname, c.fullname, '') AS company_name,
            COALESCE(ss.sarim_sekli_adi, '')     AS sarim_sekli_adi,
@@ -120,7 +120,7 @@
 <!--- Değişkenler --->
 <cfset vPartKodu  = getOrder.order_number ?: "">
 <cfset vMusteri   = getOrder.company_name ?: "">
-<cfset vRenk      = getOrder.order_head   ?: "">
+<cfset vRenk      = getOrder.main_color   ?: "">
 <cfset vKumasCins = getMainRow.recordCount ? (getMainRow.product_name ?: "") : "">
 <!--- Parti metre: ana satır quantity --->
 <cfset vMetre = (getMainRow.recordCount AND isNumeric(getMainRow.quantity) AND val(getMainRow.quantity) gt 0)
