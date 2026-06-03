@@ -551,7 +551,6 @@ function initTree() {
         rowAlternationEnabled: true, columnAutoWidth: true,
         allowColumnReordering: true, allowColumnResizing: true, columnResizingMode: 'widget',
         autoExpandAll: true,
-        treeColumnIndex: 1,
         paging: { enabled: false },
         filterRow: { visible: true },
         headerFilter: { visible: true },
@@ -564,6 +563,23 @@ function initTree() {
             document.getElementById('recordCount').textContent = total + ' satır';
         },
         columns: [
+            {
+                caption: 'Satır',
+                minWidth: 220,
+                cellTemplate: function(c, o) {
+                    var d = o.data;
+                    var isOp = d.operation_type_id > 0 && d.component_stock_id === 0;
+                    if (isOp) {
+                        $('<span>').addClass('badge bg-warning text-dark me-1').html('<i class="fas fa-cogs"></i>').appendTo(c);
+                        $('<span>').text(d.operation_type_name || 'Operasyon').appendTo(c);
+                    } else {
+                        $('<span>').addClass('fw-semibold me-1').text(d.component_stock_code || '').appendTo(c);
+                        if (d.component_name) {
+                            $('<span>').addClass('small text-muted').text('— ' + d.component_name).appendTo(c);
+                        }
+                    }
+                }
+            },
             { dataField: 'line_number',
               caption: '##',
               width: 65, alignment: 'center', dataType: 'number',
@@ -584,23 +600,6 @@ function initTree() {
                                        });
                   container.append(inp);
               }
-            },
-            {
-                caption: 'Satır',
-                minWidth: 220,
-                cellTemplate: function(c, o) {
-                    var d = o.data;
-                    var isOp = d.operation_type_id > 0 && d.component_stock_id === 0;
-                    if (isOp) {
-                        $('<span>').addClass('badge bg-warning text-dark me-1').html('<i class="fas fa-cogs"></i>').appendTo(c);
-                        $('<span>').text(d.operation_type_name || 'Operasyon').appendTo(c);
-                    } else {
-                        $('<span>').addClass('fw-semibold me-1').text(d.component_stock_code || '').appendTo(c);
-                        if (d.component_name) {
-                            $('<span>').addClass('small text-muted').text('— ' + d.component_name).appendTo(c);
-                        }
-                    }
-                }
             },
             { dataField: 'amount',
               caption: 'Miktar',
