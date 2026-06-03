@@ -21,6 +21,7 @@
 <!--- Kök stok + ürün bilgisi --->
 <cfquery name="getRootStock" datasource="boyahane">
     SELECT s.stock_id,
+           COALESCE(p.product_id, 0)      AS product_id,
            COALESCE(s.stock_code,'')    AS stock_code,
            COALESCE(p.product_name,'')  AS product_name,
            COALESCE(pc.product_cat,'')  AS product_cat
@@ -249,6 +250,11 @@
         </div>
     </div>
     <div class="d-flex gap-2">
+        <cfoutput><cfif val(getRootStock.product_id) gt 0>
+        <a class="btn-back" href="index.cfm?fuseaction=product.edit_product&id=#val(getRootStock.product_id)#">
+            <i class="fas fa-box-open"></i>Ürün Kartı
+        </a>
+        </cfif></cfoutput>
         <button class="btn-add" onclick="openAddModal(0)">
             <i class="fas fa-plus"></i>Kök Satır Ekle
         </button>
