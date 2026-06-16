@@ -172,10 +172,13 @@
   .btn-print  { background: #1d4ed8; color: #fff; }
   .btn-close  { background: #6b7280; color: #fff; }
   .kart {
-    width: 210mm;
+    width: 148mm;            /* A5 genişliği */
+    min-height: 210mm;       /* A5 yüksekliği */
     background: #fff;
-    padding: 8mm 8mm 6mm 8mm;
+    padding: 7mm;
     box-shadow: 0 4px 24px rgba(0,0,0,.35);
+    display: flex;
+    flex-direction: column;
   }
 
   /* ── HEADER ── */
@@ -211,10 +214,10 @@
   }
   .info-table td {
     border: 1px solid #000;
-    padding: 2px 5px;
+    padding: 6px 7px;
     vertical-align: top;
   }
-  .info-table .lbl { font-weight: bold; width: 90px; white-space: nowrap; }
+  .info-table .lbl { font-weight: bold; width: 100px; white-space: nowrap; }
   .info-table .val { font-size: 15px; font-weight: 600; }
   .info-table .num-lbl { font-weight: bold; white-space: nowrap; }
   .info-table .num-val { font-weight: bold; font-size: 15px; }
@@ -226,8 +229,8 @@
     text-align: center;
     font-weight: 900;
     letter-spacing: 2px;
-    font-size: 11px;
-    padding: 2px 0;
+    font-size: 13px;
+    padding: 4px 0;
     margin-top: 4px;
   }
 
@@ -239,10 +242,10 @@
   }
   .apre-table td {
     border: 1px solid #000;
-    padding: 2px 5px;
+    padding: 6px 7px;
     vertical-align: top;
   }
-  .apre-table .lbl { font-weight: bold; width: 100px; white-space: nowrap; }
+  .apre-table .lbl { font-weight: bold; width: 110px; white-space: nowrap; }
   .apre-table .val { font-size: 15px; font-weight: 600; }
 
   /* ── PROSES + KKT split ── */
@@ -250,7 +253,8 @@
     display: flex;
     border: 1.5px solid #000;
     margin-bottom: 4px;
-    min-height: 80px;
+    min-height: 110px;
+    flex: 0 0 auto;
   }
   .split-col {
     flex: 1;
@@ -279,11 +283,12 @@
   /* ── AÇIKLAMA ── */
   .aciklama-box {
     border: 1.5px solid #000;
-    min-height: 50px;
-    padding: 4px 6px;
+    min-height: 90px;
+    padding: 6px 8px;
     font-size: 14px;
-    line-height: 1.5;
+    line-height: 1.6;
     white-space: pre-wrap;
+    flex: 1 1 auto;          /* kalan dikey alanı doldur */
   }
 
   @media print {
@@ -291,10 +296,11 @@
     .btn-bar { display: none; }
     .kart {
       width: 100%;
+      min-height: 197mm;
       box-shadow: none;
-      padding: 5mm 5mm 4mm 5mm;
+      padding: 4mm;
     }
-    @page { size: A4 portrait; margin: 8mm; }
+    @page { size: A5 portrait; margin: 6mm; }
   }
 </style>
 </head>
@@ -311,7 +317,7 @@
     <div class="kart-logo">
       <div class="firma-adi-italic">Rasih Çelik</div>
       <div class="refakat-baslik">R E F A K A T</div>
-      <div class="parti-rn">Parti RN: #orderId#</div>
+      <div class="parti-rn">Parti RN: <span class="num-val">#orderId#</span></div>
     </div>
     <div class="kart-header-right">
       <div class="tarih-satir">Tarih : #dateFormat(vTarih,'dd/mm/yyyy')# #timeFormat(vTarih,'HH:mm:ss')#</div>
