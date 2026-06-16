@@ -444,7 +444,7 @@
 
 <script>
 (function() {
-  var barcodeVal = '<cfoutput>#jsStringFormat(vPartKodu)#</cfoutput>';
+  var barcodeVal = '<cfoutput>#jsStringFormat(orderId)#</cfoutput>';
   if (barcodeVal && typeof JsBarcode !== 'undefined') {
     try {
       JsBarcode('#barcode', barcodeVal, {
