@@ -214,7 +214,7 @@
   }
   .info-table td {
     border: 1px solid #000;
-    padding: 6px 7px;
+    padding: 3px 7px;
     vertical-align: top;
   }
   .info-table .lbl { font-weight: bold; width: 100px; white-space: nowrap; }
@@ -242,7 +242,7 @@
   }
   .apre-table td {
     border: 1px solid #000;
-    padding: 6px 7px;
+    padding: 3px 7px;
     vertical-align: top;
   }
   .apre-table .lbl { font-weight: bold; width: 110px; white-space: nowrap; }
@@ -253,7 +253,7 @@
     display: flex;
     border: 1.5px solid #000;
     margin-bottom: 4px;
-    min-height: 110px;
+    min-height: 80px;
     flex: 0 0 auto;
   }
   .split-col {
@@ -283,7 +283,7 @@
   /* ── AÇIKLAMA ── */
   .aciklama-box {
     border: 1.5px solid #000;
-    min-height: 90px;
+    min-height: 50px;
     padding: 6px 8px;
     font-size: 14px;
     line-height: 1.6;
@@ -296,7 +296,7 @@
     .btn-bar { display: none; }
     .kart {
       width: 100%;
-      min-height: 190mm;
+      min-height: 196mm;
       box-shadow: none;
       padding: 4mm;
     }
