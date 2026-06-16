@@ -417,7 +417,7 @@
       <div class="split-header">P R O S E S</div>
       <cfif getEkIslemRows.recordCount>
         <cfloop query="getEkIslemRows">
-          <div class="proses-item">#xmlFormat(product_name)#</div>
+          <div class="proses-item">#xmlFormat(Listgetat(product_name,1,"-"))#</div>
         </cfloop>
       <cfelse>
         <div style="color:##aaa;font-style:italic;font-size:10px">—</div>
