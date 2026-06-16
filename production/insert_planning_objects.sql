@@ -31,3 +31,19 @@ VALUES
      'unplan_order',
      'Emirden Plan Kaldır',
      'page', NULL, 57, true, false, 'page');
+
+-- =====================================================
+-- Üretim Planlama (GANTT) Sayfası — pbs_objects Menü Kaydı
+-- =====================================================
+DELETE FROM pbs_objects WHERE full_fuseaction IN (
+    'production.production_planning_gantt'
+);
+
+INSERT INTO pbs_objects (full_fuseaction, file_path, object_name, object_title, object_type, parent_id, sort_order, is_active, show_menu, window_type)
+VALUES
+    -- Gantt planlama sayfası (menüde görünür, normal sayfa — assets yüklenir)
+    ('production.production_planning_gantt',
+     '/production/display/production_planning_gantt.cfm',
+     'production_planning_gantt',
+     'Üretim Planlama (Gantt)',
+     'page', NULL, 58, true, true, 'page');
