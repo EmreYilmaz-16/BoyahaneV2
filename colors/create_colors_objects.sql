@@ -52,5 +52,10 @@ VALUES
 ('colors.delete_color',
  '/colors/form/delete_color.cfm',
  'delete_color', 'Renk Sil',
- 'page', NULL, 13, true, false, 'page')
+ 'page', NULL, 13, true, false, 'page'),
+
+('colors.copy_color',
+ '/colors/form/copy_color.cfm',
+ 'copy_color', 'Renk Kopyala',
+ 'page', NULL, 14, true, false, 'page')
 ;

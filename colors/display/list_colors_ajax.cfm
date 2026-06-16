@@ -174,6 +174,14 @@
                         <div class="form-text">Önce müşteri seçin.</div>
                     </div>
 
+                    <!--- Reçete Kaynağı (Kopyalama) --->
+                    <div class="col-12"><div class="popup-section-label"><i class="fas fa-copy"></i>Reçete Kopyalama</div></div>
+                    <div class="col-12">
+                        <label class="form-label">Kaynak Renk <small class="text-muted fw-normal">(seçilirse bu rengin boya reçetesi/ağacı kopyalanır)</small></label>
+                        <div id="popupSourceColorSelect"></div>
+                        <div class="form-text">Boş bırakılırsa reçetesiz, sadece renk başlığı oluşturulur.</div>
+                    </div>
+
                     <!--- Renk Tanımı --->
                     <div class="col-12"><div class="popup-section-label"><i class="fas fa-fill-drip"></i>Renk Tanımı</div></div>
                     <div class="col-md-6">
@@ -361,12 +369,12 @@ function openAddColorModal() {
     if (popupSelectsInitialized) {
         if ($('##popupCompanySelect').data('dxSelectBox'))
             $('##popupCompanySelect').dxSelectBox('instance').option('value', null);
+        if ($('##popupSourceColorSelect').data('dxSelectBox'))
+            $('##popupSourceColorSelect').dxSelectBox('instance').option('value', null);
         clearPopupProducts();
     }
     new bootstrap.Modal(document.getElementById('modalAddColor')).show();
-}
-
-$('##modalAddColor').on('shown.bs.modal', function() {
+}$('##modalAddColor').on('shown.bs.modal', function() {
     if (popupSelectsInitialized) return;
     popupSelectsInitialized = true;
     $('##popupCompanySelect').dxSelectBox({
@@ -384,6 +392,23 @@ $('##modalAddColor').on('shown.bs.modal', function() {
             else { clearPopupProducts(); }
             autoGeneratePopupColorCode();
         }
+    });
+
+    /* Kaynak renk (re\u00e7ete kopyalama) — mevcut renk listesinden, stok kayd\u0131 olanlar */
+    $('##popupSourceColorSelect').dxSelectBox({
+        dataSource  : colorData.filter(function(x){ return x.stock_id && x.stock_id > 0; }),
+        valueExpr   : 'stock_id',
+        displayExpr : function(item) {
+            if (!item) return '';
+            var code = item.color_code || item.color_name || ('##' + item.color_id);
+            var extra = [item.company_name, item.product_name].filter(function(p){ return p; }).join(' / ');
+            return code + (item.color_name && item.color_name !== item.color_code ? ' \u2014 ' + item.color_name : '') + (extra ? '  [' + extra + ']' : '');
+        },
+        searchEnabled : true,
+        searchExpr    : ['color_code','color_name','company_name','product_name','stock_code'],
+        showClearButton: true,
+        placeholder   : 'Re\u00e7etesi kopyalanacak rengi se\u00e7in (opsiyonel)...',
+        value         : null
     });
 });
 
@@ -441,13 +466,16 @@ function saveNewColor() {
     }
     var productId = $('##popupProductSelect').data('dxSelectBox')
         ? $('##popupProductSelect').dxSelectBox('instance').option('value') : null;
+    var sourceStockId = $('##popupSourceColorSelect').data('dxSelectBox')
+        ? $('##popupSourceColorSelect').dxSelectBox('instance').option('value') : null;
+
+    var isCopy = sourceStockId && sourceStockId > 0;
 
     var btn = document.getElementById('btnPopupSave');
     btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Kaydediliyor...';
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>' + (isCopy ? 'Kopyalan\u0131yor...' : 'Kaydediliyor...');
 
-    $.post('/colors/form/save_color.cfm', {
-        stock_id      : 0,
+    var payload = {
         company_id    : companyId,
         product_id    : productId || '',
         color_code    : document.getElementById('p_color_code').value,
@@ -459,15 +487,33 @@ function saveNewColor() {
         boya_derecesi : document.getElementById('p_boya_derecesi').value,
         flote         : document.getElementById('p_flote').value,
         information   : document.getElementById('p_information').value,
-        is_ready      : document.getElementById('p_is_ready').checked ? 'true' : 'false',
-        recipe_json   : '[]'
-    }, function(res) {
+        is_ready      : document.getElementById('p_is_ready').checked ? 'true' : 'false'
+    };
+
+    var endpoint;
+    if (isCopy) {
+        endpoint = '/colors/form/copy_color.cfm';
+        payload.source_stock_id = sourceStockId;
+    } else {
+        endpoint = '/colors/form/save_color.cfm';
+        payload.stock_id    = 0;
+        payload.recipe_json = '[]';
+    }
+
+    $.post(endpoint, payload, function(res) {
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-save me-1"></i>Kaydet ve Re\u00e7eteye Git';
         if (res && res.success) {
-            DevExpress.ui.notify('Renk olu\u015fturuldu, re\u00e7ete sayfas\u0131na y\u00f6nlendiriliyorsunuz...', 'success', 2500);
+            var msg = isCopy
+                ? 'Renk kopyaland\u0131 (' + (res.copied_rows || 0) + ' re\u00e7ete sat\u0131r\u0131), re\u00e7ete sayfas\u0131na y\u00f6nlendiriliyorsunuz...'
+                : 'Renk olu\u015fturuldu, re\u00e7ete sayfas\u0131na y\u00f6nlendiriliyorsunuz...';
+            DevExpress.ui.notify(msg, 'success', 2500);
             setTimeout(function() {
-                window.location.href = 'index.cfm?fuseaction=colors.add_color&color_id=' + res.color_id;
+                if (isCopy) {
+                    window.location.href = 'index.cfm?fuseaction=colors.add_color&stock_id=' + res.stock_id;
+                } else {
+                    window.location.href = 'index.cfm?fuseaction=colors.add_color&color_id=' + res.color_id;
+                }
             }, 1800);
         } else {
             DevExpress.ui.notify((res && res.message) || 'Kay\u0131t ba\u015far\u0131s\u0131z.', 'error', 3500);
