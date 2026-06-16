@@ -314,6 +314,7 @@
 .planner-body {
     display: flex;
     flex: 1;
+    min-height: 0;
     overflow: hidden;
     gap: 0;
 }
@@ -417,6 +418,8 @@
 /* ---- Right panel: gantt ------------------------------------------- */
 .scheduler-panel {
     flex: 1;
+    min-width: 0;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -452,8 +455,12 @@
 }
 
 #ganttContainer {
-    flex: 1;
+    flex: 1 1 auto;
+    min-height: 0;
+    min-width: 0;
     height: 100%;
+    width: 100%;
+    position: relative;
     overflow: hidden;
 }
 
@@ -963,6 +970,23 @@ function buildGantt() {
         dragItem = null;
         openPlanModal(order, null, null, null);
     });
+
+    /* SPA enjeksiyonunda kapsayıcı boyutu geç oturabilir → render'ı tazele.
+       Birkaç kare boyunca repaint çağırarak grafik panelinin doğru
+       genişlik/yükseklikle çizilmesini garantiye al. */
+    scheduleGanttRepaint();
+}
+
+function scheduleGanttRepaint() {
+    var tries = 0;
+    function tick() {
+        if (!ganttInst) return;
+        try { ganttInst.repaint(); } catch (err) {}
+        if (++tries < 5) {
+            requestAnimationFrame(function() { setTimeout(tick, 60); });
+        }
+    }
+    requestAnimationFrame(tick);
 }
 
 function refreshGantt() {
