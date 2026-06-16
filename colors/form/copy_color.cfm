@@ -149,10 +149,10 @@
                 "tree_type"   : isNumeric(srcTree.tree_type) ? val(srcTree.tree_type) : 0,
                 "detail"      : len(srcTree.detail) ? srcTree.detail : javaCast("null",""),
                 "hierarchy"   : srcTree.hierarchy ?: "",
-                "is_phantom"  : srcTree.is_phantom,
-                "is_configure": srcTree.is_configure,
-                "is_sevk"     : srcTree.is_sevk,
-                "is_tree"     : srcTree.is_tree,
+                "is_phantom"  : (isBoolean(srcTree.is_phantom)   ? srcTree.is_phantom   : false),
+                "is_configure": (isBoolean(srcTree.is_configure) ? srcTree.is_configure : false),
+                "is_sevk"     : (isBoolean(srcTree.is_sevk)      ? srcTree.is_sevk      : false),
+                "is_tree"     : (isBoolean(srcTree.is_tree)      ? srcTree.is_tree      : true),
                 "parent_old"  : val(srcTree.related_product_tree_id)
             })>
         </cfloop>
