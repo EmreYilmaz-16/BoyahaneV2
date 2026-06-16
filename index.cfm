@@ -496,6 +496,8 @@
     </cfif>
 
     <cfif loadAssets>
+    <!--- DevExtreme Gantt motoru — dxGantt için dx.all.js'ten ÖNCE yüklenmeli (E1041) --->
+    <script src="https://cdn3.devexpress.com/jslib/23.2.5/js/dx-gantt.js"></script>
     <!--- DevExtreme JS --->
     <script src="https://cdn3.devexpress.com/jslib/23.2.5/js/dx.all.js"></script>
     
