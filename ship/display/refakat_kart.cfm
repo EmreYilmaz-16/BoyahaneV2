@@ -296,7 +296,7 @@
     .btn-bar { display: none; }
     .kart {
       width: 100%;
-      min-height: 197mm;
+      min-height: 190mm;
       box-shadow: none;
       padding: 4mm;
     }
