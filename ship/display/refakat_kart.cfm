@@ -215,9 +215,9 @@
     vertical-align: top;
   }
   .info-table .lbl { font-weight: bold; width: 90px; white-space: nowrap; }
-  .info-table .val { }
+  .info-table .val { font-size: 15px; font-weight: 600; }
   .info-table .num-lbl { font-weight: bold; white-space: nowrap; }
-  .info-table .num-val { font-weight: bold; font-size: 12px; }
+  .info-table .num-val { font-weight: bold; font-size: 15px; }
 
   /* ── SECTION HEADER ── */
   .section-header {
@@ -243,7 +243,7 @@
     vertical-align: top;
   }
   .apre-table .lbl { font-weight: bold; width: 100px; white-space: nowrap; }
-  .apre-table .val { }
+  .apre-table .val { font-size: 15px; font-weight: 600; }
 
   /* ── PROSES + KKT split ── */
   .split-row {
@@ -270,17 +270,18 @@
     padding-bottom: 2px;
     text-align: center;
   }
-  .proses-item { padding: 1px 0; font-weight: 700; font-size: 11px; }
+  .proses-item { padding: 1px 0; font-weight: 700; font-size: 14px; }
   .kkt-row { display: flex; gap: 4px; margin-bottom: 2px; }
   .kkt-row .lbl { font-weight: bold; width: 80px; }
-  .kkt-aciklama { margin-top: 4px; font-weight: 700; font-size: 11px; line-height: 1.5; }
+  .kkt-row .val { font-size: 14px; font-weight: 600; }
+  .kkt-aciklama { margin-top: 4px; font-weight: 700; font-size: 14px; line-height: 1.5; }
 
   /* ── AÇIKLAMA ── */
   .aciklama-box {
     border: 1.5px solid #000;
     min-height: 50px;
     padding: 4px 6px;
-    font-size: 11px;
+    font-size: 14px;
     line-height: 1.5;
     white-space: pre-wrap;
   }
