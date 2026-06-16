@@ -509,11 +509,7 @@ function saveNewColor() {
                 : 'Renk olu\u015fturuldu, re\u00e7ete sayfas\u0131na y\u00f6nlendiriliyorsunuz...';
             DevExpress.ui.notify(msg, 'success', 2500);
             setTimeout(function() {
-                if (isCopy) {
-                    window.location.href = 'index.cfm?fuseaction=colors.add_color&stock_id=' + res.stock_id;
-                } else {
-                    window.location.href = 'index.cfm?fuseaction=colors.add_color&color_id=' + res.color_id;
-                }
+                window.location.href = 'index.cfm?fuseaction=colors.add_color&color_id=' + res.color_id;
             }, 1800);
         } else {
             DevExpress.ui.notify((res && res.message) || 'Kay\u0131t ba\u015far\u0131s\u0131z.', 'error', 3500);
