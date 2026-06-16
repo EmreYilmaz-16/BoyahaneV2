@@ -969,7 +969,7 @@ function buildScheduler() {
         height           : '100%',
         startDayHour     : 6,
         endDayHour       : 22,
-        cellDuration     : 30,
+        cellDuration     : 10,
         showAllDayPanel  : false,
         crossScrollingEnabled: true,
         groups           : ['resourceId'],
