@@ -173,34 +173,69 @@
 
 <!--- ================================================================
       Bağımlılıkları dinamik yükle (ajaxpage modunda layout head devreye girmeyebilir)
-      dxGantt, dx.all.js içinde gelir; ek script gerekmez.
+      ÖNEMLİ: dxGantt için 'dx-gantt.js' (Gantt motoru) gereklidir.
+      Çift yükleme (E0024) ve eksik motor (E1041) hatalarını önlemek için:
+        - Zaten yüklü scriptler tekrar EKLENMEZ.
+        - dx.all.js yoksa yüklenir; varsa dokunulmaz.
+        - dx-gantt.js her durumda yüklenir/teyit edilir ve hazır bayrağı set edilir.
       ================================================================ --->
 <script>
 (function() {
+    var DX = 'https://cdn3.devexpress.com/jslib/23.2.5/';
+
+    function hasScript(srcPart) {
+        return Array.prototype.some.call(document.scripts, function(s) {
+            return s.src && s.src.indexOf(srcPart) !== -1;
+        });
+    }
+    function hasLink(hrefPart) {
+        return Array.prototype.some.call(document.querySelectorAll('link[rel="stylesheet"]'), function(l) {
+            return l.href && l.href.indexOf(hrefPart) !== -1;
+        });
+    }
     function addLink(href) {
+        if (hasLink(href)) return;
         var l = document.createElement('link');
         l.rel = 'stylesheet'; l.href = href;
         document.head.appendChild(l);
     }
     function addScript(src, onload) {
+        if (hasScript(src)) { if (onload) onload(); return; }
         var s = document.createElement('script');
         s.src = src;
         if (onload) s.onload = onload;
         document.head.appendChild(s);
     }
+
+    function loadGanttEngine(next) {
+        /* Gantt motoru — dxGantt widget'ından ÖNCE değerlendirilmiş olmalı */
+        addScript(DX + 'js/dx-gantt.js', function() {
+            window.__ganttEngineReady = true;
+            if (next) next();
+        });
+    }
+
+    function loadDevExtreme() {
+        addLink(DX + 'css/dx.common.css');
+        addLink(DX + 'css/dx.light.css');
+        if (typeof DevExpress === 'undefined' && !hasScript('dx.all.js')) {
+            /* DevExtreme yoksa: önce Gantt motoru, sonra dx.all.js (doğru sıra) */
+            loadGanttEngine(function() {
+                addScript(DX + 'js/dx.all.js');
+            });
+        } else {
+            /* DevExtreme zaten yüklü: sadece Gantt motorunu ekle (lazy widget oluşturmada yeterli) */
+            loadGanttEngine();
+        }
+    }
+
     if (typeof jQuery === 'undefined') {
         addScript('https://code.jquery.com/jquery-3.7.1.min.js', function() {
             addScript('https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js');
-            if (typeof DevExpress === 'undefined') {
-                addLink('https://cdn3.devexpress.com/jslib/23.2.5/css/dx.common.css');
-                addLink('https://cdn3.devexpress.com/jslib/23.2.5/css/dx.light.css');
-                addScript('https://cdn3.devexpress.com/jslib/23.2.5/js/dx.all.js');
-            }
+            loadDevExtreme();
         });
-    } else if (typeof DevExpress === 'undefined') {
-        addLink('https://cdn3.devexpress.com/jslib/23.2.5/css/dx.common.css');
-        addLink('https://cdn3.devexpress.com/jslib/23.2.5/css/dx.light.css');
-        addScript('https://cdn3.devexpress.com/jslib/23.2.5/js/dx.all.js');
+    } else {
+        loadDevExtreme();
     }
 }());
 </script>
@@ -775,7 +810,8 @@ function getActiveStations() {
         typeof DevExpress === 'undefined' ||
         typeof bootstrap === 'undefined' ||
         typeof bootstrap.Modal !== 'function' ||
-        !jQuery.fn || typeof jQuery.fn.dxGantt !== 'function') {
+        !jQuery.fn || typeof jQuery.fn.dxGantt !== 'function' ||
+        !window.__ganttEngineReady) {
         setTimeout(poll, 50);
         return;
     }
