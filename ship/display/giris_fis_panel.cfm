@@ -452,7 +452,7 @@
                     <!--- Miktar --->
                     <div class="row g-2 mb-3">
                         <div class="col-4">
-                            <label class="form-label small mb-1 fw-semibold">
+                            <label class="form-label small mb-1 fw-semibold" id="mprt_miktarLabel">
                                 Miktar (mt) <span class="text-danger">*</span>
                             </label>
                             <input type="number" class="form-control form-control-sm" id="mprt_miktar"
@@ -460,9 +460,10 @@
                             <div class="form-text" id="mprt_kalanText"></div>
                         </div>
                         <div class="col-4">
-                            <label class="form-label small mb-1 fw-semibold">Kg <span class="text-muted">(opsiyonel)</span></label>
+                            <label class="form-label small mb-1 fw-semibold" id="mprt_kgLabel">Kg <span class="text-muted">(opsiyonel)</span></label>
                             <input type="number" class="form-control form-control-sm" id="mprt_kg"
                                    step="0.001" min="0" placeholder="0.000">
+                            <div class="form-text" id="mprt_kgKalanText"></div>
                         </div>
                         <div class="col-4">
                             <label class="form-label small mb-1 fw-semibold">Top Adedi</label>
@@ -1319,34 +1320,60 @@ function openYeniPartiModal(shipId) {
             document.getElementById('mprt_company_id').value   = res.company_id;
             document.getElementById('mprt_stock_id').value     = res.stock_id;
             document.getElementById('mprt_product_id').value   = res.product_id;
-            document.getElementById('mprt_unit').value         = res.unit;
+            /* Etkin birimi belirle: ship_row 'mt' diyorsa ama fis kg-bazlı ise 'kg' yap */
+            var effUnit = (res.unit || 'mt').toLowerCase();
+            if (effUnit === 'mt' && fis && fis.hk_kg > 0 && !(fis.hk_metre > 0)) {
+                effUnit = 'kg';
+            }
+            var isMtModal = (effUnit === 'mt');
+            document.getElementById('mprt_unit').value         = effUnit;
             document.getElementById('mprt_unit_id').value      = res.unit_id;
             document.getElementById('mprt_product_name').value = res.product_name;
             document.getElementById('mprt_ref_no').value       = res.ship_number;
             document.getElementById('mprt_parti_kodu').value   = res.parti_kodu;
             document.getElementById('mprt_fisLabel').textContent    = res.ship_number;
             document.getElementById('mprt_companyLabel').textContent = fis ? fis.company_name : '';
+            /* Label güncelle */
+            document.getElementById('mprt_miktarLabel').innerHTML = isMtModal
+                ? 'Miktar (mt) <span class="text-danger">*</span>'
+                : 'Miktar (mt) <span class="text-muted">(opsiyonel)</span>';
+            document.getElementById('mprt_kgLabel').innerHTML = isMtModal
+                ? 'Kg <span class="text-muted">(opsiyonel)</span>'
+                : 'Kg <span class="text-danger">*</span>';
             /* Kalan metre, kg, top */
             mprt_kalan_metre = (fis && fis.hk_metre > 0)     ? Math.max(0, fis.hk_metre     - fis.parti_metre) : Infinity;
             mprt_kalan_kg    = (fis && fis.hk_kg > 0)        ? Math.max(0, fis.hk_kg        - fis.parti_kg)    : Infinity;
             mprt_kalan_top   = (fis && fis.hk_top_adedi > 0) ? Math.max(0, fis.hk_top_adedi - fis.parti_top)   : Infinity;
 
-            if (fis && fis.hk_metre > 0) {
-                var kalanParts = ['Kalan: ' + mprt_kalan_metre.toFixed(2) + ' mt'];
-                if (fis.hk_kg > 0)        kalanParts.push(mprt_kalan_kg.toFixed(2) + ' kg');
-                if (fis.hk_top_adedi > 0) kalanParts.push(mprt_kalan_top + ' top');
-                document.getElementById('mprt_kalanText').textContent = kalanParts.join(' · ');
-                /* Miktar: son partiden varsa onu kullan, yoksa kalan */
-                var sonMiktar = res.son_parti_miktar || res.SON_PARTI_MIKTAR || 0;
-                document.getElementById('mprt_miktar').value = sonMiktar > 0 ? parseFloat(sonMiktar).toFixed(3) : (mprt_kalan_metre > 0 && isFinite(mprt_kalan_metre) ? mprt_kalan_metre.toFixed(3) : '');
+            var sonMiktar = res.son_parti_miktar || res.SON_PARTI_MIKTAR || 0;
+            var sonKg     = res.son_parti_kg     || res.SON_PARTI_KG     || 0;
+            document.getElementById('mprt_kalanText').textContent   = '';
+            document.getElementById('mprt_kgKalanText').textContent = '';
+
+            if (isMtModal) {
+                /* Metre bazlı fis */
+                if (fis && fis.hk_metre > 0) {
+                    var kalanParts = ['Kalan: ' + mprt_kalan_metre.toFixed(2) + ' mt'];
+                    if (fis.hk_kg > 0)        kalanParts.push(mprt_kalan_kg.toFixed(2) + ' kg');
+                    if (fis.hk_top_adedi > 0) kalanParts.push(mprt_kalan_top + ' top');
+                    document.getElementById('mprt_kalanText').textContent = kalanParts.join(' · ');
+                    document.getElementById('mprt_miktar').value = sonMiktar > 0 ? parseFloat(sonMiktar).toFixed(3) : (isFinite(mprt_kalan_metre) && mprt_kalan_metre > 0 ? mprt_kalan_metre.toFixed(3) : '');
+                } else {
+                    if (sonMiktar > 0) document.getElementById('mprt_miktar').value = parseFloat(sonMiktar).toFixed(3);
+                }
+                if (sonKg > 0) document.getElementById('mprt_kg').value = parseFloat(sonKg).toFixed(3);
             } else {
-                document.getElementById('mprt_kalanText').textContent = '';
-                var sonMiktar = res.son_parti_miktar || res.SON_PARTI_MIKTAR || 0;
+                /* Kg bazlı fis */
+                if (fis && fis.hk_kg > 0) {
+                    var kgKalanParts = ['Kalan: ' + (isFinite(mprt_kalan_kg) ? mprt_kalan_kg.toFixed(2) : '—') + ' kg'];
+                    if (fis.hk_top_adedi > 0) kgKalanParts.push(mprt_kalan_top + ' top');
+                    document.getElementById('mprt_kgKalanText').textContent = kgKalanParts.join(' · ');
+                    document.getElementById('mprt_kg').value = sonKg > 0 ? parseFloat(sonKg).toFixed(3) : (isFinite(mprt_kalan_kg) && mprt_kalan_kg > 0 ? mprt_kalan_kg.toFixed(3) : '');
+                } else {
+                    if (sonKg > 0) document.getElementById('mprt_kg').value = parseFloat(sonKg).toFixed(3);
+                }
                 if (sonMiktar > 0) document.getElementById('mprt_miktar').value = parseFloat(sonMiktar).toFixed(3);
             }
-            /* Kg: son partiden */
-            var sonKg = res.son_parti_kg || res.SON_PARTI_KG || 0;
-            if (sonKg > 0) document.getElementById('mprt_kg').value = parseFloat(sonKg).toFixed(3);
             /* Top Adedi: son partiden */
             var sonTop = res.son_parti_top || res.SON_PARTI_TOP || 0;
             if (sonTop > 0) document.getElementById('mprt_top').value = parseInt(sonTop);
