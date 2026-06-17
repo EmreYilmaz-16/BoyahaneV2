@@ -1414,17 +1414,21 @@ function savePartiModal() {
     var stockId   = parseInt(document.getElementById('mprt_stock_id').value)   || 0;
     var productId = parseInt(document.getElementById('mprt_product_id').value) || 0;
     var miktar    = parseFloat(document.getElementById('mprt_miktar').value)   || 0;
+    var kgVal     = parseFloat(document.getElementById('mprt_kg').value)       || 0;
+    var topVal    = parseInt(document.getElementById('mprt_top').value)        || 0;
+    var unit      = document.getElementById('mprt_unit').value || 'mt';
+    var isMt      = unit.toLowerCase() === 'mt';
     var errEl = document.getElementById('mprt_errorMsg');
     errEl.classList.add('d-none');
-    if (miktar <= 0) {
+    if (isMt && miktar <= 0) {
         errEl.textContent = 'Miktar sıfırdan büyük olmalı.'; errEl.classList.remove('d-none'); return;
+    }
+    if (!isMt && kgVal <= 0) {
+        errEl.textContent = 'Kg değeri sıfırdan büyük olmalı.'; errEl.classList.remove('d-none'); return;
     }
     if (!productId || !stockId) {
         errEl.textContent = 'Giriş fişine ait ürün bilgisi bulunamadı.'; errEl.classList.remove('d-none'); return;
     }
-
-    var kgVal  = parseFloat(document.getElementById('mprt_kg').value)  || 0;
-    var topVal = parseInt(document.getElementById('mprt_top').value)    || 0;
 
     /* Kalan değer kontrolleri */
     var fisCur = ALL_FIS.find(function(f) { return f.ship_id === shipId; });
@@ -1447,11 +1451,11 @@ function savePartiModal() {
         stock_id:      stockId,
         product_id:    productId,
         product_name:  document.getElementById('mprt_product_name').value,
-        quantity:      miktar,
-        unit:          document.getElementById('mprt_unit').value || 'mt',
+        quantity:      isMt ? miktar : kgVal,
+        unit:          unit,
         unit_id:       parseInt(document.getElementById('mprt_unit_id').value) || 0,
-        amount2:       kgVal > 0 ? kgVal : 0,
-        unit2:         kgVal > 0 ? 'kg' : '',
+        amount2:       isMt ? (kgVal > 0 ? kgVal : 0) : (miktar > 0 ? miktar : 0),
+        unit2:         isMt ? (kgVal > 0 ? 'kg' : '') : (miktar > 0 ? 'mt' : ''),
         price:         0, tax: 0, discount_1: 0,
         grosstotal:    0, nettotal: 0, taxtotal: 0
     };
@@ -1463,8 +1467,8 @@ function savePartiModal() {
             stock_id:     parseInt(chk.dataset.stockId)   || 0,
             product_id:   parseInt(chk.dataset.productId) || 0,
             product_name: chk.dataset.productName || '',
-            quantity:     miktar,
-            unit:         document.getElementById('mprt_unit').value || 'mt',
+            quantity:     isMt ? miktar : kgVal,
+            unit:         unit,
             unit_id:      0,
             price:        0, tax: 0, discount_1: 0,
             grosstotal:   0, nettotal: 0, taxtotal: 0
