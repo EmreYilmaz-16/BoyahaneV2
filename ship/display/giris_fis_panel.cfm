@@ -1555,7 +1555,7 @@ function savePartiModal() {
             purchase_sales: 'false',
             order_stage:    1,
             order_number:   document.getElementById('mprt_parti_kodu').value,
-            order_head:     document.getElementById('mprt_aciklama').value,
+            order_detail:     document.getElementById('mprt_aciklama').value,
             ref_no:         document.getElementById('mprt_ref_no').value,
             ref_ship_id:    shipId,
             company_id:     companyId,
