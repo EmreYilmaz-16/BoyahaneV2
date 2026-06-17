@@ -510,7 +510,6 @@
 
     <script src="/assets/js/ajax.js"></script>
     <script src="/assets/js/AjaxControl/dist/build.js"></script>
-    <script src="/assets/js/sidebar.js"></script>
     
     <script src="/assets/js/index.js"></script>
 

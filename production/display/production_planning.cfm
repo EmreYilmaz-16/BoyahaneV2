@@ -177,6 +177,11 @@
 <!--- Bağımlılıkları dinamik yükle (ajaxpage modunda layout head devreye girmeyebilir) --->
 <script>
 (function() {
+    function hasScript(srcPart) {
+        return Array.prototype.some.call(document.scripts, function(s) {
+            return s.src && s.src.indexOf(srcPart) !== -1;
+        });
+    }
     function addLink(href) {
         var l = document.createElement('link');
         l.rel = 'stylesheet'; l.href = href;
@@ -191,16 +196,20 @@
     if (typeof jQuery === 'undefined') {
         addScript('https://code.jquery.com/jquery-3.7.1.min.js', function() {
             addScript('https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js');
-            if (typeof DevExpress === 'undefined') {
+            if (typeof DevExpress === 'undefined' && !hasScript('dx.all.js')) {
                 addLink('https://cdn3.devexpress.com/jslib/23.2.5/css/dx.common.css');
                 addLink('https://cdn3.devexpress.com/jslib/23.2.5/css/dx.light.css');
-                addScript('https://cdn3.devexpress.com/jslib/23.2.5/js/dx.all.js');
+                addScript('https://cdn3.devexpress.com/jslib/23.2.5/js/dx.all.js', function() {
+                    addScript('https://cdn3.devexpress.com/jslib/23.2.5/js/localization/dx.messages.tr.js');
+                });
             }
         });
-    } else if (typeof DevExpress === 'undefined') {
+    } else if (typeof DevExpress === 'undefined' && !hasScript('dx.all.js')) {
         addLink('https://cdn3.devexpress.com/jslib/23.2.5/css/dx.common.css');
         addLink('https://cdn3.devexpress.com/jslib/23.2.5/css/dx.light.css');
-        addScript('https://cdn3.devexpress.com/jslib/23.2.5/js/dx.all.js');
+        addScript('https://cdn3.devexpress.com/jslib/23.2.5/js/dx.all.js', function() {
+            addScript('https://cdn3.devexpress.com/jslib/23.2.5/js/localization/dx.messages.tr.js');
+        });
     }
 }());
 </script>
