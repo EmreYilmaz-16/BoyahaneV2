@@ -17,8 +17,16 @@
                    JOIN product p2  ON st2.product_id = p2.product_id
                    WHERE orw2.order_id = o.order_id
                      AND COALESCE(p2.is_ek_islem, false) = false
-                     AND COALESCE(LOWER(TRIM(orw2.unit)), '') <> 'kg'
-               ), 0) AS ana_miktar
+               ), 0) AS ana_miktar,
+               COALESCE((
+                   SELECT LOWER(TRIM(orw2.unit))
+                   FROM order_row orw2
+                   JOIN stocks st2  ON orw2.stock_id  = st2.stock_id
+                   JOIN product p2  ON st2.product_id = p2.product_id
+                   WHERE orw2.order_id = o.order_id
+                     AND COALESCE(p2.is_ek_islem, false) = false
+                   ORDER BY orw2.order_row_id LIMIT 1
+               ), 'mt') AS ana_unit
         FROM orders o
         JOIN ship s ON s.ship_id = <cfqueryparam value="#shipId#" cfsqltype="cf_sql_integer">
         WHERE o.ref_ship_id = s.ship_id
@@ -48,6 +56,7 @@
             "order_date":  isDate(order_date)  ? dateFormat(order_date,  "dd/mm/yyyy") : "",
             "record_date": isDate(record_date) ? dateFormat(record_date, "dd/mm/yyyy") : "",
             "ana_miktar":  isNumeric(ana_miktar) ? val(ana_miktar) : 0,
+            "unit":        len(trim(ana_unit ?: "")) ? lCase(trim(ana_unit)) : "mt",
             "nettotal":    isNumeric(nettotal)   ? val(nettotal)   : 0
         })>
     </cfloop>

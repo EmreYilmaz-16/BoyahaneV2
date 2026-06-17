@@ -63,7 +63,7 @@
     LEFT JOIN company c ON s.company_id = c.company_id
     WHERE s.ship_type = 5
       AND NOT (
-          s.hk_metre > 0
+          COALESCE(s.hk_metre, 0) > 0
           AND COALESCE((
               SELECT SUM(orw.quantity)
               FROM orders o
@@ -990,7 +990,7 @@ function renderPartiler(list) {
             '<td class="ps-3 fw-semibold">' + escHtml(p.order_number) + '</td>' +
             '<td class="text-primary fw-semibold">' + (fisPartiNo ? escHtml(fisPartiNo) : '—') + '</td>' +
             '<td class="text-muted">' + p.order_date + '</td>' +
-            '<td>' + (p.ana_miktar > 0 ? p.ana_miktar.toFixed(2) + ' mt' : '—') + '</td>' +
+            '<td>' + (p.ana_miktar > 0 ? p.ana_miktar.toFixed(2) + ' ' + escHtml(p.unit || 'mt') : '—') + '</td>' +
             '<td><span class="badge bg-' + color + ' rounded-pill" style="font-size:.72rem">' +
             escHtml(p.stage_label) + '</span></td>' +
             '<td class="pe-2 text-end">' +
