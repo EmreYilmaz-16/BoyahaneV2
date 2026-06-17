@@ -125,6 +125,14 @@
     <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
     <script src="https://code.jquery.com/ui/1.13.3/jquery-ui.min.js" integrity="sha256-sw0iNNXmOJbQhYFuC9OF2kOlD5KQKe1y5lfBn4C9Sjg=" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+    <!--- DevExtreme Gantt motoru — dxGantt için dx.all.js'ten ÖNCE yüklenmeli (E1041) --->
+    <script src="https://cdn3.devexpress.com/jslib/23.2.5/js/dx-gantt.js"></script>
+    <!--- DevExtreme JS --->
+    <script src="https://cdn3.devexpress.com/jslib/23.2.5/js/dx.all.js"></script>
+    <!--- DevExtreme Türkçe Lokalizasyon --->
+    <script src="https://cdn3.devexpress.com/jslib/23.2.5/js/localization/dx.messages.tr.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     </cfif>
 </head>
 <body>
@@ -496,18 +504,7 @@
     </cfif>
 
     <cfif loadAssets>
-    <!--- DevExtreme Gantt motoru — dxGantt için dx.all.js'ten ÖNCE yüklenmeli (E1041) --->
-    <script src="https://cdn3.devexpress.com/jslib/23.2.5/js/dx-gantt.js"></script>
-    <!--- DevExtreme JS --->
-    <script src="https://cdn3.devexpress.com/jslib/23.2.5/js/dx.all.js"></script>
-    
-    <!--- DevExtreme Türkçe Lokalizasyon --->
-    <script src="https://cdn3.devexpress.com/jslib/23.2.5/js/localization/dx.messages.tr.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-    
     <!--- Custom JavaScript --->
-
     <script src="/assets/js/ajax.js"></script>
     <script src="/assets/js/AjaxControl/dist/build.js"></script>
     
