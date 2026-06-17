@@ -78,6 +78,25 @@
                 )
           ), 0) >= s.hk_metre
       )
+      AND NOT (
+          COALESCE(s.hk_metre, 0) = 0
+          AND COALESCE(s.hk_kg, 0) > 0
+          AND COALESCE((
+              SELECT SUM(
+                  CASE WHEN COALESCE(LOWER(TRIM(orw.unit)), '') = 'kg'
+                       THEN orw.quantity
+                       ELSE COALESCE(orw.amount2, 0)
+                  END
+              )
+              FROM orders o
+              JOIN order_row orw ON o.order_id = orw.order_id
+              JOIN stocks st ON orw.stock_id = st.stock_id
+              JOIN product p  ON st.product_id = p.product_id
+              WHERE (o.ref_ship_id = s.ship_id
+                 OR (o.ref_ship_id IS NULL AND o.ref_no IS NOT NULL AND o.ref_no <> '' AND o.ref_no = s.ship_number))
+                AND COALESCE(p.is_ek_islem, false) = false
+          ), 0) >= s.hk_kg
+      )
     ORDER BY s.ship_id DESC
 </cfquery>
 
@@ -769,6 +788,19 @@ var mprt_kalan_metre = Infinity;
 var mprt_kalan_kg    = Infinity;
 var mprt_kalan_top   = Infinity;
 
+/* ════ Yardımcı: tamamlanma / ilerleme ════ */
+function isFisFull(f) {
+    if (!f) return false;
+    if (f.hk_metre > 0) return f.parti_metre >= f.hk_metre;
+    if (f.hk_kg    > 0) return f.parti_kg    >= f.hk_kg;
+    return false;
+}
+function fisProgress(f) {
+    if (f && f.hk_metre > 0) return { pct: Math.min(100, (f.parti_metre / f.hk_metre) * 100), full: f.parti_metre >= f.hk_metre, hasLimit: true,  unit: 'mt', current: f.parti_metre, limit: f.hk_metre };
+    if (f && f.hk_kg    > 0) return { pct: Math.min(100, (f.parti_kg    / f.hk_kg)    * 100), full: f.parti_kg    >= f.hk_kg,    hasLimit: true,  unit: 'kg', current: f.parti_kg,    limit: f.hk_kg    };
+    return { pct: 0, full: false, hasLimit: false, unit: 'mt', current: 0, limit: 0 };
+}
+
 /* ════ Sol liste render ════ */
 function renderList(items) {
     var el = document.getElementById('fisList');
@@ -780,8 +812,9 @@ function renderList(items) {
     }
     var html = '';
     items.forEach(function(f) {
-        var pct  = f.hk_metre > 0 ? Math.min(100, (f.parti_metre / f.hk_metre) * 100) : 0;
-        var full = f.hk_metre > 0 && f.parti_metre >= f.hk_metre;
+        var prog = fisProgress(f);
+        var pct  = prog.pct;
+        var full = prog.full;
         var meta = [];
         if (f.hk_metre    > 0) meta.push(f.hk_metre.toFixed(1) + ' mt');
         if (f.hk_kg       > 0) meta.push(f.hk_kg.toFixed(1) + ' kg');
@@ -802,7 +835,7 @@ function renderList(items) {
                   '" style="font-size:.65rem">' + f.parti_count + ' parti</span>'
                 : '<span style="font-size:.68rem;color:##bbb">Parti yok</span>') +
             '</div>';
-        if (f.hk_metre > 0) {
+        if (prog.hasLimit) {
             html += '<div class="fis-prog"><div class="fis-prog-bar' + (full ? ' full' : '') +
                     '" style="width:' + pct.toFixed(0) + '%"></div></div>';
         }
@@ -832,7 +865,7 @@ function selectFis(shipId) {
 
     /* Toolbar butonları */
     var fis  = ALL_FIS.find(function(f) { return f.ship_id === shipId; });
-    var full = fis && fis.hk_metre > 0 && fis.parti_metre >= fis.hk_metre;
+    var full = isFisFull(fis);
     document.getElementById('btnDuzenle').disabled      = false;
     document.getElementById('btnPartiListesi').disabled = false;
     document.getElementById('btnSil').disabled          = false;
@@ -882,9 +915,17 @@ function renderDetail(d) {
     document.getElementById('detayBadges').innerHTML = b;
 
     /* Progress hesapla */
-    var pct   = d.hk_metre > 0 ? Math.min(100, (d.parti_metre / d.hk_metre) * 100) : 0;
-    var kalan = Math.max(0, d.hk_metre - d.parti_metre);
-    var full  = d.hk_metre > 0 && d.parti_metre >= d.hk_metre;
+    var useKg = !(d.hk_metre > 0) && d.hk_kg > 0;
+    var pct, kalan, full;
+    if (!useKg) {
+        pct   = d.hk_metre > 0 ? Math.min(100, (d.parti_metre / d.hk_metre) * 100) : 0;
+        kalan = Math.max(0, (d.hk_metre || 0) - d.parti_metre);
+        full  = d.hk_metre > 0 && d.parti_metre >= d.hk_metre;
+    } else {
+        pct   = Math.min(100, (d.parti_kg / d.hk_kg) * 100);
+        kalan = Math.max(0, d.hk_kg - d.parti_kg);
+        full  = d.parti_kg >= d.hk_kg;
+    }
     var strokeColor = full ? '##6c757d' : '##198754';
     var dashArr = (pct * 2.83).toFixed(0);
 
@@ -911,7 +952,9 @@ function renderDetail(d) {
 
     /* Donut progress */
     var donut = '';
-    if (d.hk_metre > 0) {
+    if (d.hk_metre > 0 || d.hk_kg > 0) {
+        var dispUnit    = useKg ? 'kg' : 'mt';
+        var dispCurrent = useKg ? (d.parti_kg || 0) : d.parti_metre;
         donut = '<div class="text-center">' +
             '<div class="text-muted small fw-semibold mb-2">Partileme Durumu</div>' +
             '<div class="position-relative mx-auto" style="width:110px;height:110px">' +
@@ -925,17 +968,17 @@ function renderDetail(d) {
             '<div class="mt-2 small">' +
             '<div class="d-flex justify-content-between px-2">' +
             '<span class="text-muted">Partilenen</span>' +
-            '<span class="fw-semibold text-success">' + d.parti_metre.toFixed(2) + ' mt</span></div>' +
+            '<span class="fw-semibold text-success">' + dispCurrent.toFixed(2) + ' ' + dispUnit + '</span></div>' +
             '<div class="d-flex justify-content-between px-2">' +
             '<span class="text-muted">Kalan</span>' +
-            '<span class="fw-semibold ' + (kalan > 0 ? 'text-primary' : 'text-secondary') + '">' + kalan.toFixed(2) + ' mt</span></div>' +
+            '<span class="fw-semibold ' + (kalan > 0 ? 'text-primary' : 'text-secondary') + '">' + kalan.toFixed(2) + ' ' + dispUnit + '</span></div>' +
             '</div></div>';
     }
 
     document.getElementById('detayBody').innerHTML =
         '<div class="row g-0">' +
         '<div class="col-md-8 pe-md-3">' + tableHtml + '</div>' +
-        '<div class="col-md-4 border-start ps-md-3 d-flex align-items-center justify-content-center">' + (donut || '<span class="text-muted small">Metre bilgisi girilmemiş</span>') + '</div>' +
+        '<div class="col-md-4 border-start ps-md-3 d-flex align-items-center justify-content-center">' + (donut || '<span class="text-muted small">Miktar bilgisi girilmemiş</span>') + '</div>' +
         '</div>';
 }
 
@@ -965,7 +1008,7 @@ function renderPartiler(list) {
     document.getElementById('partiBadge').textContent = list.length;
 
     var fis  = ALL_FIS.find(function(f) { return f.ship_id === selectedShipId; });
-    var full = fis && fis.hk_metre > 0 && fis.parti_metre >= fis.hk_metre;
+    var full = isFisFull(fis);
     document.getElementById('btnPartiOlusturInline').style.display = full ? 'none' : '';
 
     if (!list.length) {
@@ -1547,7 +1590,7 @@ function savePartiModal() {
                     fis.parti_top   += topVal;
                     renderList(ALL_FIS);
                     /* Toolbar butonunu duruma göre güncelle */
-                    var full = fis.hk_metre > 0 && fis.parti_metre >= fis.hk_metre;
+                    var full = isFisFull(fis);
                     document.getElementById('btnPartiOlustur').disabled = !!full;
                     document.getElementById('btnPartiOlusturInline').style.display = full ? 'none' : '';
                 }

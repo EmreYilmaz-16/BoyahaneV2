@@ -33,7 +33,20 @@
                          WHERE sr2.ship_id = s.ship_id
                          ORDER BY sr2.ship_row_id LIMIT 1
                      )
-               ), 0) AS parti_metre
+               ), 0) AS parti_metre,
+               COALESCE((
+                   SELECT SUM(
+                       CASE WHEN COALESCE(LOWER(TRIM(orw.unit)), '') = 'kg'
+                            THEN orw.quantity ELSE COALESCE(orw.amount2, 0) END
+                   )
+                   FROM orders o
+                   JOIN order_row orw ON o.order_id = orw.order_id
+                   JOIN stocks st ON orw.stock_id = st.stock_id
+                   JOIN product p  ON st.product_id = p.product_id
+                   WHERE (o.ref_ship_id = s.ship_id
+                      OR (o.ref_ship_id IS NULL AND o.ref_no IS NOT NULL AND o.ref_no <> '' AND o.ref_no = s.ship_number))
+                     AND COALESCE(p.is_ek_islem, false) = false
+               ), 0) AS parti_kg
         FROM ship s
         LEFT JOIN company c ON s.company_id = c.company_id
         WHERE s.ship_id = <cfqueryparam value="#shipId#" cfsqltype="cf_sql_integer">
@@ -61,6 +74,7 @@
         "hk_ham_boyali":(getShip.hk_ham_boyali EQ true OR getShip.hk_ham_boyali EQ "true" OR getShip.hk_ham_boyali EQ "YES"),
         "hk_parti_no":  getShip.hk_parti_no ?: "",
         "parti_metre":  isNumeric(getShip.parti_metre) ? val(getShip.parti_metre) : 0,
+        "parti_kg":     isNumeric(getShip.parti_kg)    ? val(getShip.parti_kg)    : 0,
         "record_date":  isDate(getShip.record_date) ? dateFormat(getShip.record_date, "dd/mm/yyyy") : "",
         "is_ship_iptal":(getShip.is_ship_iptal EQ true OR getShip.is_ship_iptal EQ "true" OR getShip.is_ship_iptal EQ "YES")
     }>
