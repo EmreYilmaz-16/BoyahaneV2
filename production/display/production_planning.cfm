@@ -811,6 +811,13 @@ function getActiveAppointments() {
 
 var ALL_APPOINTMENTS = [];
 
+var STATUS_META = {
+    1: { label: 'Planlandı',    bg: '##1a3a5c', fg: '##fff' },
+    2: { label: 'Çalışıyor',   bg: '##2e7d32', fg: '##fff' },
+    5: { label: 'Tamamlandı',  bg: '##757575', fg: '##fff' },
+    9: { label: 'İptal',       bg: '##b71c1c', fg: '##fff' }
+};
+
 /* ================================================================
    Init — deps yoksa 50ms aralıklarla bekle
    ================================================================ */
@@ -1058,13 +1065,6 @@ function upsertAllAppointment(appt) {
 function removeAllAppointment(id) {
     ALL_APPOINTMENTS = ALL_APPOINTMENTS.filter(function(a){ return a.p_order_id !== id; });
 }
-
-var STATUS_META = {
-    1: { label: 'Planlandı',    bg: '##1a3a5c', fg: '##fff' },
-    2: { label: 'Çalışıyor',   bg: '##2e7d32', fg: '##fff' },
-    5: { label: 'Tamamlandı',  bg: '##757575', fg: '##fff' },
-    9: { label: 'İptal',       bg: '##b71c1c', fg: '##fff' }
-};
 
 function fmtMins(mins) {
     if (!mins) return '';
