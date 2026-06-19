@@ -4,7 +4,8 @@
 
 <!--- Operasyon başlık satırları: related_product_tree_id IS NULL, operation_type_id dolu --->
 <cfquery name="getOperations" datasource="boyahane">
-    SELECT pt.product_tree_id, pt.operation_type_id, pt.operation_line_number, ot.operation_type
+    SELECT pt.product_tree_id, pt.operation_type_id, pt.operation_line_number,
+           ot.operation_type, COALESCE(ot.o_hour, 0) AS o_hour, COALESCE(ot.o_minute, 0) AS o_minute
     FROM product_tree pt
     LEFT JOIN operation_types ot ON ot.operation_type_id = pt.operation_type_id
     WHERE pt.stock_id = <cfqueryparam value="#url.stock_id#" cfsqltype="cf_sql_integer">
@@ -45,6 +46,8 @@
         "product_tree_id"     : val(product_tree_id),
         "operation_type_id"   : val(operation_type_id),
         "operation_type"      : operation_type ?: "",
+        "o_hour"              : isNumeric(o_hour) ? val(o_hour) : 0,
+        "o_minute"            : isNumeric(o_minute) ? val(o_minute) : 0,
         "operation_line_number": val(operation_line_number),
         "items"               : items
     })>

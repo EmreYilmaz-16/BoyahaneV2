@@ -103,6 +103,22 @@ select.ci-input { cursor: pointer; }
                 </div>
             </div>
 
+            <div class="color-side-row">
+                <div class="csr-label"><i class="fas fa-clock"></i>Toplam Süre</div>
+                <div class="csr-value">
+                    <span id="totalDurationDisplay" style="font-size:0.82rem;font-weight:600;color:#1e293b;">—</span>
+                </div>
+            </div>
+
+            <div class="color-side-row" style="flex-direction:column;align-items:flex-start;gap:4px;">
+                <div class="csr-label"><i class="fas fa-sticky-note"></i>Açıklama</div>
+                <div class="csr-value" style="width:100%;">
+                    <textarea id="ci_information" class="ci-input" rows="3"
+                        style="resize:vertical;line-height:1.4;padding:3px 0;"
+                        placeholder="Notlar, özel talimatlar...">#htmlEditFormat(getColors.information ?: '')#</textarea>
+                </div>
+            </div>
+
             <div style="padding:10px 14px;margin-top:auto;border-top:1px solid ##f1f5f9;">
                 <button type="button" id="ci_saveBtn" onclick="saveColorInfo()"
                         style="width:100%;background:var(--accent);border:none;border-radius:7px;color:##fff;font-size:0.78rem;font-weight:700;padding:8px 0;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
@@ -196,7 +212,8 @@ function saveColorInfo() {
             kartela_date:  document.getElementById('ci_kartela_date').value,
             renk_tonu:     document.getElementById('ci_renk_tonu').value,
             boya_derecesi: document.getElementById('ci_boya_derecesi').value,
-            is_ready:      document.getElementById('ci_is_ready').value
+            is_ready:      document.getElementById('ci_is_ready').value,
+            information:   document.getElementById('ci_information').value
         },
         success: function(res) {
             btn.disabled = false;

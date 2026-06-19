@@ -15,6 +15,7 @@
     <cfparam name="form.renk_tonu"      default="">
     <cfparam name="form.boya_derecesi"  default="">
     <cfparam name="form.is_ready"       default="false">
+    <cfparam name="form.information"    default="">
 
     <cfset stockId     = isNumeric(form.stock_id) AND val(form.stock_id) gt 0 ? val(form.stock_id) : 0>
     <cfset colorCode   = trim(form.color_code)>
@@ -26,6 +27,7 @@
     <cfset renkTonu    = isNumeric(form.renk_tonu) AND val(form.renk_tonu) gt 0 ? val(form.renk_tonu) : javaCast("null","")>
     <cfset boyaDer     = trim(form.boya_derecesi)>
     <cfset isReady     = (form.is_ready eq "true" OR form.is_ready eq "1")>
+    <cfset infoText    = trim(form.information)>
 
     <cfif stockId eq 0>
         <cfset response.message = "Geçersiz stok kaydı.">
@@ -50,6 +52,7 @@
             renk_tonu     = <cfqueryparam value="#isNull(renkTonu)?'':renkTonu#"           cfsqltype="cf_sql_smallint" null="#isNull(renkTonu)#">,
             boya_derecesi = <cfqueryparam value="#boyaDer#"                               cfsqltype="cf_sql_varchar"  null="#NOT len(boyaDer)#">,
             is_ready      = <cfqueryparam value="#isReady#"                               cfsqltype="cf_sql_bit">,
+            information   = <cfqueryparam value="#infoText#"                              cfsqltype="cf_sql_longvarchar" null="#NOT len(infoText)#">,
             update_date   = CURRENT_TIMESTAMP
         WHERE stock_id = <cfqueryparam value="#stockId#" cfsqltype="cf_sql_integer">
     </cfquery>

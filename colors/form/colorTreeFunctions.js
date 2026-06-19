@@ -215,6 +215,8 @@ function AddOperationToTree(pid, sid) {
                             </div>
                         </div>
                     `;
+                    currentCard.dataset.hours   = element.o_hour   || 0;
+                    currentCard.dataset.minutes = element.o_minute || 0;
                     currentList = document.createElement("div");
                     currentList.className = "tree-sortable-list";
                 } else {
@@ -282,13 +284,14 @@ function AddOperationToTree(pid, sid) {
             // Son kartı da ekle
             flushCard();
             initTreeSortable();
+            updateTotalDuration();
         })
         .catch(error => {
             console.error("Ağaç verisi alınırken hata:", error);
             alert("Ağaç verisi alınırken bir hata oluştu.");
         });
 
-    $("#OperationSearchResult").hide();
+    $( "#OperationSearchResult").hide();
 }
 function serializeTree() {
     const treeArea = document.getElementById('treeArea');
@@ -387,6 +390,9 @@ function LoadColorTree(stockId) {
                     </div>
                 `;
 
+                card.dataset.hours   = op.o_hour   || 0;
+                card.dataset.minutes = op.o_minute || 0;
+
                 const list = document.createElement('div');
                 list.className = 'tree-sortable-list';
 
@@ -434,15 +440,28 @@ function LoadColorTree(stockId) {
                 forcePlaceholderSize: true,
                 cancel: 'button, .record-count'
             });
+            updateTotalDuration();
         })
         .catch(err => {
             console.error('Ağaç yüklenirken hata:', err);
         });
 }
 // ─────────────────────────────────────────────────────────
+function updateTotalDuration() {
+    var totalMins = 0;
+    document.querySelectorAll('#treeArea .grid-card').forEach(function(card) {
+        totalMins += (parseInt(card.dataset.hours || 0) * 60) + parseInt(card.dataset.minutes || 0);
+    });
+    var el = document.getElementById('totalDurationDisplay');
+    if (!el) return;
+    if (totalMins === 0) { el.textContent = '\u2014'; return; }
+    var h = Math.floor(totalMins / 60), m = totalMins % 60;
+    el.textContent = (h > 0 ? h + ' saat ' : '') + (m > 0 ? m + ' dk' : '');
+}
+// ─────────────────────────────────────────────────────────
 function removeCard(cardId) {
     const card = document.getElementById(cardId);
-    if (card) card.remove();
+    if (card) { card.remove(); updateTotalDuration(); }
 }
 
 function removeTreeNode(nodeId) {

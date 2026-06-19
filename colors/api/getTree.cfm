@@ -3,7 +3,9 @@
 <cfcontent type="application/json; charset=utf-8">
 
 <cfquery name="getProductTree" datasource="boyahane">
-    select pt.related_id,pt.product_id,pt.operation_type_id,pt.line_number,pt.related_product_tree_id,p.product_name,p.product_code,ot.operation_type,pt.amount,pc.product_catid 
+    select pt.related_id,pt.product_id,pt.operation_type_id,pt.line_number,pt.related_product_tree_id,
+           p.product_name,p.product_code,ot.operation_type,pt.amount,pc.product_catid,
+           COALESCE(ot.o_hour,0) AS o_hour, COALESCE(ot.o_minute,0) AS o_minute 
 from product_tree pt
 left join stocks s on pt.related_id=s.stock_id
 left join product p on p.product_id=s.product_id
@@ -24,7 +26,9 @@ order  by pt.line_number, pt.operation_type_id asc
         "product_code"       : product_code ?: "",
         "operation_type"     : operation_type ?: "",
         "amount"             : val(amount),
-        "productcat_id"      : val(product_catid)
+        "productcat_id"      : val(product_catid),
+        "o_hour"             : isNumeric(o_hour) ? val(o_hour) : 0,
+        "o_minute"           : isNumeric(o_minute) ? val(o_minute) : 0
     })>
 </cfloop>
 
