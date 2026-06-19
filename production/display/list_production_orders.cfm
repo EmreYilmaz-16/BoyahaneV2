@@ -107,6 +107,15 @@
             <span class="record-count" id="recordCount">Yükleniyor...</span>
         </div>
         <div class="card-body p-2">
+            <div class="d-flex align-items-center gap-1 px-1 pb-2 flex-wrap" style="border-bottom:1px solid ##e9ecef;margin-bottom:6px">
+                <span class="text-muted small me-1"><i class="fas fa-layer-group me-1"></i>Hızlı grupla:</span>
+                <button class="btn btn-xs btn-outline-secondary" onclick="quickGroup('station_name')">Makina</button>
+                <button class="btn btn-xs btn-outline-secondary" onclick="quickGroup('status_label')">Durum</button>
+                <button class="btn btn-xs btn-outline-secondary" onclick="quickGroup('company_name')">Müşteri</button>
+                <button class="btn btn-xs btn-outline-secondary" onclick="quickGroup('color_code')">Renk Kodu</button>
+                <button class="btn btn-xs btn-outline-secondary" onclick="quickGroup('lot_no')">Lot No</button>
+                <button class="btn btn-xs btn-outline-danger ms-1" onclick="clearGroups()" title="Gruplamayi kaldir"><i class="fas fa-times"></i> Temizle</button>
+            </div>
             <div id="ordersGrid"></div>
         </div>
     </div>
@@ -138,6 +147,8 @@ function buildGrid() {
         pager: { showPageSizeSelector: true, allowedPageSizes: [15,25,50,100], showInfo: true },
         searchPanel: { visible: true, placeholder: 'Ara...' },
         filterRow: { visible: true },
+        groupPanel: { visible: true, emptyPanelText: 'Gruplamak için sütun başlığını buraya sürüklein' },
+        grouping: { autoExpandAll: true },
         export: { enabled: true },
         onExporting: function (e) {
             var workbook = new ExcelJS.Workbook();
@@ -159,8 +170,8 @@ function buildGrid() {
         },
         onRowDblClick: function(e) { viewOrder(e.data.p_order_id); },
         columns: [
-            { dataField:'p_order_id',   caption:'ID',         width:65,  alignment:'center', dataType:'number', sortOrder:'desc' },
-            { dataField:'p_order_no',   caption:'Emir No',    width:130,
+            { dataField:'p_order_id',   caption:'ID',         width:65,  alignment:'center', dataType:'number', sortOrder:'desc', allowGrouping: false },
+            { dataField:'p_order_no',   caption:'Emir No',    width:130, allowGrouping: false,
                 cellTemplate: function(container, options) {
                     $('<a>').attr('href','javascript:void(0)').css({fontWeight:'bold',cursor:'pointer'})
                         .text(options.value||'-').on('click',function(){ viewOrder(options.data.p_order_id); }).appendTo(container);
@@ -176,11 +187,11 @@ function buildGrid() {
                 }
             },
             { dataField:'station_name', caption:'Makina',     width:140 },
-            { dataField:'quantity',     caption:'Miktar (kg)',width:100,  alignment:'right', dataType:'number', format: { type:'fixedPoint', precision:2 } },
+            { dataField:'quantity',     caption:'Miktar (kg)',width:100,  alignment:'right', dataType:'number', format: { type:'fixedPoint', precision:2 }, allowGrouping: false },
             { dataField:'lot_no',       caption:'Lot No',     width:110 },
-            { dataField:'start_date',   caption:'Başlangıç',  width:110, alignment:'center', dataType:'string' },
-            { dataField:'finish_date',  caption:'Planlanan B.',width:120, alignment:'center', dataType:'string' },
-            { dataField:'finish_date_real', caption:'Gerçekleşen B.', width:130, alignment:'center', dataType:'string' },
+            { dataField:'start_date',   caption:'Başlangıç',  width:110, alignment:'center', dataType:'string', allowGrouping: false },
+            { dataField:'finish_date',  caption:'Planlanan B.',width:120, alignment:'center', dataType:'string', allowGrouping: false },
+            { dataField:'finish_date_real', caption:'Gerçekleşen B.', width:130, alignment:'center', dataType:'string', allowGrouping: false },
             {
                 dataField: 'status_label',
                 caption: 'Durum',
@@ -197,6 +208,7 @@ function buildGrid() {
                 alignment: 'center',
                 allowFiltering: false,
                 allowSorting: false,
+                allowGrouping: false,
                 cellTemplate: function(container, options) {
                     var d = options.data;
                     $('<button class="btn btn-xs btn-outline-info me-1" title="Görüntüle"><i class="fas fa-eye"></i></button>')
@@ -218,6 +230,20 @@ function buildGrid() {
 function addOrder()       { window.location.href = 'index.cfm?fuseaction=production.add_production_order'; }
 function editOrder(id)    { window.location.href = 'index.cfm?fuseaction=production.add_production_order&p_order_id=' + id; }
 function viewOrder(id)    { window.location.href = 'index.cfm?fuseaction=production.view_production_order&p_order_id=' + id; }
+
+var _activeGroupField = null;
+function quickGroup(field) {
+    var grid = $('##ordersGrid').dxDataGrid('instance');
+    // Önce tüm kolonlardaki gruplamayi temizle
+    grid.clearGrouping();
+    // Yeni gruplamayi uygula
+    grid.columnOption(field, 'groupIndex', 0);
+    _activeGroupField = field;
+}
+function clearGroups() {
+    $('##ordersGrid').dxDataGrid('instance').clearGrouping();
+    _activeGroupField = null;
+}
 
 function updateStatus(id, newStatus) {
     var label = newStatus === 2 ? 'başlatmak' : 'tamamlandı olarak işaretlemek';
