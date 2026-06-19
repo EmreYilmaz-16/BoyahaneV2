@@ -19,6 +19,8 @@
     <cfparam name="form.ezgi_formul"        default="">
     <cfparam name="form.stock_id"           default="0">
     <cfparam name="form.product_name"       default="">
+    <cfparam name="form.ph"                 default="">
+    <cfparam name="form.isi"                default="">
 
     <cfset opId     = isNumeric(form.operation_type_id) ? val(form.operation_type_id) : 0>
     <cfset opName   = trim(form.operation_type)>
@@ -28,6 +30,8 @@
     <cfset oMinute  = isNumeric(form.o_minute) ? val(form.o_minute) : 0>
     <cfset stockId  = isNumeric(form.stock_id) AND val(form.stock_id) gt 0 ? val(form.stock_id) : javaCast("null","")>
     <cfset ezgiSure = isNumeric(form.ezgi_h_sure) ? val(form.ezgi_h_sure) : 0>
+    <cfset fPH      = len(trim(form.ph))  AND isNumeric(form.ph)  ? val(form.ph)  : javaCast("null","")>
+    <cfset fISI     = len(trim(form.isi)) AND isNumeric(form.isi) ? val(form.isi) : javaCast("null","")>
 
     <cfif NOT len(opName)>
         <cfset response.message = "Operasyon adı zorunludur.">
@@ -65,7 +69,9 @@
                 ezgi_h_sure      = <cfqueryparam value="#ezgiSure#"              cfsqltype="cf_sql_numeric">,
                 ezgi_formul      = <cfqueryparam value="#trim(form.ezgi_formul)#" cfsqltype="cf_sql_varchar" null="#NOT len(trim(form.ezgi_formul))#">,
                 stock_id         = <cfqueryparam value="#isNull(stockId) ? '' : stockId#" cfsqltype="cf_sql_integer" null="#isNull(stockId)#">,
-                product_name     = <cfqueryparam value="#trim(form.product_name)#" cfsqltype="cf_sql_varchar" null="#NOT len(trim(form.product_name))#">
+                product_name     = <cfqueryparam value="#trim(form.product_name)#" cfsqltype="cf_sql_varchar" null="#NOT len(trim(form.product_name))#">,
+                ph               = <cfqueryparam value="#isNull(fPH) ? '' : fPH#"  cfsqltype="cf_sql_numeric" null="#isNull(fPH)#">,
+                isi              = <cfqueryparam value="#isNull(fISI) ? '' : fISI#" cfsqltype="cf_sql_numeric" null="#isNull(fISI)#">
             WHERE operation_type_id = <cfqueryparam value="#opId#" cfsqltype="cf_sql_integer">
         </cfquery>
         <cfset response = { "success": true, "operation_type_id": opId, "mode": "updated" }>
@@ -75,7 +81,7 @@
             INSERT INTO operation_types
                 (operation_type, operation_code, operation_cost, money, o_hour, o_minute,
                  operation_status, comment, comment2, ezgi_h_sure, ezgi_formul,
-                 stock_id, product_name, record_date)
+                 stock_id, product_name, ph, isi, record_date)
             VALUES (
                 <cfqueryparam value="#opName#"                cfsqltype="cf_sql_varchar">,
                 <cfqueryparam value="#trim(form.operation_code)#" cfsqltype="cf_sql_varchar" null="#NOT len(trim(form.operation_code))#">,
@@ -90,6 +96,8 @@
                 <cfqueryparam value="#trim(form.ezgi_formul)#" cfsqltype="cf_sql_varchar" null="#NOT len(trim(form.ezgi_formul))#">,
                 <cfqueryparam value="#isNull(stockId) ? '' : stockId#" cfsqltype="cf_sql_integer" null="#isNull(stockId)#">,
                 <cfqueryparam value="#trim(form.product_name)#" cfsqltype="cf_sql_varchar" null="#NOT len(trim(form.product_name))#">,
+                <cfqueryparam value="#isNull(fPH)  ? '' : fPH#"  cfsqltype="cf_sql_numeric" null="#isNull(fPH)#">,
+                <cfqueryparam value="#isNull(fISI) ? '' : fISI#" cfsqltype="cf_sql_numeric" null="#isNull(fISI)#">,
                 CURRENT_TIMESTAMP
             )
             RETURNING operation_type_id

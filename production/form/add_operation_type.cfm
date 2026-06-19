@@ -47,6 +47,8 @@
 <cfset fEzgiForm  = editMode ? (getRec.ezgi_formul        ?: "") : "">
 <cfset fStockId   = editMode ? (isNumeric(getRec.stock_id) ? val(getRec.stock_id) : 0) : 0>
 <cfset fProdName  = editMode ? (getRec.product_name      ?: "") : "">
+<cfset fPH        = editMode ? (isNumeric(getRec.ph)  ? val(getRec.ph)  : "") : "">
+<cfset fISI       = editMode ? (isNumeric(getRec.isi) ? val(getRec.isi) : "") : "">
 
 <cfif NOT structKeyExists(request, "jQueryLoaded")>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
@@ -159,6 +161,17 @@
                     </div>
                 </div>
 
+                <div class="row g-3 mt-1">
+                    <div class="col-md-6">
+                        <label class="form-label">pH Değeri</label>
+                        <cfoutput><input type="number" step="0.01" min="0" max="14" class="form-control" id="f_ph" value="#fPH#" placeholder="Ör: 7.0"></cfoutput>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Isı (°C)</label>
+                        <cfoutput><input type="number" step="0.1" class="form-control" id="f_isi" value="#fISI#" placeholder="Ör: 60"></cfoutput>
+                    </div>
+                </div>
+
                 <cfif NOT editMode>
                 <div class="row g-3 mt-2">
                     <div class="col-12">
@@ -224,6 +237,8 @@ $(document).ready(function(){
                 operation_status  : $('##f_operation_status').is(':checked'),
                 comment           : $('##f_comment').val(),
                 comment2          : $('##f_comment2').val(),
+                ph                : $('##f_ph').val(),
+                isi               : $('##f_isi').val(),
                 stock_id          : $('##f_stock_id').val() || 0,
                 product_name      : $('##f_product_name').val(),
                 ezgi_h_sure       : $('##f_ezgi_h_sure').val() || 0,
