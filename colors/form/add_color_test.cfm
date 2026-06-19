@@ -106,7 +106,7 @@ select.ci-input { cursor: pointer; }
             <div class="color-side-row">
                 <div class="csr-label"><i class="fas fa-clock"></i>Toplam Süre</div>
                 <div class="csr-value">
-                    <span id="totalDurationDisplay" style="font-size:0.82rem;font-weight:600;color:#1e293b;">—</span>
+                    <span id="totalDurationDisplay" style="font-size:0.82rem;font-weight:600;color:##1e293b;">—</span>
                 </div>
             </div>
 
