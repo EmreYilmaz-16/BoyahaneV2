@@ -61,10 +61,14 @@
 <cfif arrayLen(rowProductIds) gt 0>
     <cfquery name="getColorVariants" datasource="boyahane">
         SELECT st.stock_id, st.stock_code,
-               COALESCE(st.stock_code_2,'') AS stock_code_2,
-               COALESCE(st.property,'')     AS property,
-               st.product_id
+               COALESCE(st.stock_code_2,'')  AS stock_code_2,
+               COALESCE(st.property,'')      AS property,
+               st.product_id,
+               COALESCE(ci.color_code,'')    AS color_code,
+               COALESCE(ci.color_name,'')    AS color_name,
+               COALESCE(ci.information,'')   AS information
         FROM stocks st
+        LEFT JOIN color_info ci ON ci.stock_id = st.stock_id
         WHERE st.product_id IN (<cfqueryparam value="#arrayToList(rowProductIds)#" cfsqltype="cf_sql_integer" list="true">)
           AND (st.is_main_stock IS NULL OR st.is_main_stock = false)
         ORDER BY st.product_id, st.stock_id
@@ -75,7 +79,10 @@
             "stock_code":   stock_code   ?: "",
             "stock_code_2": stock_code_2 ?: "",
             "property":     property     ?: "",
-            "product_id":   val(product_id)
+            "product_id":   val(product_id),
+            "color_code":   color_code   ?: "",
+            "color_name":   color_name   ?: "",
+            "information":  information  ?: ""
         })>
     </cfloop>
 </cfif>
@@ -506,7 +513,7 @@
                     <input type="text" class="form-control form-control-sm" id="colorPickerSearch"
                            placeholder="Renk adı veya kodu ara..." autocomplete="off">
                 </div>
-                <div id="colorOptionsList" class="d-flex flex-wrap gap-2"></div>
+                <div id="colorOptionsList" class="d-flex flex-column gap-2"></div>
                 <div class="mt-3" id="noColorMsg" style="display:none;">
                     <div class="alert alert-info py-2 mb-0">Bu ürün için tanımlı renk varyantı bulunmuyor.</div>
                 </div>
@@ -537,10 +544,13 @@
 ##receteModal       { z-index: 99997 !important; }
 .modal-backdrop     { z-index: 99988 !important; }
 /* Renk seçenekleri */
-##colorPickerModal .color-option { cursor:pointer; border:2px solid ##e5e7eb; border-radius:8px; padding:8px 12px; transition:.15s; display:flex; align-items:center; gap:8px; }
+##colorPickerModal .color-option { cursor:pointer; border:2px solid ##e5e7eb; border-radius:8px; padding:8px 12px; transition:.15s; display:flex; align-items:flex-start; gap:10px; width:100%; }
 ##colorPickerModal .color-option:hover  { border-color:##6366f1; background:##f5f3ff; }
 ##colorPickerModal .color-option.active { border-color:##6366f1; background:##ede9fe; }
-##colorPickerModal .color-dot { width:14px; height:14px; border-radius:50%; background:##6366f1; flex-shrink:0; }
+##colorPickerModal .color-dot { width:14px; height:14px; border-radius:50%; background:##6366f1; flex-shrink:0; margin-top:3px; }
+##colorPickerModal .color-opt-code { font-size:.8rem; font-weight:700; color:##1e293b; }
+##colorPickerModal .color-opt-name { font-size:.77rem; color:##4b5563; }
+##colorPickerModal .color-opt-info { font-size:.72rem; color:##6b7280; font-style:italic; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:280px; }
 /* Add-color modal styles */
 .add-color-modal .modal-header { background:linear-gradient(135deg,##4f46e5,##7c3aed); color:##fff; }
 .add-color-modal .modal-content { border:none; border-radius:12px; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,.25); }
@@ -570,7 +580,10 @@ colorVariants.forEach(function(v) {
         stock_id:     v.STOCK_ID     || v.stock_id,
         stock_code:   v.STOCK_CODE   || v.stock_code   || '',
         stock_code_2: v.STOCK_CODE_2 || v.stock_code_2 || '',
-        property:     v.PROPERTY     || v.property     || ''
+        property:     v.PROPERTY     || v.property     || '',
+        color_code:   v.COLOR_CODE   || v.color_code   || '',
+        color_name:   v.COLOR_NAME   || v.color_name   || '',
+        information:  v.INFORMATION  || v.information  || ''
     });
 });
 
@@ -1142,13 +1155,18 @@ function renderColorOptions(list) {
         return;
     }
     list.forEach(function(v, idx) {
-        var label = v.property || v.stock_code_2 || v.stock_code;
+        var code  = v.color_code  || v.stock_code  || '';
+        var name  = v.color_name  || v.property    || v.stock_code_2 || '';
+        var info  = v.information || '';
         var bg    = getBg(idx);
-        var $opt  = $('<div>').addClass('color-option').attr('data-stock-id', v.stock_id)
-            .html('<span class="color-dot" style="background:' + bg + '"></span>' +
-                  '<span>' + $('<span>').text(label).html() +
-                  (v.stock_code_2 ? ' <small class="text-muted">(' + $('<span>').text(v.stock_code_2).html() + ')</small>' : '') +
-                  '</span>');
+        var esc   = function(t){ return $('<span>').text(t).html(); };
+        var html  = '<span class="color-dot" style="background:' + bg + '"></span>'
+                  + '<div style="overflow:hidden;flex:1;min-width:0;">'
+                  + (code ? '<div class="color-opt-code">' + esc(code) + '</div>' : '')
+                  + (name ? '<div class="color-opt-name">' + esc(name) + '</div>' : '')
+                  + (info ? '<div class="color-opt-info" title="' + esc(info) + '">' + esc(info) + '</div>' : '')
+                  + '</div>';
+        var $opt  = $('<div>').addClass('color-option').attr('data-stock-id', v.stock_id).html(html);
         $opt.on('click', function() {
             $('##colorOptionsList .color-option').removeClass('active');
             $(this).addClass('active');
@@ -1173,7 +1191,10 @@ function filterColorOptions(q) {
     }
     q = q.toLowerCase();
     var filtered = variants.filter(function(v) {
-        return ((v.property     || '') + ' ' +
+        return ((v.color_code   || '') + ' ' +
+                (v.color_name   || '') + ' ' +
+                (v.information  || '') + ' ' +
+                (v.property     || '') + ' ' +
                 (v.stock_code_2 || '') + ' ' +
                 (v.stock_code   || '')).toLowerCase().includes(q);
     });
