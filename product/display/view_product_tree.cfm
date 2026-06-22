@@ -236,7 +236,7 @@
     <cfset arrayAppend(stationsArr, { "station_id": val(station_id), "station_name": station_name ?: "" })>
 </cfloop>
 
-<cfif NOT structKeyExists(request,"jQueryLoaded")>
+<cfif NOT structKeyExists(request,"jQueryLoaded") AND (NOT isDefined("loadAssets") OR NOT loadAssets)>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
     <cfset request.jQueryLoaded = true>
 </cfif>
