@@ -17,11 +17,15 @@
     <cfparam name="form.start_date"  default="">
     <cfparam name="form.status"      default="1">
     <cfparam name="form.shift_following" default="0">
+    <cfparam name="form.snap_back_minutes" default="0">
 
     <cfset pOrderId  = isNumeric(form.p_order_id) AND val(form.p_order_id) gt 0 ? val(form.p_order_id) : 0>
     <cfset stationId = isNumeric(form.station_id) AND val(form.station_id) gt 0 ? val(form.station_id) : 0>
     <cfset statusVal = isNumeric(form.status) ? val(form.status) : 1>
     <cfset shiftFollowing = isNumeric(form.shift_following) AND val(form.shift_following) eq 1>
+    <cfset snapBackMins = isNumeric(form.snap_back_minutes) ? val(form.snap_back_minutes) : 0>
+    <cfif snapBackMins lt 0><cfset snapBackMins = 0></cfif>
+    <cfif snapBackMins gt 180><cfset snapBackMins = 180></cfif>
 
     <cfif pOrderId eq 0>
         <cfset response.message = "Geçersiz üretim emri.">
@@ -96,6 +100,36 @@
     <cfset finishDate = createODBCDateTime(rawFinish)>
     <cfset startStr   = dateFormat(rawStart,"yyyy-mm-dd") & "T" & timeFormat(rawStart,"HH:mm:ss")>
     <cfset finishStr  = dateFormat(rawFinish,"yyyy-mm-dd") & "T" & timeFormat(rawFinish,"HH:mm:ss")>
+
+    <!---
+        Drag&drop hücre başlangıcını gönderir (örn. 30 dk hücrede 16:30).
+        Aynı makinede hemen önce biten iş hücre aralığı içinde kaldıysa,
+        yeni işi o işin gerçek bitiş saatine yapıştır (örn. 16:22).
+    --->
+    <cfif shiftFollowing AND snapBackMins gt 0>
+        <cfquery name="qPreviousOrder" datasource="boyahane" maxrows="1">
+            SELECT p_order_id, finish_date
+            FROM production_orders
+            WHERE station_id = <cfqueryparam value="#stationId#" cfsqltype="cf_sql_integer">
+              AND p_order_id <> <cfqueryparam value="#pOrderId#" cfsqltype="cf_sql_integer">
+              AND status IN (1, 2)
+              AND finish_date IS NOT NULL
+              AND finish_date <= <cfqueryparam value="#startDate#" cfsqltype="cf_sql_timestamp">
+              AND finish_date >= <cfqueryparam value="#createODBCDateTime(dateAdd('n', -snapBackMins, rawStart))#" cfsqltype="cf_sql_timestamp">
+            ORDER BY finish_date DESC
+        </cfquery>
+
+        <cfif qPreviousOrder.recordCount>
+            <cfset rawStart   = parseDateTime(dateFormat(qPreviousOrder.finish_date,"yyyy-mm-dd") & " " & timeFormat(qPreviousOrder.finish_date,"HH:mm:ss"))>
+            <cfset rawFinish  = dateAdd("n", safeMins, rawStart)>
+            <cfset startDate  = createODBCDateTime(rawStart)>
+            <cfset finishDate = createODBCDateTime(rawFinish)>
+            <cfset startStr   = dateFormat(rawStart,"yyyy-mm-dd") & "T" & timeFormat(rawStart,"HH:mm:ss")>
+            <cfset finishStr  = dateFormat(rawFinish,"yyyy-mm-dd") & "T" & timeFormat(rawFinish,"HH:mm:ss")>
+            <cfset response.snapped = true>
+            <cfset response.start_date = startStr>
+        </cfif>
+    </cfif>
 
     <!--- ============================================================
           ÇAKIŞMA KONTROLÜ

@@ -1247,6 +1247,18 @@ function getDropInfo(ev, inst) {
     return result;
 }
 
+function getCurrentCellDuration() {
+    if (!schedulerInst) return 30;
+    var current = schedulerInst.option('currentView');
+    var views = schedulerInst.option('views') || [];
+    for (var i = 0; i < views.length; i++) {
+        if (typeof views[i] === 'object' && views[i].type === current && views[i].cellDuration) {
+            return parseInt(views[i].cellDuration, 10) || 30;
+        }
+    }
+    return parseInt(schedulerInst.option('cellDuration'), 10) || 30;
+}
+
 /* ================================================================
    Direkt kayıt — modal açmadan sürükle-bırak sonucu planla
    ================================================================ */
@@ -1271,7 +1283,8 @@ function directSavePlan(order, stationId, startDate, endDate) {
             start_date : fmtDTForServer(sd),
             finish_date: fmtDTForServer(ed),
             status     : 1,
-            shift_following: 1
+            shift_following: 1,
+            snap_back_minutes: getCurrentCellDuration()
         },
         dataType: 'json',
         success : function(resp) {
