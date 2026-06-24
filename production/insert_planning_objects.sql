@@ -6,7 +6,8 @@
 DELETE FROM pbs_objects WHERE full_fuseaction IN (
     'production.production_planning',
     'production.save_plan',
-    'production.unplan_order'
+    'production.unplan_order',
+    'production.get_planned_orders'
 );
 
 INSERT INTO pbs_objects (full_fuseaction, file_path, object_name, object_title, object_type, parent_id, sort_order, is_active, show_menu, window_type)
@@ -30,7 +31,14 @@ VALUES
      '/production/form/unplan_order.cfm',
      'unplan_order',
      'Emirden Plan Kaldır',
-     'page', NULL, 57, true, false, 'page');
+     'page', NULL, 57, true, false, 'page'),
+
+    -- Görünür tarih aralığına göre planlı emirleri getirir (menüde görünmez)
+    ('production.get_planned_orders',
+     '/production/form/get_planned_orders.cfm',
+     'get_planned_orders',
+     'Planlı Emirleri Getir',
+     'page', NULL, 58, true, false, 'page');
 
 -- =====================================================
 -- Üretim Planlama (GANTT) Sayfası — pbs_objects Menü Kaydı
@@ -46,4 +54,4 @@ VALUES
      '/production/display/production_planning_gantt.cfm',
      'production_planning_gantt',
      'Üretim Planlama (Gantt)',
-     'page', NULL, 58, true, true, 'page');
+     'page', NULL, 59, true, true, 'page');

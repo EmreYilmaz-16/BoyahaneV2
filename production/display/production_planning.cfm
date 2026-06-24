@@ -74,7 +74,10 @@
     LEFT JOIN workstations ws ON po.station_id = ws.station_id
     WHERE po.station_id IS NOT NULL
       AND po.start_date IS NOT NULL
-      AND po.status IN (1, 2)
+      AND po.finish_date IS NOT NULL
+      AND po.status IN (1, 2, 5)
+      AND po.start_date < <cfqueryparam value="#createODBCDateTime(dateAdd('d', 4, now()))#" cfsqltype="cf_sql_timestamp">
+      AND po.finish_date > <cfqueryparam value="#createODBCDateTime(dateAdd('d', -1, now()))#" cfsqltype="cf_sql_timestamp">
     ORDER BY po.p_order_id DESC
 </cfquery>
 
@@ -138,13 +141,13 @@
 
 <cfset plannedArr = []>
 <cfloop query="qPlanned">
-    <!--- Bitiş tarihi: start_date + operasyon toplamı (dk). Toplam 0 ise DB'deki finish_date kullan, o da yoksa +8 saat --->
+    <!--- Bitiş tarihi: DB'deki finish_date öncelikli; yoksa operasyon toplamı, o da yoksa +8 saat --->
     <cfset sDate    = isDate(start_date) ? start_date : now()>
     <cfset opMins   = isNumeric(total_op_minutes) ? val(total_op_minutes) : 0>
-    <cfif opMins gt 0>
-        <cfset fDate = dateAdd("n", opMins, sDate)>
-    <cfelseif isDate(finish_date)>
+    <cfif isDate(finish_date)>
         <cfset fDate = finish_date>
+    <cfelseif opMins gt 0>
+        <cfset fDate = dateAdd("n", opMins, sDate)>
     <cfelse>
         <cfset fDate = dateAdd("h", 8, sDate)>
     </cfif>
@@ -804,6 +807,8 @@ var currentView    = 'timelineDay';
 var planModalBs    = null;
 var activeGroupId  = 0;    // 0 = tümü
 var ZOOM_DURATIONS = [10, 15, 30, 60, 120];
+var plannedLoadTimer = null;
+var plannedLoadKey   = '';
 
 /* ---- palette for machines ----------------------------------------- */
 var PALETTE = [
@@ -1026,13 +1031,34 @@ function buildScheduler() {
         appointmentTemplate: appointmentTpl,
         onAppointmentDblClick: function(e) {
             e.cancel = true;
+            if (e.appointmentData && parseInt(e.appointmentData.status, 10) === 5) {
+                showToast('Tamamlanan emirler düzenlenemez.', 'warning');
+                return;
+            }
             openEditModal(e.appointmentData);
+        },
+        onAppointmentUpdating: function(e) {
+            if (e.oldData && parseInt(e.oldData.status, 10) === 5) {
+                e.cancel = true;
+                showToast('Tamamlanan emirler taşınamaz.', 'warning');
+            }
         },
         onAppointmentUpdated: function(e) {
             syncAppointmentUpdate(e.appointmentData);
         },
+        onAppointmentDeleting: function(e) {
+            if (e.appointmentData && parseInt(e.appointmentData.status, 10) === 5) {
+                e.cancel = true;
+                showToast('Tamamlanan emirler plandan kaldırılamaz.', 'warning');
+            }
+        },
         onAppointmentDeleted: function(e) {
             moveBackToUnplanned(e.appointmentData.p_order_id);
+        },
+        onOptionChanged: function(e) {
+            if (e.name === 'currentDate' || e.name === 'currentView') {
+                queueLoadVisibleAppointments();
+            }
         },
         editing: {
             allowAdding   : false,
@@ -1077,8 +1103,8 @@ function buildScheduler() {
     });
 }
 
-function buildAppointments() {
-    return RAW_PLANNED.map(function(o) {
+function buildAppointments(source) {
+    return (source || RAW_PLANNED || []).map(function(o) {
         return {
             p_order_id       : o.p_order_id,
             text             : o.text || (o.p_order_no + ' | ' + o.color_code + ' ' + o.color_name),
@@ -1095,6 +1121,76 @@ function buildAppointments() {
             active_pause_count: o.active_pause_count || 0,
             total_pause_minutes: o.total_pause_minutes || 0
         };
+    });
+}
+
+function getCurrentViewConfig() {
+    var current = schedulerInst ? schedulerInst.option('currentView') : currentView;
+    var views = schedulerInst ? (schedulerInst.option('views') || []) : [];
+    for (var i = 0; i < views.length; i++) {
+        if (typeof views[i] === 'object' && views[i].type === current) return views[i];
+    }
+    return {};
+}
+
+function getVisibleDateRange() {
+    var view = schedulerInst ? schedulerInst.option('currentView') : currentView;
+    var currentDate = schedulerInst ? new Date(schedulerInst.option('currentDate')) : new Date();
+    var start = new Date(currentDate);
+    var end = new Date(currentDate);
+
+    if (view === 'timelineWeek') {
+        var dow = start.getDay() || 7;
+        start.setDate(start.getDate() - dow + 1);
+        start.setHours(0, 0, 0, 0);
+        end = new Date(start);
+        end.setDate(end.getDate() + 7);
+    } else if (view === 'timelineMonth') {
+        start = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+        end = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
+    } else {
+        var cfg = getCurrentViewConfig();
+        var days = parseInt(cfg.intervalCount, 10) || 1;
+        start.setHours(0, 0, 0, 0);
+        end = new Date(start);
+        end.setDate(end.getDate() + days);
+    }
+
+    return { start: start, end: end };
+}
+
+function queueLoadVisibleAppointments() {
+    if (plannedLoadTimer) clearTimeout(plannedLoadTimer);
+    plannedLoadTimer = setTimeout(loadVisibleAppointments, 180);
+}
+
+function loadVisibleAppointments() {
+    if (!schedulerInst) return;
+    var range = getVisibleDateRange();
+    var key = fmtDTForServer(range.start) + '|' + fmtDTForServer(range.end) + '|' + schedulerInst.option('currentView');
+    if (key === plannedLoadKey) return;
+    plannedLoadKey = key;
+
+    $.ajax({
+        url: '/production/form/get_planned_orders.cfm',
+        method: 'GET',
+        dataType: 'json',
+        data: {
+            start_date: fmtDTForServer(range.start),
+            end_date: fmtDTForServer(range.end)
+        },
+        success: function(resp) {
+            if (!resp || !resp.success || !Array.isArray(resp.data)) {
+                showToast((resp && resp.message) || 'Plan verisi alınamadı.', 'danger');
+                return;
+            }
+            RAW_PLANNED = resp.data;
+            ALL_APPOINTMENTS = buildAppointments(RAW_PLANNED);
+            schedulerInst.option('dataSource', getActiveAppointments());
+        },
+        error: function() {
+            showToast('Plan verisi alınamadı.', 'danger');
+        }
     });
 }
 
