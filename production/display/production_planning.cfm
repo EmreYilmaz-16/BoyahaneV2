@@ -986,7 +986,7 @@ function buildScheduler() {
                 intervalCount: 3,
                 startDayHour : 0,
                 endDayHour   : 24,
-                cellDuration : 10
+                cellDuration : 60
             },
             {
                 type         : 'timelineWeek',
@@ -1209,7 +1209,7 @@ function getDropInfo(ev, inst) {
                 if (colIdx >= 0) {
                     var baseDate  = new Date(inst.option('currentDate'));
                     var startHour = inst.option('startDayHour') || 0;
-                    var cellDur   = inst.option('cellDuration')  || 60; /* dakika */
+                    var cellDur   = getCurrentCellDuration(); /* dakika */
                     var view      = inst.option('currentView') || 'timelineDay';
 
                     if (view === 'timelineDay') {
