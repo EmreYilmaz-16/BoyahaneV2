@@ -423,6 +423,12 @@
 .scheduler-panel-header .view-btns button:hover {
     background: ##1a3a5c; color: ##fff; border-color: ##1a3a5c;
 }
+.scheduler-zoom-hint {
+    color: ##64748b;
+    font-size: .72rem;
+    font-weight: 500;
+    white-space: nowrap;
+}
 
 ##schedulerContainer {
     flex: 1;
@@ -621,6 +627,7 @@
                 <span style="color:##94a3b8;font-weight:400;font-size:.75rem;margin-left:.4rem">
                     — Emri sürükleyip makina satırına bırakın, tarih/saat ayarlayın
                 </span>
+                <span class="scheduler-zoom-hint" id="zoomHint"></span>
                 <div class="view-btns">
                     <button id="btnDay"   onclick="switchView('timelineDay')"   class="active">3 Gün</button>
                     <button id="btnWeek"  onclick="switchView('timelineWeek')"          >Haftalık</button>
@@ -796,6 +803,7 @@ var pendingDrop    = null; // { order, stationId, startDate, endDate }
 var currentView    = 'timelineDay';
 var planModalBs    = null;
 var activeGroupId  = 0;    // 0 = tümü
+var ZOOM_DURATIONS = [10, 15, 30, 60, 120];
 
 /* ---- palette for machines ----------------------------------------- */
 var PALETTE = [
@@ -1034,10 +1042,16 @@ function buildScheduler() {
             allowDragging : true
         }
     }).dxScheduler('instance');
+    updateZoomHint();
 
     /* ---- drag-over / drop on scheduler panel ---- */
     var schedulerEl = document.getElementById('schedulerContainer');
     var dropOverlay = document.getElementById('dropOverlay');
+
+    if (!schedulerEl._zoomWheelBound) {
+        schedulerEl._zoomWheelBound = true;
+        schedulerEl.addEventListener('wheel', handleSchedulerWheelZoom, { passive: false });
+    }
 
     schedulerEl.addEventListener('dragover', function(e) {
         if (!dragItem) return;
@@ -1138,6 +1152,7 @@ function appointmentTpl(model) {
 function switchView(view) {
     currentView = view;
     if (schedulerInst) schedulerInst.option('currentView', view);
+    updateZoomHint();
     document.querySelectorAll('.view-btns button').forEach(function(b) { b.classList.remove('active'); });
     var map = { 'timelineDay': 'btnDay', 'timelineWeek': 'btnWeek', 'timelineMonth': 'btnMonth' };
     var el = document.getElementById(map[view]);
@@ -1257,6 +1272,56 @@ function getCurrentCellDuration() {
         }
     }
     return parseInt(schedulerInst.option('cellDuration'), 10) || 30;
+}
+
+function setCurrentCellDuration(duration) {
+    if (!schedulerInst || !duration) return;
+    var current = schedulerInst.option('currentView');
+    if (current === 'timelineMonth') return;
+
+    var views = (schedulerInst.option('views') || []).map(function(v) {
+        if (typeof v !== 'object' || v.type !== current) return v;
+        var copy = Object.assign({}, v);
+        copy.cellDuration = duration;
+        return copy;
+    });
+
+    schedulerInst.option('views', views);
+    schedulerInst.option('cellDuration', duration);
+    schedulerInst.repaint();
+    updateZoomHint();
+}
+
+function zoomScheduler(delta) {
+    if (!schedulerInst) return;
+    if (schedulerInst.option('currentView') === 'timelineMonth') return;
+
+    var currentDuration = getCurrentCellDuration();
+    var idx = ZOOM_DURATIONS.indexOf(currentDuration);
+    if (idx < 0) {
+        idx = ZOOM_DURATIONS.reduce(function(bestIdx, val, i) {
+            return Math.abs(val - currentDuration) < Math.abs(ZOOM_DURATIONS[bestIdx] - currentDuration) ? i : bestIdx;
+        }, 0);
+    }
+
+    var nextIdx = Math.max(0, Math.min(ZOOM_DURATIONS.length - 1, idx + delta));
+    if (nextIdx !== idx) setCurrentCellDuration(ZOOM_DURATIONS[nextIdx]);
+}
+
+function handleSchedulerWheelZoom(e) {
+    if (!e.ctrlKey) return;
+    e.preventDefault();
+    zoomScheduler(e.deltaY < 0 ? -1 : 1);
+}
+
+function updateZoomHint() {
+    var el = document.getElementById('zoomHint');
+    if (!el || !schedulerInst) return;
+    if (schedulerInst.option('currentView') === 'timelineMonth') {
+        el.textContent = '';
+        return;
+    }
+    el.textContent = 'Zoom: ' + getCurrentCellDuration() + ' dk (Ctrl + tekerlek)';
 }
 
 /* ================================================================
