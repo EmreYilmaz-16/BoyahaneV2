@@ -622,7 +622,7 @@
                     — Emri sürükleyip makina satırına bırakın, tarih/saat ayarlayın
                 </span>
                 <div class="view-btns">
-                    <button id="btnDay"   onclick="switchView('timelineDay')"   class="active">Günlük</button>
+                    <button id="btnDay"   onclick="switchView('timelineDay')"   class="active">3 Gün</button>
                     <button id="btnWeek"  onclick="switchView('timelineWeek')"          >Haftalık</button>
                     <button id="btnMonth" onclick="switchView('timelineMonth')"         >Aylık</button>
                 </div>
@@ -979,7 +979,27 @@ function buildScheduler() {
 
     schedulerInst = $('##schedulerContainer').dxScheduler({
         dataSource       : appointments,
-        views            : ['timelineDay','timelineWeek','timelineMonth'],
+        views            : [
+            {
+                type         : 'timelineDay',
+                name         : '3 Gün',
+                intervalCount: 3,
+                startDayHour : 0,
+                endDayHour   : 24,
+                cellDuration : 10
+            },
+            {
+                type         : 'timelineWeek',
+                name         : 'Haftalık',
+                startDayHour : 0,
+                endDayHour   : 24,
+                cellDuration : 30
+            },
+            {
+                type: 'timelineMonth',
+                name: 'Aylık'
+            }
+        ],
         currentView      : currentView,
         currentDate      : new Date(),
         height           : '100%',
