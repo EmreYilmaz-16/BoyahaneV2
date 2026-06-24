@@ -834,10 +834,10 @@ function getActiveAppointments() {
 var ALL_APPOINTMENTS = [];
 
 var STATUS_META = {
-    1: { label: 'Planlandı',    bg: '##1a3a5c', fg: '##fff' },
-    2: { label: 'Çalışıyor',   bg: '##2e7d32', fg: '##fff' },
-    5: { label: 'Tamamlandı',  bg: '##757575', fg: '##fff' },
-    9: { label: 'İptal',       bg: '##b71c1c', fg: '##fff' }
+    1: { label: 'Planlandı',    bg: '##1a3a5c', fg: '##fff', apptBg: '##1a3a5c' },
+    2: { label: 'Çalışıyor',   bg: '##16a34a', fg: '##fff', apptBg: '##16a34a' },
+    5: { label: 'Tamamlandı',  bg: '##dc2626', fg: '##fff', apptBg: '##dc2626' },
+    9: { label: 'İptal',       bg: '##7f1d1d', fg: '##fff', apptBg: '##7f1d1d' }
 };
 
 /* ================================================================
@@ -1029,6 +1029,15 @@ function buildScheduler() {
             useColorAsDefault: true
         }],
         appointmentTemplate: appointmentTpl,
+        onAppointmentRendered: function(e) {
+            var st = STATUS_META[e.appointmentData.status];
+            if (!st || !st.apptBg) return;
+            $(e.appointmentElement).css({
+                backgroundColor: st.apptBg,
+                borderColor: st.apptBg,
+                color: st.fg || '##fff'
+            });
+        },
         onAppointmentDblClick: function(e) {
             e.cancel = true;
             if (e.appointmentData && parseInt(e.appointmentData.status, 10) === 5) {
@@ -1069,6 +1078,7 @@ function buildScheduler() {
         }
     }).dxScheduler('instance');
     updateZoomHint();
+    queueLoadVisibleAppointments();
 
     /* ---- drag-over / drop on scheduler panel ---- */
     var schedulerEl = document.getElementById('schedulerContainer');
@@ -1128,13 +1138,18 @@ function getCurrentViewConfig() {
     var current = schedulerInst ? schedulerInst.option('currentView') : currentView;
     var views = schedulerInst ? (schedulerInst.option('views') || []) : [];
     for (var i = 0; i < views.length; i++) {
-        if (typeof views[i] === 'object' && views[i].type === current) return views[i];
+        if (typeof views[i] === 'object' && (views[i].type === current || views[i].name === current)) return views[i];
     }
     return {};
 }
 
+function getCurrentViewType() {
+    var cfg = getCurrentViewConfig();
+    return cfg.type || (schedulerInst ? schedulerInst.option('currentView') : currentView);
+}
+
 function getVisibleDateRange() {
-    var view = schedulerInst ? schedulerInst.option('currentView') : currentView;
+    var view = getCurrentViewType();
     var currentDate = schedulerInst ? new Date(schedulerInst.option('currentDate')) : new Date();
     var start = new Date(currentDate);
     var end = new Date(currentDate);
@@ -1167,7 +1182,7 @@ function queueLoadVisibleAppointments() {
 function loadVisibleAppointments() {
     if (!schedulerInst) return;
     var range = getVisibleDateRange();
-    var key = fmtDTForServer(range.start) + '|' + fmtDTForServer(range.end) + '|' + schedulerInst.option('currentView');
+    var key = fmtDTForServer(range.start) + '|' + fmtDTForServer(range.end) + '|' + getCurrentViewType();
     if (key === plannedLoadKey) return;
     plannedLoadKey = key;
 
@@ -1213,7 +1228,7 @@ function fmtMins(mins) {
 
 function appointmentTpl(model) {
     var data   = model.appointmentData;
-    var st     = STATUS_META[data.status] || { label: 'Bilinmiyor', bg: '##9e9e9e', fg: '##fff' };
+    var st     = STATUS_META[data.status] || { label: 'Bilinmiyor', bg: '##9e9e9e', fg: '##fff', apptBg: '##9e9e9e' };
     var pauseHtml = (data.active_pause_count > 0)
         ? '<span style="background:##e65100;color:##fff;border-radius:3px;padding:1px 4px;font-size:.68rem;margin-left:4px;">&##9646;&##9646; Duruşta</span>'
         : '';
@@ -1236,10 +1251,10 @@ function appointmentTpl(model) {
         ? '<div style="font-size:.74rem;display:flex;flex-wrap:wrap;gap:1px 8px;overflow:hidden;">' + parts.join('') + '</div>'
         : '<div style="font-size:.74rem;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + htmlEnc(data.text || '') + '</div>';
 
-    return $('<div style="padding:3px 5px;overflow:hidden;line-height:1.5;">'
+    return $('<div style="padding:3px 5px;overflow:hidden;line-height:1.5;background:' + st.apptBg + ';color:' + st.fg + ';height:100%;border-radius:4px;">'
         + contentHtml
         + '<div style="margin-top:2px;">'
-            + '<span style="background:' + st.bg + ';color:' + st.fg + ';border-radius:3px;padding:1px 5px;font-size:.68rem;">' + st.label + '</span>'
+            + '<span style="background:rgba(0,0,0,.18);color:' + st.fg + ';border-radius:3px;padding:1px 5px;font-size:.68rem;">' + st.label + '</span>'
             + pauseHtml + durationHtml
         + '</div>'
         + '</div>');
@@ -1249,6 +1264,7 @@ function switchView(view) {
     currentView = view;
     if (schedulerInst) schedulerInst.option('currentView', view);
     updateZoomHint();
+    queueLoadVisibleAppointments();
     document.querySelectorAll('.view-btns button').forEach(function(b) { b.classList.remove('active'); });
     var map = { 'timelineDay': 'btnDay', 'timelineWeek': 'btnWeek', 'timelineMonth': 'btnMonth' };
     var el = document.getElementById(map[view]);
@@ -1321,7 +1337,7 @@ function getDropInfo(ev, inst) {
                     var baseDate  = new Date(inst.option('currentDate'));
                     var startHour = inst.option('startDayHour') || 0;
                     var cellDur   = getCurrentCellDuration(); /* dakika */
-                    var view      = inst.option('currentView') || 'timelineDay';
+                    var view      = getCurrentViewType();
 
                     if (view === 'timelineDay') {
                         baseDate.setHours(startHour, 0, 0, 0);
@@ -1363,7 +1379,7 @@ function getCurrentCellDuration() {
     var current = schedulerInst.option('currentView');
     var views = schedulerInst.option('views') || [];
     for (var i = 0; i < views.length; i++) {
-        if (typeof views[i] === 'object' && views[i].type === current && views[i].cellDuration) {
+        if (typeof views[i] === 'object' && (views[i].type === current || views[i].name === current) && views[i].cellDuration) {
             return parseInt(views[i].cellDuration, 10) || 30;
         }
     }
@@ -1373,10 +1389,11 @@ function getCurrentCellDuration() {
 function setCurrentCellDuration(duration) {
     if (!schedulerInst || !duration) return;
     var current = schedulerInst.option('currentView');
-    if (current === 'timelineMonth') return;
+    var currentType = getCurrentViewType();
+    if (currentType === 'timelineMonth') return;
 
     var views = (schedulerInst.option('views') || []).map(function(v) {
-        if (typeof v !== 'object' || v.type !== current) return v;
+        if (typeof v !== 'object' || (v.type !== current && v.name !== current && v.type !== currentType)) return v;
         var copy = Object.assign({}, v);
         copy.cellDuration = duration;
         return copy;
@@ -1390,7 +1407,7 @@ function setCurrentCellDuration(duration) {
 
 function zoomScheduler(delta) {
     if (!schedulerInst) return;
-    if (schedulerInst.option('currentView') === 'timelineMonth') return;
+    if (getCurrentViewType() === 'timelineMonth') return;
 
     var currentDuration = getCurrentCellDuration();
     var idx = ZOOM_DURATIONS.indexOf(currentDuration);
@@ -1413,7 +1430,7 @@ function handleSchedulerWheelZoom(e) {
 function updateZoomHint() {
     var el = document.getElementById('zoomHint');
     if (!el || !schedulerInst) return;
-    if (schedulerInst.option('currentView') === 'timelineMonth') {
+    if (getCurrentViewType() === 'timelineMonth') {
         el.textContent = '';
         return;
     }
