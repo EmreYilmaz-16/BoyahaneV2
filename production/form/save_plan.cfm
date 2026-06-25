@@ -17,13 +17,17 @@
     <cfparam name="form.start_date"  default="">
     <cfparam name="form.status"      default="1">
     <cfparam name="form.shift_following" default="0">
+    <cfparam name="form.interval_minutes" default="0">
     <cfparam name="form.snap_back_minutes" default="0">
 
     <cfset pOrderId  = isNumeric(form.p_order_id) AND val(form.p_order_id) gt 0 ? val(form.p_order_id) : 0>
     <cfset stationId = isNumeric(form.station_id) AND val(form.station_id) gt 0 ? val(form.station_id) : 0>
     <cfset statusVal = isNumeric(form.status) ? val(form.status) : 1>
     <cfset shiftFollowing = isNumeric(form.shift_following) AND val(form.shift_following) eq 1>
-    <cfset snapBackMins = isNumeric(form.snap_back_minutes) ? val(form.snap_back_minutes) : 0>
+    <cfset intervalMins = isNumeric(form.interval_minutes) ? val(form.interval_minutes) : 0>
+    <cfif intervalMins lt 0><cfset intervalMins = 0></cfif>
+    <cfif intervalMins gt 180><cfset intervalMins = 180></cfif>
+    <cfset snapBackMins = isNumeric(form.snap_back_minutes) AND val(form.snap_back_minutes) gt 0 ? val(form.snap_back_minutes) : intervalMins>
     <cfif snapBackMins lt 0><cfset snapBackMins = 0></cfif>
     <cfif snapBackMins gt 180><cfset snapBackMins = 180></cfif>
 

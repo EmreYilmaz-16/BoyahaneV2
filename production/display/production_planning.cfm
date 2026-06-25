@@ -1462,6 +1462,7 @@ function directSavePlan(order, stationId, startDate, endDate) {
             finish_date: fmtDTForServer(ed),
             status     : 1,
             shift_following: 1,
+            interval_minutes: getCurrentCellDuration(),
             snap_back_minutes: getCurrentCellDuration()
         },
         dataType: 'json',
@@ -1627,6 +1628,7 @@ function savePlan() {
             finish_date: endVal.replace('T',' '),
             status     : statusVal,
             shift_following: pendingDrop.isEdit ? 0 : 1,
+            interval_minutes: getCurrentCellDuration(),
             snap_back_minutes: getCurrentCellDuration()
         },
         dataType: 'json',
@@ -1784,7 +1786,8 @@ function syncAppointmentUpdate(apptData) {
             station_id : apptData.resourceId,
             start_date : fmtDTForServer(apptData.startDate),
             finish_date: fmtDTForServer(apptData.endDate),
-            status     : apptData.status || 1
+            status     : apptData.status || 1,
+            interval_minutes: getCurrentCellDuration()
         },
         dataType: 'json'
     });
