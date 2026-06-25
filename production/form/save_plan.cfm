@@ -178,12 +178,19 @@
               AND finish_date > <cfqueryparam value="#startDate#"  cfsqltype="cf_sql_timestamp">
         </cfquery>
 
-        <cfif qConflict2.recordCount>
+        <cfif qConflict2.recordCount AND NOT shiftFollowing>
             <cfset conflictNo = qConflict2.p_order_no ?: ("Emir ##" & qConflict2.p_order_id)>
             <cfset response.message = "Çakışma: Bu makine belirtilen zaman aralığında '#conflictNo#' emriyle dolu. Lütfen farklı bir saat seçin.">
             <cfoutput>#serializeJSON(response)#</cfoutput><cfabort>
         </cfif>
 
+        <!---
+            shift_following açıkken, kaydırılmış yeni başlangıçtan sonra hâlâ
+            çakışma varsa bu kayıtlar aşağıdaki blokta yeni emrin süresi kadar
+            ileri ötelenir. Özellikle 1 saatlik görünümde hücre başlangıcına
+            bırakılan emirlerin, mevcut emrin arkasına takılıp sırayı bozmayacak
+            şekilde kaydedilmesini sağlar.
+        --->
         <cfset response.snapped = true>
         <cfset response.start_date = startStr>
     </cfif>
