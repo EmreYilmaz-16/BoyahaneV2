@@ -147,13 +147,13 @@
           AND finish_date IS NOT NULL
           AND start_date  < <cfqueryparam value="#finishDate#" cfsqltype="cf_sql_timestamp">
           AND finish_date > <cfqueryparam value="#startDate#"  cfsqltype="cf_sql_timestamp">
-        ORDER BY finish_date ASC
+        ORDER BY finish_date DESC
     </cfquery>
 
     <cfif qConflict.recordCount>
         <!---
             Scheduler hücreleri 30 dk'ya snap'lediğinden bırakılan nokta çakışan
-            bir işin içine düşebilir. Bu durumda işi reddetmek yerine ilk
+            bir işin içine düşebilir. Bu durumda işi reddetmek yerine en geç
             çakışan işin bitiş saatine kaydırıyoruz (auto-snap).
             Kaydırılmış başlangıç, yeni finish_date'i de etkiler.
         --->
@@ -178,7 +178,7 @@
               AND finish_date > <cfqueryparam value="#startDate#"  cfsqltype="cf_sql_timestamp">
         </cfquery>
 
-        <cfif qConflict2.recordCount AND NOT shiftFollowing>
+        <cfif qConflict2.recordCount>
             <cfset conflictNo = qConflict2.p_order_no ?: ("Emir ##" & qConflict2.p_order_id)>
             <cfset response.message = "Çakışma: Bu makine belirtilen zaman aralığında '#conflictNo#' emriyle dolu. Lütfen farklı bir saat seçin.">
             <cfoutput>#serializeJSON(response)#</cfoutput><cfabort>
