@@ -150,12 +150,15 @@
         ORDER BY finish_date DESC
     </cfquery>
 
-    <cfif qConflict.recordCount>
+    <cfif qConflict.recordCount AND NOT shiftFollowing>
         <!---
             Scheduler hücreleri 30 dk'ya snap'lediğinden bırakılan nokta çakışan
             bir işin içine düşebilir. Bu durumda işi reddetmek yerine en geç
             çakışan işin bitiş saatine kaydırıyoruz (auto-snap).
             Kaydırılmış başlangıç, yeni finish_date'i de etkiler.
+            Araya ekleme modunda (shift_following=1) bu snap uygulanmaz;
+            yeni emir bırakıldığı başlangıçta kalır ve sonraki emirler aşağıda
+            yeni emrin süresi kadar ileri ötelenir.
         --->
         <cfset snapStart   = qConflict.finish_date>
         <cfset rawSnapStart = parseDateTime(dateFormat(snapStart,"yyyy-mm-dd") & " " & timeFormat(snapStart,"HH:mm:ss"))>
@@ -178,19 +181,12 @@
               AND finish_date > <cfqueryparam value="#startDate#"  cfsqltype="cf_sql_timestamp">
         </cfquery>
 
-        <cfif qConflict2.recordCount AND NOT shiftFollowing>
+        <cfif qConflict2.recordCount>
             <cfset conflictNo = qConflict2.p_order_no ?: ("Emir ##" & qConflict2.p_order_id)>
             <cfset response.message = "Çakışma: Bu makine belirtilen zaman aralığında '#conflictNo#' emriyle dolu. Lütfen farklı bir saat seçin.">
             <cfoutput>#serializeJSON(response)#</cfoutput><cfabort>
         </cfif>
 
-        <!---
-            shift_following açıkken, kaydırılmış yeni başlangıçtan sonra hâlâ
-            çakışma varsa bu kayıtlar aşağıdaki blokta yeni emrin süresi kadar
-            ileri ötelenir. Özellikle 1 saatlik görünümde hücre başlangıcına
-            bırakılan emirlerin, mevcut emrin arkasına takılıp sırayı bozmayacak
-            şekilde kaydedilmesini sağlar.
-        --->
         <cfset response.snapped = true>
         <cfset response.start_date = startStr>
     </cfif>

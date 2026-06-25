@@ -1553,7 +1553,7 @@ function directSavePlan(order, stationId, startDate, endDate) {
    Plan Modal (kart tıklama + çift tıklama düzenleme için)
    ================================================================ */
 function openPlanModal(order, stationId, startDate, endDate) {
-    pendingDrop = { order: order, stationId: stationId, startDate: startDate, endDate: endDate };
+    pendingDrop = { order: order, stationId: stationId, startDate: startDate, endDate: endDate, isEdit: false };
 
     document.getElementById('modalOrderTitle').textContent =
         (order.p_order_no || ('Emir ##' + order.p_order_id))
@@ -1589,6 +1589,7 @@ function openEditModal(apptData) {
         quantity    : apptData.quantity    || 0
     };
     openPlanModal(fakeOrder, apptData.resourceId, apptData.startDate, apptData.endDate);
+    if (pendingDrop) pendingDrop.isEdit = true;
     document.getElementById('modalStatus').value = apptData.status || 1;
 }
 
@@ -1624,7 +1625,9 @@ function savePlan() {
             station_id : stationId,
             start_date : startVal.replace('T',' '),
             finish_date: endVal.replace('T',' '),
-            status     : statusVal
+            status     : statusVal,
+            shift_following: pendingDrop.isEdit ? 0 : 1,
+            snap_back_minutes: getCurrentCellDuration()
         },
         dataType: 'json',
         success : function(resp) {
@@ -1636,11 +1639,17 @@ function savePlan() {
                 /* update scheduler */
                 var stationObj = getActiveStations().find(function(s){ return s.id === stationId; })
                               || ALL_STATIONS.find(function(s){ return s.id === stationId; });
+                var serverStart = (resp.start_date && isValidDateStr(resp.start_date))
+                                ? new Date(resp.start_date.replace('T', ' '))
+                                : startDate;
+                var serverEnd = (resp.finish_date && isValidDateStr(resp.finish_date))
+                              ? new Date(resp.finish_date.replace('T', ' '))
+                              : endDate;
                 var newAppt = {
                     p_order_id  : order.p_order_id,
                     text        : (order.p_order_no || ('Emir ##' + order.p_order_id)) + ' | ' + order.color_code + ' ' + order.color_name,
-                    startDate   : startDate,
-                    endDate     : endDate,
+                    startDate   : serverStart,
+                    endDate     : serverEnd,
                     resourceId  : stationId,
                     color_code  : order.color_code,
                     color_name  : order.color_name,
@@ -1656,6 +1665,19 @@ function savePlan() {
                 /* ALL_APPOINTMENTS güncelle (filtre değişse de kaybolmasın) */
                 upsertAllAppointment(newAppt);
 
+                if (Array.isArray(resp.shifted_orders) && resp.shifted_orders.length) {
+                    resp.shifted_orders.forEach(function(shifted) {
+                        var sid = parseInt(shifted.p_order_id, 10);
+                        if (!sid || !shifted.start_date || !shifted.finish_date) return;
+                        var existingAll = ALL_APPOINTMENTS.find(function(a){ return a.p_order_id === sid; });
+                        if (existingAll) {
+                            existingAll.startDate = new Date(shifted.start_date.replace('T', ' '));
+                            existingAll.endDate   = new Date(shifted.finish_date.replace('T', ' '));
+                            upsertAllAppointment(existingAll);
+                        }
+                    });
+                }
+
                 /* add/update appointment on scheduler (sadece aktif grupta görünüyorsa) */
                 var inActiveGroup = getActiveStations().some(function(s){ return s.id === stationId; });
                 if (inActiveGroup) {
@@ -1666,8 +1688,25 @@ function savePlan() {
                     } else {
                         schedulerInst.addAppointment(newAppt);
                     }
+
+                    if (Array.isArray(resp.shifted_orders) && resp.shifted_orders.length) {
+                        resp.shifted_orders.forEach(function(shifted) {
+                            var sid = parseInt(shifted.p_order_id, 10);
+                            if (!sid || !shifted.start_date || !shifted.finish_date) return;
+                            var existingShifted = ds.find(function(a){ return a.p_order_id === sid; });
+                            if (existingShifted) {
+                                schedulerInst.updateAppointment(existingShifted, Object.assign({}, existingShifted, {
+                                    startDate: new Date(shifted.start_date.replace('T', ' ')),
+                                    endDate  : new Date(shifted.finish_date.replace('T', ' '))
+                                }));
+                            }
+                        });
+                    }
                 }
-                showToast('Emir planlandı: ' + (order.p_order_no || 'Emir ##' + order.p_order_id), 'success');
+                var shiftNote = (resp.shifted_count && parseInt(resp.shifted_count, 10) > 0)
+                    ? (' | Sonraki ' + resp.shifted_count + ' emir ötelenmiştir')
+                    : '';
+                showToast('Emir planlandı: ' + (order.p_order_no || 'Emir ##' + order.p_order_id) + shiftNote, 'success');
             } else {
                 showToast((resp && resp.message) || 'Kayıt hatası!', 'danger');
             }
