@@ -809,6 +809,7 @@ var activeGroupId  = 0;    // 0 = tümü
 var ZOOM_DURATIONS = [10, 15, 30, 60, 120];
 var plannedLoadTimer = null;
 var plannedLoadKey   = '';
+var suppressAppointmentSync = false;
 
 /* ---- palette for machines ----------------------------------------- */
 var PALETTE = [
@@ -1053,6 +1054,7 @@ function buildScheduler() {
             }
         },
         onAppointmentUpdated: function(e) {
+            if (suppressAppointmentSync) return;
             syncAppointmentUpdate(e.appointmentData);
         },
         onAppointmentDeleting: function(e) {
@@ -1745,9 +1747,71 @@ function syncAppointmentUpdate(apptData) {
             station_id : apptData.resourceId,
             start_date : fmtDTForServer(apptData.startDate),
             finish_date: fmtDTForServer(apptData.endDate),
-            status     : apptData.status || 1
+            status     : apptData.status || 1,
+            shift_following: 1,
+            snap_back_minutes: getCurrentCellDuration()
         },
-        dataType: 'json'
+        dataType: 'json',
+        success: function(resp) {
+            if (!resp || !resp.success) {
+                showToast((resp && resp.message) || 'Plan güncellenemedi.', 'danger');
+                queueLoadVisibleAppointments();
+                return;
+            }
+
+            var serverStart = (resp.start_date && isValidDateStr(resp.start_date))
+                            ? new Date(resp.start_date.replace('T', ' '))
+                            : apptData.startDate;
+            var serverEnd = (resp.finish_date && isValidDateStr(resp.finish_date))
+                          ? new Date(resp.finish_date.replace('T', ' '))
+                          : apptData.endDate;
+            var updatedAppt = Object.assign({}, apptData, {
+                startDate: serverStart,
+                endDate  : serverEnd
+            });
+
+            upsertAllAppointment(updatedAppt);
+
+            var ds = schedulerInst ? schedulerInst.option('dataSource') : [];
+            var existing = ds.find(function(a){ return a.p_order_id === apptData.p_order_id; });
+            suppressAppointmentSync = true;
+            try {
+                if (existing) schedulerInst.updateAppointment(existing, updatedAppt);
+
+                if (Array.isArray(resp.shifted_orders) && resp.shifted_orders.length) {
+                    resp.shifted_orders.forEach(function(shifted) {
+                        var sid = parseInt(shifted.p_order_id, 10);
+                        if (!sid || !shifted.start_date || !shifted.finish_date) return;
+                        var shiftedStart = new Date(shifted.start_date.replace('T', ' '));
+                        var shiftedEnd   = new Date(shifted.finish_date.replace('T', ' '));
+                        var existingAll  = ALL_APPOINTMENTS.find(function(a){ return a.p_order_id === sid; });
+                        if (existingAll) {
+                            existingAll.startDate = shiftedStart;
+                            existingAll.endDate   = shiftedEnd;
+                            upsertAllAppointment(existingAll);
+                        }
+                        var existingShifted = ds.find(function(a){ return a.p_order_id === sid; });
+                        if (existingShifted) {
+                            schedulerInst.updateAppointment(existingShifted, Object.assign({}, existingShifted, {
+                                startDate: shiftedStart,
+                                endDate  : shiftedEnd
+                            }));
+                        }
+                    });
+                }
+            } finally {
+                suppressAppointmentSync = false;
+            }
+
+            if (resp.snapped) {
+                showToast('Başlangıç önceki işin bitişine ayarlandı: '
+                    + serverStart.toLocaleTimeString('tr-TR', {hour:'2-digit', minute:'2-digit'}), 'info');
+            }
+        },
+        error: function() {
+            showToast('Plan güncellenemedi.', 'danger');
+            queueLoadVisibleAppointments();
+        }
     });
 }
 
