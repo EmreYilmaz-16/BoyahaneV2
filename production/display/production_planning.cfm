@@ -1459,6 +1459,7 @@ function directSavePlan(order, stationId, startDate, endDate) {
             p_order_id : order.p_order_id,
             station_id : stationId,
             start_date : fmtDTForServer(sd),
+            cell_start_date: fmtDTForServer(sd),
             finish_date: fmtDTForServer(ed),
             status     : 1,
             shift_following: 1,
@@ -1625,6 +1626,7 @@ function savePlan() {
             p_order_id : order.p_order_id,
             station_id : stationId,
             start_date : startVal.replace('T',' '),
+            cell_start_date: startVal.replace('T',' '),
             finish_date: endVal.replace('T',' '),
             status     : statusVal,
             shift_following: pendingDrop.isEdit ? 0 : 1,
@@ -1785,6 +1787,7 @@ function syncAppointmentUpdate(apptData) {
             p_order_id : apptData.p_order_id,
             station_id : apptData.resourceId,
             start_date : fmtDTForServer(apptData.startDate),
+            cell_start_date: fmtDTForServer(apptData.startDate),
             finish_date: fmtDTForServer(apptData.endDate),
             status     : apptData.status || 1,
             interval_minutes: getCurrentCellDuration()

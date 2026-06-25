@@ -15,6 +15,7 @@
     <cfparam name="form.p_order_id"  default="0">
     <cfparam name="form.station_id"  default="0">
     <cfparam name="form.start_date"  default="">
+    <cfparam name="form.cell_start_date" default="">
     <cfparam name="form.status"      default="1">
     <cfparam name="form.shift_following" default="0">
     <cfparam name="form.interval_minutes" default="0">
@@ -49,6 +50,10 @@
         <cfset response.message = "Geçerli bir başlangıç tarihi girin.">
         <cfoutput>#serializeJSON(response)#</cfoutput><cfabort>
     </cfif>
+    <cfset rawCellStart = (len(trim(form.cell_start_date)) AND isDate(form.cell_start_date))
+                        ? parseDateTime(Replace(trim(form.cell_start_date),'T',' ','all'))
+                        : parseDateTime(Replace(trim(form.start_date),'T',' ','all'))>
+    <cfset response.cell_start_date = dateFormat(rawCellStart,"yyyy-mm-dd") & "T" & timeFormat(rawCellStart,"HH:mm:ss")>
 
     <!--- İstasyon kontrolü --->
     <cfquery name="chkStation" datasource="boyahane">
