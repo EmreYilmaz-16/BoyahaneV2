@@ -1790,7 +1790,9 @@ function syncAppointmentUpdate(apptData) {
             cell_start_date: fmtDTForServer(apptData.startDate),
             finish_date: fmtDTForServer(apptData.endDate),
             status     : apptData.status || 1,
-            interval_minutes: getCurrentCellDuration()
+            shift_following: 1,
+            interval_minutes: getCurrentCellDuration(),
+            snap_back_minutes: getCurrentCellDuration()
         },
         dataType: 'json'
     });
