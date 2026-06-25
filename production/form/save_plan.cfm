@@ -109,11 +109,12 @@
     <cfset finishDate = createODBCDateTime(rawFinish)>
     <cfset startStr   = dateFormat(rawStart,"yyyy-mm-dd") & "T" & timeFormat(rawStart,"HH:mm:ss")>
     <cfset finishStr  = dateFormat(rawFinish,"yyyy-mm-dd") & "T" & timeFormat(rawFinish,"HH:mm:ss")>
+    <cfset rawCellEnd = snapBackMins gt 0 ? dateAdd("n", snapBackMins, rawCellStart) : rawStart>
 
     <!---
-        Drag&drop hücre başlangıcını gönderir (örn. 30 dk hücrede 16:30).
-        Aynı makinede hemen önce biten iş hücre aralığı içinde kaldıysa,
-        yeni işi o işin gerçek bitiş saatine yapıştır (örn. 16:22).
+        Drag&drop hücre başlangıcını gönderir (örn. 60 dk hücrede 10:00).
+        Aynı makinede bu hücre içinde biten son iş varsa, yeni işi o işin
+        gerçek bitiş saatine yapıştır (örn. 10:30).
     --->
     <cfif shiftFollowing AND snapBackMins gt 0>
         <cfquery name="qPreviousOrder" datasource="boyahane" maxrows="1">
@@ -123,8 +124,8 @@
               AND p_order_id <> <cfqueryparam value="#pOrderId#" cfsqltype="cf_sql_integer">
               AND status IN (1, 2)
               AND finish_date IS NOT NULL
-              AND finish_date <= <cfqueryparam value="#startDate#" cfsqltype="cf_sql_timestamp">
-              AND finish_date >= <cfqueryparam value="#createODBCDateTime(dateAdd('n', -snapBackMins, rawStart))#" cfsqltype="cf_sql_timestamp">
+              AND finish_date > <cfqueryparam value="#createODBCDateTime(rawCellStart)#" cfsqltype="cf_sql_timestamp">
+              AND finish_date <= <cfqueryparam value="#createODBCDateTime(rawCellEnd)#" cfsqltype="cf_sql_timestamp">
             ORDER BY finish_date DESC
         </cfquery>
 
