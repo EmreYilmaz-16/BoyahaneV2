@@ -7,7 +7,8 @@ DELETE FROM pbs_objects WHERE full_fuseaction IN (
     'production.production_planning',
     'production.save_plan',
     'production.unplan_order',
-    'production.get_planned_orders'
+    'production.get_planned_orders',
+    'production.production_timeline'
 );
 
 INSERT INTO pbs_objects (full_fuseaction, file_path, object_name, object_title, object_type, parent_id, sort_order, is_active, show_menu, window_type)
@@ -38,7 +39,14 @@ VALUES
      '/production/form/get_planned_orders.cfm',
      'get_planned_orders',
      'Planlı Emirleri Getir',
-     'page', NULL, 58, true, false, 'page');
+     'page', NULL, 58, true, false, 'page'),
+
+    -- Timeline planlama sayfası: sürükle-bırak ile arka arkaya/araya emir ekleme
+    ('production.production_timeline',
+     '/production/display/production_timeline.cfm',
+     'production_timeline',
+     'Üretim Timeline Planlama',
+     'page', NULL, 60, true, true, 'page');
 
 -- =====================================================
 -- Üretim Planlama (GANTT) Sayfası — pbs_objects Menü Kaydı
