@@ -65,15 +65,19 @@
         <cfoutput>#serializeJSON(response)#</cfoutput><cfabort>
     </cfif>
 
-    <!--- Emir kontrolü + stock_id al --->
+    <!--- Emir kontrolü + mevcut plan bilgisini al --->
     <cfquery name="chkOrder" datasource="boyahane">
-        SELECT p_order_id, stock_id FROM production_orders
+        SELECT p_order_id, stock_id, station_id AS old_station_id, start_date AS old_start_date, finish_date AS old_finish_date
+        FROM production_orders
         WHERE p_order_id = <cfqueryparam value="#pOrderId#" cfsqltype="cf_sql_integer">
     </cfquery>
     <cfif NOT chkOrder.recordCount>
         <cfset response.message = "Üretim emri bulunamadı.">
         <cfoutput>#serializeJSON(response)#</cfoutput><cfabort>
     </cfif>
+    <cfset oldStationId = isNumeric(chkOrder.old_station_id) ? val(chkOrder.old_station_id) : 0>
+    <cfset hasOldPlan = oldStationId gt 0 AND isDate(chkOrder.old_start_date) AND isDate(chkOrder.old_finish_date)>
+    <cfset oldDurationMins = hasOldPlan ? dateDiff("n", chkOrder.old_start_date, chkOrder.old_finish_date) : 0>
 
     <!--- Operasyon dakika toplamını hesapla --->
     <!--- Önce production_operation tablosundan bak (emir özelinde) --->
@@ -248,8 +252,47 @@
                 "finish_date": dateFormat(shiftedEnd,  "yyyy-mm-dd") & "T" & timeFormat(shiftedEnd,  "HH:mm:ss")
             })>
         </cfloop>
-        <cfset response.shifted_count = arrayLen(response.shifted_orders)>
     </cfif>
+
+    <!---
+        Emir başka makineye taşındıysa, eski makinede geride kalan boşluğu kapat:
+        eski emrin bitişinden sonra başlayan planlı emirleri, eski emrin gerçek
+        süresi kadar geriye çek.
+    --->
+    <cfif shiftFollowing AND hasOldPlan AND oldStationId neq stationId AND oldDurationMins gt 0>
+        <cfquery name="qOldFollowingOrders" datasource="boyahane">
+            SELECT p_order_id, start_date, finish_date
+            FROM production_orders
+            WHERE station_id = <cfqueryparam value="#oldStationId#" cfsqltype="cf_sql_integer">
+              AND p_order_id <> <cfqueryparam value="#pOrderId#" cfsqltype="cf_sql_integer">
+              AND status IN (1, 2)
+              AND start_date IS NOT NULL
+              AND finish_date IS NOT NULL
+              AND start_date >= <cfqueryparam value="#createODBCDateTime(chkOrder.old_finish_date)#" cfsqltype="cf_sql_timestamp">
+            ORDER BY start_date ASC
+        </cfquery>
+
+        <cfloop query="qOldFollowingOrders">
+            <cfset shiftedStart = dateAdd("n", -oldDurationMins, qOldFollowingOrders.start_date)>
+            <cfset shiftedEnd   = dateAdd("n", -oldDurationMins, qOldFollowingOrders.finish_date)>
+
+            <cfquery datasource="boyahane">
+                UPDATE production_orders
+                SET start_date  = <cfqueryparam value="#createODBCDateTime(shiftedStart)#" cfsqltype="cf_sql_timestamp">,
+                    finish_date = <cfqueryparam value="#createODBCDateTime(shiftedEnd)#"   cfsqltype="cf_sql_timestamp">,
+                    update_date = CURRENT_TIMESTAMP
+                WHERE p_order_id = <cfqueryparam value="#qOldFollowingOrders.p_order_id#" cfsqltype="cf_sql_integer">
+            </cfquery>
+
+            <cfset arrayAppend(response.shifted_orders, {
+                "p_order_id" : val(qOldFollowingOrders.p_order_id),
+                "start_date" : dateFormat(shiftedStart,"yyyy-mm-dd") & "T" & timeFormat(shiftedStart,"HH:mm:ss"),
+                "finish_date": dateFormat(shiftedEnd,  "yyyy-mm-dd") & "T" & timeFormat(shiftedEnd,  "HH:mm:ss")
+            })>
+        </cfloop>
+    </cfif>
+
+    <cfset response.shifted_count = arrayLen(response.shifted_orders)>
 
     <cfset response.success          = true>
     <cfset response.message          = "Emir planlandı.">

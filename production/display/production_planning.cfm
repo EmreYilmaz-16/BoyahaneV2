@@ -1794,7 +1794,18 @@ function syncAppointmentUpdate(apptData) {
             interval_minutes: getCurrentCellDuration(),
             snap_back_minutes: getCurrentCellDuration()
         },
-        dataType: 'json'
+        dataType: 'json',
+        success: function(resp) {
+            if (!resp || !resp.success) {
+                showToast((resp && resp.message) || 'Plan güncellenemedi.', 'danger');
+                return;
+            }
+            plannedLoadKey = '';
+            queueLoadVisibleAppointments();
+        },
+        error: function() {
+            showToast('Plan güncellenemedi.', 'danger');
+        }
     });
 }
 
