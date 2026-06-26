@@ -112,6 +112,7 @@
     <div class="tl-tools">
       <select id="daySelect"><option value="3">3 gün</option><option value="7">7 gün</option><option value="14">14 gün</option><option value="30">30 gün</option></select>
       <button class="tl-btn" onclick="location.reload()">Yenile</button>
+      <button class="tl-btn" onclick="location.href='?fuseaction=production.production_timeline_vis&days='+document.getElementById('daySelect').value">Vis Timeline Prototipi</button>
       <div class="tl-modebar" title="Bırakma davranışını seçin">
         <button type="button" class="tl-mode active" data-mode="insert">Ötele / araya koy</button>
         <button type="button" class="tl-mode" data-mode="move">Boşluğa taşı</button>
