@@ -128,7 +128,7 @@
               AND p_order_id <> <cfqueryparam value="#pOrderId#" cfsqltype="cf_sql_integer">
               AND status IN (1, 2)
               AND finish_date IS NOT NULL
-              AND finish_date > <cfqueryparam value="#createODBCDateTime(rawCellStart)#" cfsqltype="cf_sql_timestamp">
+              AND finish_date >= <cfqueryparam value="#createODBCDateTime(rawCellStart)#" cfsqltype="cf_sql_timestamp">
               AND finish_date <= <cfqueryparam value="#createODBCDateTime(rawCellEnd)#" cfsqltype="cf_sql_timestamp">
             ORDER BY finish_date DESC
         </cfquery>
