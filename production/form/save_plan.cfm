@@ -234,23 +234,35 @@
             ORDER BY start_date ASC
         </cfquery>
 
+        <cfset cascadeEnd = rawFinish>
         <cfloop query="qFollowingOrders">
-            <cfset shiftedStart = dateAdd("n", safeMins, qFollowingOrders.start_date)>
-            <cfset shiftedEnd   = dateAdd("n", safeMins, qFollowingOrders.finish_date)>
+            <!---
+                Sadece yeni planın gerçek bitişinden önce başlayan emirleri ötele.
+                Arada boşluk varsa (örn. yeni emir 10:00'da bitiyor, sonraki 10:10'da
+                başlıyorsa) sonraki emirlere dokunma. Çakışan emir ötelenince zincirde
+                bir sonraki emirle çakışırsa cascadeEnd ilerleyerek yalnızca gerekli
+                emirleri kaydırır.
+            --->
+            <cfif qFollowingOrders.start_date lt cascadeEnd>
+                <cfset shiftMins = dateDiff("n", qFollowingOrders.start_date, cascadeEnd)>
+                <cfset shiftedStart = dateAdd("n", shiftMins, qFollowingOrders.start_date)>
+                <cfset shiftedEnd   = dateAdd("n", shiftMins, qFollowingOrders.finish_date)>
+                <cfset cascadeEnd   = shiftedEnd>
 
-            <cfquery datasource="boyahane">
-                UPDATE production_orders
-                SET start_date  = <cfqueryparam value="#createODBCDateTime(shiftedStart)#" cfsqltype="cf_sql_timestamp">,
-                    finish_date = <cfqueryparam value="#createODBCDateTime(shiftedEnd)#"   cfsqltype="cf_sql_timestamp">,
-                    update_date = CURRENT_TIMESTAMP
-                WHERE p_order_id = <cfqueryparam value="#qFollowingOrders.p_order_id#" cfsqltype="cf_sql_integer">
-            </cfquery>
+                <cfquery datasource="boyahane">
+                    UPDATE production_orders
+                    SET start_date  = <cfqueryparam value="#createODBCDateTime(shiftedStart)#" cfsqltype="cf_sql_timestamp">,
+                        finish_date = <cfqueryparam value="#createODBCDateTime(shiftedEnd)#"   cfsqltype="cf_sql_timestamp">,
+                        update_date = CURRENT_TIMESTAMP
+                    WHERE p_order_id = <cfqueryparam value="#qFollowingOrders.p_order_id#" cfsqltype="cf_sql_integer">
+                </cfquery>
 
-            <cfset arrayAppend(response.shifted_orders, {
-                "p_order_id" : val(qFollowingOrders.p_order_id),
-                "start_date" : dateFormat(shiftedStart,"yyyy-mm-dd") & "T" & timeFormat(shiftedStart,"HH:mm:ss"),
-                "finish_date": dateFormat(shiftedEnd,  "yyyy-mm-dd") & "T" & timeFormat(shiftedEnd,  "HH:mm:ss")
-            })>
+                <cfset arrayAppend(response.shifted_orders, {
+                    "p_order_id" : val(qFollowingOrders.p_order_id),
+                    "start_date" : dateFormat(shiftedStart,"yyyy-mm-dd") & "T" & timeFormat(shiftedStart,"HH:mm:ss"),
+                    "finish_date": dateFormat(shiftedEnd,  "yyyy-mm-dd") & "T" & timeFormat(shiftedEnd,  "HH:mm:ss")
+                })>
+            </cfif>
         </cfloop>
     </cfif>
 
