@@ -6,6 +6,40 @@
 <cfset timelineStart = createDateTime(year(now()), month(now()), day(now()), 0, 0, 0)>
 <cfset timelineEnd = dateAdd("d", viewDays, timelineStart)>
 
+<cfset currentUserId = 0>
+<cfif structKeyExists(session, "user") AND structKeyExists(session.user, "id") AND isNumeric(session.user.id)>
+    <cfset currentUserId = val(session.user.id)>
+<cfelseif structKeyExists(session, "ep") AND structKeyExists(session.ep, "userid") AND isNumeric(session.ep.userid)>
+    <cfset currentUserId = val(session.ep.userid)>
+</cfif>
+
+<cfset defaultLabelFields = "plan_rn,renk_kodu,renk_adi,firma_adi,sure">
+<cfset savedLabelFields = defaultLabelFields>
+<cfif currentUserId gt 0>
+    <cftry>
+        <cfquery datasource="boyahane">
+            CREATE TABLE IF NOT EXISTS production_user_preferences (
+                user_id INTEGER NOT NULL,
+                pref_key VARCHAR(100) NOT NULL,
+                pref_value TEXT,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (user_id, pref_key)
+            )
+        </cfquery>
+        <cfquery name="qTimelinePrefs" datasource="boyahane">
+            SELECT pref_value
+            FROM production_user_preferences
+            WHERE user_id = <cfqueryparam value="#currentUserId#" cfsqltype="cf_sql_integer">
+              AND pref_key = <cfqueryparam value="production_timeline_vis_label_fields" cfsqltype="cf_sql_varchar">
+        </cfquery>
+        <cfif qTimelinePrefs.recordCount>
+            <cfset savedLabelFields = qTimelinePrefs.pref_value>
+        </cfif>
+        <cfcatch></cfcatch>
+    </cftry>
+</cfif>
+<cfset savedLabelFieldsArr = listToArray(savedLabelFields)>
+
 <cfquery name="qUnplanned" datasource="boyahane">
     SELECT po.p_order_id,
            po.p_order_no,
@@ -175,7 +209,7 @@ function pad(n){return n<10?'0'+n:n;} function serverDate(d){return d.getFullYea
 function snapDate(d){var ms=5*60000;return new Date(Math.round(d.getTime()/ms)*ms);} function addMins(d,m){return new Date(d.getTime()+m*60000);}
 function toast(m,ok){var t=document.createElement('div');t.className='ptv-toast';t.style.background=ok?'##16a34a':'##dc2626';t.textContent=m||'';document.body.appendChild(t);setTimeout(function(){t.remove();},3200);}
 var LABEL_FIELDS=[{key:'plan_rn',label:'PlanRN',getValue:function(d){return d.p_order_no||(d.p_order_id?'##'+d.p_order_id:'');}},{key:'parti_rn',label:'PartiRN',getValue:function(d){return d.lot_no||'';}},{key:'firma_adi',label:'FirmaAdi',getValue:function(d){return d.company_name||'';}},{key:'kumas_cinsi',label:'Kumaş Cinsi',getValue:function(d){return d.stock_code||'';}},{key:'renk_kodu',label:'RenkKodu',getValue:function(d){return d.color_code||'';}},{key:'renk_adi',label:'RenkAdi',getValue:function(d){return d.color_name||'';}},{key:'kg',label:'Kg',getValue:function(d){return d.quantity?(Math.round(Number(d.quantity)*100)/100+' kg'):'';}},{key:'sure',label:'Süre',getValue:function(d){return Math.round((d.total_op_minutes||480)/60*10)/10+' sa';}},{key:'plan_bas',label:'Planlanan Başlangıç',getValue:function(d){return d.startDate?fmtDate(d.startDate):'';}},{key:'plan_bit',label:'Planlanan Bitiş',getValue:function(d){return d.endDate?fmtDate(d.endDate):'';}}];
-var selectedFields=new Set(['plan_rn','renk_kodu','renk_adi','firma_adi','sure']);
+var selectedFields=new Set(#serializeJSON(savedLabelFieldsArr)#);
 function selectedLabelParts(o){var parts=[];LABEL_FIELDS.forEach(function(f){if(!selectedFields.has(f.key))return;var v=f.getValue(o);if(v)parts.push({key:f.key,label:f.label,value:v});});return parts;}
 function itemContent(o){var parts=selectedLabelParts(o), title=parts.length?parts.shift().value:(o.p_order_no||'');return '<div class="job-title">'+enc(title)+'</div><div class="job-sub">'+parts.map(function(p){return enc(p.value);}).join(' · ')+'</div>';}
 function statusLabel(status){status=Number(status||1);return status===1?'Planlandı':(status===2?'Devam Ediyor':(status===5?'Tamamlandı':(status===9?'İptal':'Bilinmiyor')));}function itemClass(o){var cls='production-job';if(Number(o.active_pause_count||0)>0)cls+=' paused';else if(Number(o.status)===2)cls+=' active';else if(Number(o.status)===5)cls+=' completed';if(o.is_urgent)cls+=' urgent';return cls;}
@@ -194,9 +228,11 @@ function applyGroupFilter(val){activeGroupId=parseInt(val,10)||0;refreshTimeline
 function mergePlannedOrders(data){PLANNED=data||[];refreshTimelineFilter();}
 function initSabitlerDropdown(){var body=document.getElementById('sabitlerBody');if(!body)return;body.innerHTML='';LABEL_FIELDS.forEach(function(f){var lbl=document.createElement('label');lbl.className='sd-item';var chk=document.createElement('input');chk.type='checkbox';chk.checked=selectedFields.has(f.key);chk.onchange=function(e){toggleField(f.key,e.target.checked);};lbl.appendChild(chk);lbl.appendChild(document.createTextNode(f.label));body.appendChild(lbl);});}
 function toggleSabitlerDropdown(e){if(e)e.stopPropagation();var btn=document.getElementById('sabitlerBtn'),dd=document.getElementById('sabitlerDropdown');if(!btn||!dd)return;var open=dd.classList.toggle('open');btn.classList.toggle('open',open);}
-function toggleField(key,checked){if(checked)selectedFields.add(key);else selectedFields.delete(key);refreshVisuals();}
-function selectAllFields(){LABEL_FIELDS.forEach(function(f){selectedFields.add(f.key);});initSabitlerDropdown();refreshVisuals();}
-function clearAllFields(){selectedFields.clear();initSabitlerDropdown();refreshVisuals();}
+function saveSabitlerPreferences(){var fields=Array.from(selectedFields);try{window.localStorage&&localStorage.setItem('production_timeline_vis_label_fields',fields.join(','));}catch(e){}fetch('/production/form/save_timeline_preferences.cfm',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded','Accept':'application/json'},body:new URLSearchParams({selected_fields:fields.join(',')})}).then(function(r){return r.json();}).then(function(res){if(res&&!res.success)toast(res.message||'Sabitler kaydedilemedi.',false);}).catch(function(){toast('Sabitler kaydedilemedi.',false);});}
+function loadLocalSabitlerFallback(){if(selectedFields.size)return;try{var raw=window.localStorage&&localStorage.getItem('production_timeline_vis_label_fields');if(raw){raw.split(',').forEach(function(k){if(k)selectedFields.add(k);});}}catch(e){}if(!selectedFields.size){['plan_rn','renk_kodu','renk_adi','firma_adi','sure'].forEach(function(k){selectedFields.add(k);});}}
+function toggleField(key,checked){if(checked)selectedFields.add(key);else selectedFields.delete(key);saveSabitlerPreferences();refreshVisuals();}
+function selectAllFields(){LABEL_FIELDS.forEach(function(f){selectedFields.add(f.key);});saveSabitlerPreferences();initSabitlerDropdown();refreshVisuals();}
+function clearAllFields(){selectedFields.clear();saveSabitlerPreferences();initSabitlerDropdown();refreshVisuals();}
 function refreshVisuals(){renderOrders();refreshTimelineFilter();}
 document.addEventListener('click',function(e){var dd=document.getElementById('sabitlerDropdown'),btn=document.getElementById('sabitlerBtn');if(dd&&dd.classList.contains('open')&&!dd.contains(e.target)&&btn&&!btn.contains(e.target)){dd.classList.remove('open');btn.classList.remove('open');}});
 function reloadPlannedRange(startDate,endDate,showToast){if(!items)return;var seq=++plannedLoadSeq, qs=new URLSearchParams({start_date:rangeDate(startDate),end_date:rangeDate(endDate)});fetch('/production/form/get_planned_orders.cfm?'+qs.toString(),{headers:{'Accept':'application/json'}}).then(function(r){return r.json();}).then(function(res){if(seq!==plannedLoadSeq)return;if(res&&res.success){mergePlannedOrders(res.data||[]);if(showToast)toast('Planlı emirler güncellendi.',true);}else if(showToast)toast((res&&res.message)||'Planlı emirler alınamadı.',false);}).catch(function(){if(showToast)toast('Planlı emirler alınamadı.',false);});}
@@ -209,6 +245,6 @@ function orderCardContent(o){var parts=selectedLabelParts(o), title=parts.length
 function renderOrders(){var q=(document.getElementById('visOrderSearch').value||'').toLowerCase(), el=document.getElementById('visOrderList');el.innerHTML='';UNPLANNED.filter(function(o){return !q || JSON.stringify(o).toLowerCase().indexOf(q)>-1;}).forEach(function(o){var c=document.createElement('div');c.className='ptv-order-card '+(o.is_urgent?'urgent':'');c.draggable=true;c.dataset.id=o.p_order_id;c.innerHTML=orderCardContent(o);c.addEventListener('mousedown',function(ev){ptvLog('[PTV] card mousedown',{id:o.p_order_id,target:ev.target});});c.addEventListener('dragstart',function(ev){draggedOrder=o;ev.dataTransfer.effectAllowed='move';ev.dataTransfer.setData('text/plain',JSON.stringify(o));ev.dataTransfer.setData('application/x-production-order',String(o.p_order_id));ptvLog('[PTV] card dragstart',{id:o.p_order_id,types:Array.prototype.slice.call(ev.dataTransfer.types||[])});});c.addEventListener('dragend',function(ev){ptvLog('[PTV] card dragend',{id:o.p_order_id,dropEffect:ev.dataTransfer&&ev.dataTransfer.dropEffect});draggedOrder=null;});el.appendChild(c);});ptvLog('[PTV] renderOrders',{count:el.children.length});}
 function buildTimeline(){if(!VisTimeline.Timeline||!VisTimeline.DataSet){toast('Vis Timeline kütüphanesi yüklenemedi.',false);return;}STATIONS=getActiveStations();var visible=activeStationMap();groups=new VisTimeline.DataSet(STATIONS);items=new VisTimeline.DataSet(PLANNED.filter(function(o){return visible[String(o.station_id)];}).map(function(o){return {id:o.p_order_id, group:o.station_id, start:o.startDate, end:o.endDate, content:itemContent(o), className:itemClass(o), order:o};}));timeline=new VisTimeline.Timeline(document.getElementById('visProductionTimeline'),items,groups,{start:START,end:INITIAL_END,min:START,max:END,zoomMin:10*60*1000,stack:false,editable:{updateTime:true,updateGroup:true,add:false,remove:false,overrideItems:false},orientation:'top',margin:{item:10,axis:8},snap:function(date){return snapDate(date);},onMove:function(item,callback){var start=snapDate(new Date(item.start)), order=(items.get(item.id)||{}).order||{p_order_id:item.id,total_op_minutes:480};ptvLog('[PTV] internal onMove',{id:item.id,group:item.group,start:start});savePlan(item.id,item.group,start,1,function(ok,res){if(ok){applyPlanResult(order,item.group,res);item.start=res.start_date;item.end=res.finish_date;callback(item);}else callback(null);});}});timeline.on('rangechanged',function(props){clearTimeout(plannedLoadTimer);plannedLoadTimer=setTimeout(function(){reloadPlannedRange(new Date(props.start),new Date(props.end),false);},450);});timeline.on('select',function(props){if(props.items&&props.items.length){openOrderModal(findOrder(props.items[0]));}});timeline.on('doubleClick',function(props){if(props.item){openOrderModal(findOrder(props.item));}});var container=document.getElementById('visProductionTimeline');ptvLog('[PTV] buildTimeline ready',{stations:STATIONS.length,planned:PLANNED.length,container:!!container});function onTimelineDrop(ev){if(!draggedOrder)return;ev.preventDefault();ev.stopPropagation();var props=timeline.getEventProperties(ev), raw=ev.dataTransfer.getData('text/plain'), stationId=groupFromDrop(ev,props);ptvLog('[PTV] timeline drop',{rawLength:raw&&raw.length,types:Array.prototype.slice.call(ev.dataTransfer.types||[]),group:props.group,stationId:stationId,time:props.time,draggedOrder:draggedOrder&&draggedOrder.p_order_id,target:ev.target&&ev.target.className});if(!stationId){toast('Emri bir makine satırının üzerine bırakın.',false);return;}if(!props.time){toast('Emri zaman çizelgesi alanına bırakın.',false);return;}if(!raw&&!draggedOrder){toast('Sürüklenen emir okunamadı.',false);return;}try{var o=draggedOrder||JSON.parse(raw), start=snapDate(props.time);ptvLog('[PTV] savePlan start',{id:o.p_order_id,stationId:stationId,start:start});savePlan(o.p_order_id,stationId,start,1,function(ok,res){ptvLog('[PTV] savePlan done',{id:o.p_order_id,ok:ok});if(ok)applyPlanResult(o,stationId,res);},props.time);}catch(e){ptvLog('[PTV] drop parse error',e);toast('Sürüklenen emir okunamadı.',false);}finally{draggedOrder=null;}}container.addEventListener('dragenter',function(ev){ptvLog('[PTV] timeline dragenter',{target:ev.target&&ev.target.className,draggedOrder:draggedOrder&&draggedOrder.p_order_id});},true);container.addEventListener('dragover',function(ev){if(!draggedOrder)return;ev.preventDefault();ev.stopPropagation();ev.dataTransfer.dropEffect='move';var props=timeline.getEventProperties(ev);ptvLog('[PTV] timeline dragover',{x:ev.clientX,y:ev.clientY,group:props.group,time:props.time,draggedOrder:draggedOrder&&draggedOrder.p_order_id});},true);container.addEventListener('drop',onTimelineDrop,true);}
 function savePlan(id,stationId,start,shiftFollowing,done,cellStart){var data={p_order_id:id,station_id:stationId,start_date:serverDate(start),cell_start_date:serverDate(cellStart||start),status:1,shift_following:shiftFollowing?1:0,interval_minutes:5,snap_back_minutes:5};function ok(res){toast(res.message,res.success);if(done)done(!!res.success,res||{});}function fail(){toast('Plan kaydedilemedi.',false);if(done)done(false,{});}if(window.jQuery){$.ajax({url:'/production/form/save_plan.cfm',method:'POST',data:data,dataType:'json'}).done(ok).fail(fail);}else{fetch('/production/form/save_plan.cfm',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(data)}).then(function(r){return r.json();}).then(ok).catch(fail);}}
-document.getElementById('visOrderSearch').oninput=renderOrders;populateGroupFilter();initSabitlerDropdown();renderOrders();buildTimeline();
+document.getElementById('visOrderSearch').oninput=renderOrders;loadLocalSabitlerFallback();populateGroupFilter();initSabitlerDropdown();renderOrders();buildTimeline();
 </script>
 </cfoutput>
