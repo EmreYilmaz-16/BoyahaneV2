@@ -32,6 +32,7 @@
 <!--- Seçili emir (URL'den) --->
 <cfparam name="url.p_order_id" default="0">
 <cfset selOrderId = isNumeric(url.p_order_id) AND val(url.p_order_id) gt 0 ? val(url.p_order_id) : 0>
+<cfset closedPauseMs = 0>
 
 <!--- Seçili emir detayı + duruş geçmişi --->
 <cfif selOrderId gt 0>
@@ -69,13 +70,31 @@
         ORDER BY sp.prod_pause_id DESC
     </cfquery>
 
+    <!--- Sayfa yenilense bile devam eden duruşu geri yükle. --->
+    <cfquery name="qActivePause" datasource="boyahane">
+        SELECT sp.prod_pause_id,
+               sp.prod_pause_type_id,
+               COALESCE(sp.prod_detail, '') AS prod_detail,
+               sp.is_working_time,
+               sp.duration_start_date
+        FROM setup_prod_pause sp
+        WHERE sp.p_order_id = <cfqueryparam value="#selOrderId#" cfsqltype="cf_sql_integer">
+          AND sp.duration_finish_date IS NULL
+        ORDER BY sp.prod_pause_id DESC
+        LIMIT 1
+    </cfquery>
+
     <!--- Toplam duruş dakikası --->
     <cfset totalPauseMin = 0>
     <cfloop query="qPauses">
         <cfset totalPauseMin += val(prod_duration)>
+        <cfif isDate(duration_start_date) AND isDate(duration_finish_date)>
+            <cfset closedPauseMs += max(0, dateDiff("s", duration_start_date, duration_finish_date) * 1000)>
+        </cfif>
     </cfloop>
 <cfelse>
     <cfset qSel = queryNew("")>
+    <cfset qActivePause = queryNew("")>
 </cfif>
 
 <!--- Seçili emir için JS değişkenleri --->
@@ -83,8 +102,22 @@
 <cfset jsStatus      = selOrderId gt 0 AND qSel.recordCount ? val(qSel.status) : 0>
 <cfset jsQty         = selOrderId gt 0 AND qSel.recordCount ? val(qSel.quantity ?: 0) : 0>
 <cfset jsStartReal   = "">
+<cfset jsActivePauseId = 0>
+<cfset jsActivePauseStart = 0>
+<cfset jsActivePauseType = "">
+<cfset jsActivePauseDetail = "">
+<cfset jsActivePauseWorking = false>
 <cfif selOrderId gt 0 AND qSel.recordCount AND isDate(qSel.start_date_real)>
     <cfset jsStartReal = dateFormat(qSel.start_date_real,"yyyy-mm-dd") & "T" & timeFormat(qSel.start_date_real,"HH:mm:ss") & "Z">
+</cfif>
+<cfif selOrderId gt 0 AND qActivePause.recordCount>
+    <cfset jsActivePauseId = val(qActivePause.prod_pause_id)>
+    <cfset jsActivePauseType = qActivePause.prod_pause_type_id ?: "">
+    <cfset jsActivePauseDetail = qActivePause.prod_detail ?: "">
+    <cfset jsActivePauseWorking = qActivePause.is_working_time ? true : false>
+    <cfif isDate(qActivePause.duration_start_date)>
+        <cfset jsActivePauseStart = qActivePause.duration_start_date.getTime()>
+    </cfif>
 </cfif>
 
 <cfoutput>
@@ -635,6 +668,8 @@ option.status-2 { font-weight: 600; color: ##16a34a; }
                         <td style="font-size:.78rem; color:##64748b;">
                             <cfif isDate(duration_start_date) AND isDate(duration_finish_date)>
                                 #timeFormat(duration_start_date,"HH:mm")# – #timeFormat(duration_finish_date,"HH:mm")#
+                            <cfelseif isDate(duration_start_date)>
+                                #timeFormat(duration_start_date,"HH:mm")# – <strong>Devam ediyor</strong>
                             <cfelse>—</cfif>
                         </td>
                         <td>#len(prod_detail) ? htmlEditFormat(prod_detail) : "—"#</td>
@@ -706,7 +741,7 @@ option.status-2 { font-weight: 600; color: ##16a34a; }
         </div>
         <div class="mes-modal-footer">
             <button class="mes-btn-sm mes-btn-sm-cancel" onclick="closePauseModal()">İptal</button>
-            <button class="mes-btn-sm" style="background:linear-gradient(135deg,##d97706,##f59e0b);color:##fff;" onclick="startPause()">
+            <button class="mes-btn-sm" id="btnStartPause" style="background:linear-gradient(135deg,##d97706,##f59e0b);color:##fff;" onclick="startPause()">
                 <i class="fas fa-pause"></i> Duruşa Geç
             </button>
         </div>
@@ -804,11 +839,12 @@ option.status-2 { font-weight: 600; color: ##16a34a; }
     /* Production timer */
     var prodInterval = null;
     var prodStartTs  = startReal ? new Date(startReal).getTime() : 0;
-    var prodPausedMs = 0;   /* total ms paused so far (to offset prod timer) */
+    var prodPausedMs = #val(closedPauseMs)#; /* DB'deki tamamlanmış duruşlar */
 
     /* Pause timer state */
     var pauseInterval  = null;
     var pauseStartTs   = 0;    /* ms timestamp when current pause started */
+    var pauseId        = #val(jsActivePauseId)#;
     var pauseTypeId    = '';
     var pauseDetail    = '';
     var pauseIsWorking = false;
@@ -818,6 +854,14 @@ option.status-2 { font-weight: 600; color: ##16a34a; }
     ================================================================ */
     if (status === 2 && prodStartTs > 0) {
         startProdTimer();
+    }
+    if (pauseId && #val(jsActivePauseStart)# > 0) {
+        pauseStartTs   = #val(jsActivePauseStart)#;
+        pauseTypeId    = "#jsStringFormat(jsActivePauseType)#";
+        pauseDetail    = "#jsStringFormat(jsActivePauseDetail)#";
+        pauseIsWorking = #jsActivePauseWorking ? "true" : "false"#;
+        showActivePauseUi();
+        startPauseTimer(pauseStartTs);
     }
 
     /* ================================================================
@@ -862,8 +906,8 @@ option.status-2 { font-weight: 600; color: ##16a34a; }
     /* ================================================================
        PAUSE TIMER
     ================================================================ */
-    function startPauseTimer() {
-        pauseStartTs = Date.now();
+    function startPauseTimer(startTs) {
+        pauseStartTs = startTs || Date.now();
         updatePauseTimer();
         pauseInterval = setInterval(updatePauseTimer, 1000);
     }
@@ -876,6 +920,21 @@ option.status-2 { font-weight: 600; color: ##16a34a; }
     function stopPauseTimer() {
         clearInterval(pauseInterval);
         pauseInterval = null;
+    }
+
+    function showActivePauseUi() {
+        stopProdTimer();
+        document.getElementById('pauseLiveCard').style.display = 'block';
+        document.getElementById('timerCard').style.opacity = '0.35';
+        document.getElementById('actionButtons').style.display = 'none';
+        document.getElementById('devamEtArea').style.display = 'block';
+    }
+
+    function hideActivePauseUi() {
+        document.getElementById('pauseLiveCard').style.display = 'none';
+        document.getElementById('timerCard').style.opacity = '1';
+        document.getElementById('actionButtons').style.display = 'flex';
+        document.getElementById('devamEtArea').style.display = 'none';
     }
 
     function formatSec(total) {
@@ -903,35 +962,48 @@ option.status-2 { font-weight: 600; color: ##16a34a; }
         pauseDetail    = document.getElementById('pauseDetail').value.trim();
         pauseIsWorking = document.getElementById('pauseIsWorking').checked;
 
-        closePauseModal();
+        var btn = document.getElementById('btnStartPause');
+        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Başlatılıyor...'; }
 
-        /* Stop production timer — show pause timer */
-        stopProdTimer();
-
-        document.getElementById('pauseLiveCard').style.display  = 'block';
-        document.getElementById('timerCard').style.opacity      = '0.35';
-        document.getElementById('actionButtons').style.display  = 'none';
-        document.getElementById('devamEtArea').style.display    = 'block';
-
-        startPauseTimer();
+        $.ajax({
+            url: 'index.cfm?fuseaction=production.save_production_pause',
+            type: 'POST',
+            dataType: 'json',
+            data: {
+                action: 'start',
+                p_order_id: orderId,
+                pause_type_id: pauseTypeId,
+                prod_detail: pauseDetail,
+                is_working_time: pauseIsWorking ? '1' : '0'
+            },
+            success: function(r) {
+                if (r && r.success) {
+                    pauseId = parseInt(r.prod_pause_id, 10);
+                    pauseStartTs = r.duration_start_ms
+                        ? Number(r.duration_start_ms)
+                        : Date.now();
+                    closePauseModal();
+                    showActivePauseUi();
+                    startPauseTimer(pauseStartTs);
+                    loadPauseHistory();
+                    showToast('Duruş başlatıldı.', 'success');
+                } else {
+                    showToast((r && r.message) ? r.message : 'Duruş başlatılamadı.', 'error');
+                }
+            },
+            error: function() {
+                showToast('Sunucu hatası.', 'error');
+            },
+            complete: function() {
+                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-pause"></i> Duruşa Geç'; }
+            }
+        });
     };
 
     /* ================================================================
        "DEVAM ET" — end pause, save to DB, resume production
     ================================================================ */
     window.endPause = function() {
-        var pauseEndTs = Date.now();
-        stopPauseTimer();
-
-        var durationMs  = pauseEndTs - pauseStartTs;
-        var durationMin = Math.max(1, Math.round(durationMs / 60000));
-
-        /* accumulate paused millis so production timer stays accurate */
-        prodPausedMs += durationMs;
-
-        var startIso = toISOLocal(new Date(pauseStartTs));
-        var endIso   = toISOLocal(new Date(pauseEndTs));
-
         /* Disable button immediately to prevent double-click */
         var btn = document.querySelector('##devamEtArea button');
         if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Kaydediliyor...'; }
@@ -940,17 +1012,20 @@ option.status-2 { font-weight: 600; color: ##16a34a; }
             url:  'index.cfm?fuseaction=production.save_production_pause',
             type: 'POST',
             data: {
-                p_order_id:           orderId,
-                pause_type_id:        pauseTypeId,
-                prod_duration:        durationMin,
-                prod_detail:          pauseDetail,
-                duration_start_date:  startIso,
-                duration_finish_date: endIso,
-                is_working_time:      pauseIsWorking ? '1' : '0'
+                action: 'end',
+                p_order_id: orderId,
+                prod_pause_id: pauseId
             },
             dataType: 'json',
             success: function(r) {
                 if (r && r.success) {
+                    var durationMs = Math.max(0, Date.now() - pauseStartTs);
+                    var durationMin = parseInt(r.prod_duration, 10) || 0;
+                    stopPauseTimer();
+
+                    /* accumulate paused millis so production timer stays accurate */
+                    prodPausedMs += durationMs;
+
                     /* Update total pause badge without reloading */
                     var badge = document.getElementById('totalPauseBadge');
                     var span  = document.getElementById('totalPauseMinDisplay');
@@ -966,11 +1041,8 @@ option.status-2 { font-weight: 600; color: ##16a34a; }
                     loadPauseHistory();
 
                     /* Restore production UI */
-                    document.getElementById('pauseLiveCard').style.display  = 'none';
-                    document.getElementById('timerCard').style.opacity      = '1';
-                    document.getElementById('actionButtons').style.display  = 'flex';
-                    document.getElementById('devamEtArea').style.display    = 'none';
-
+                    hideActivePauseUi();
+                    pauseId = 0;
                     resumeProdTimer();
                 } else {
                     showToast((r && r.message) ? r.message : 'Kayıt hatası.', 'error');
@@ -1010,7 +1082,8 @@ option.status-2 { font-weight: 600; color: ##16a34a; }
                     '</tr></thead><tbody>';
                 data.rows.forEach(function(r) {
                     var timeRange = (r.duration_start_date && r.duration_finish_date)
-                        ? r.duration_start_date + ' – ' + r.duration_finish_date : '—';
+                        ? r.duration_start_date + ' – ' + r.duration_finish_date
+                        : (r.duration_start_date ? r.duration_start_date + ' – <strong>Devam ediyor</strong>' : '—');
                     html += '<tr>' +
                         '<td>' + (r.action_date || '—') + '</td>' +
                         '<td>' + (r.pause_type  || '—') + '</td>' +
@@ -1127,12 +1200,6 @@ option.status-2 { font-weight: 600; color: ##16a34a; }
             '"></i> ' + msg;
         t.classList.add('show');
         setTimeout(function() { t.classList.remove('show'); }, 3500);
-    }
-
-    function toISOLocal(d) {
-        var p = function(n) { return n < 10 ? '0'+n : n; };
-        return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate()) +
-               'T' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
     }
 
     document.querySelectorAll('.mes-modal-overlay').forEach(function(el) {
