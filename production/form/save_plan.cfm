@@ -17,6 +17,7 @@
     <cfparam name="form.start_date"  default="">
     <cfparam name="form.cell_start_date" default="">
     <cfparam name="form.status"      default="1">
+    <cfparam name="form.plan_water_amount" default="0">
     <cfparam name="form.shift_following" default="0">
     <cfparam name="form.interval_minutes" default="0">
     <cfparam name="form.snap_back_minutes" default="0">
@@ -24,6 +25,8 @@
     <cfset pOrderId  = isNumeric(form.p_order_id) AND val(form.p_order_id) gt 0 ? val(form.p_order_id) : 0>
     <cfset stationId = isNumeric(form.station_id) AND val(form.station_id) gt 0 ? val(form.station_id) : 0>
     <cfset statusVal = isNumeric(form.status) ? val(form.status) : 1>
+    <cfset planWaterAmount = isNumeric(form.plan_water_amount) ? val(form.plan_water_amount) : 0>
+    <cfif planWaterAmount lt 0><cfset planWaterAmount = 0></cfif>
     <cfset shiftFollowing = isNumeric(form.shift_following) AND val(form.shift_following) eq 1>
     <cfset intervalMins = isNumeric(form.interval_minutes) ? val(form.interval_minutes) : 0>
     <cfif intervalMins lt 0><cfset intervalMins = 0></cfif>
@@ -211,6 +214,7 @@
             station_id  = <cfqueryparam value="#stationId#"  cfsqltype="cf_sql_integer">,
             start_date  = <cfqueryparam value="#startDate#"  cfsqltype="cf_sql_timestamp">,
             finish_date = <cfqueryparam value="#finishDate#" cfsqltype="cf_sql_timestamp">,
+            plan_water_amount = <cfqueryparam value="#planWaterAmount#" cfsqltype="cf_sql_numeric">,
             status      = <cfqueryparam value="#statusVal#"  cfsqltype="cf_sql_integer">,
             update_date = CURRENT_TIMESTAMP
         WHERE p_order_id = <cfqueryparam value="#pOrderId#" cfsqltype="cf_sql_integer">

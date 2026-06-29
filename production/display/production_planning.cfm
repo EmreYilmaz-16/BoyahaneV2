@@ -16,6 +16,7 @@
            COALESCE(s.stock_code,'')            AS stock_code,
            po.start_date,
            po.finish_date,
+           COALESCE(po.plan_water_amount, 0) AS plan_water_amount,
            po.station_id,
            COALESCE(ws.station_name,'')         AS station_name,
            COALESCE(po.status, 1)               AS status,
@@ -44,6 +45,7 @@
            COALESCE(s.stock_code,'')            AS stock_code,
            po.start_date,
            po.finish_date,
+           COALESCE(po.plan_water_amount, 0) AS plan_water_amount,
            po.station_id,
            COALESCE(ws.station_name,'')         AS station_name,
            COALESCE(po.status, 1)               AS status,
@@ -135,7 +137,8 @@
         "status"      : val(status),
         "is_urgent"   : is_urgent,
         "start_date"  : isDate(start_date)  ? dateFormat(start_date, "yyyy-mm-dd")  & "T" & timeFormat(start_date,  "HH:mm:ss") : "",
-        "finish_date" : isDate(finish_date) ? dateFormat(finish_date,"yyyy-mm-dd")  & "T" & timeFormat(finish_date, "HH:mm:ss") : ""
+        "finish_date" : isDate(finish_date) ? dateFormat(finish_date,"yyyy-mm-dd")  & "T" & timeFormat(finish_date, "HH:mm:ss") : "",
+        "plan_water_amount" : isNumeric(plan_water_amount) ? val(plan_water_amount) : 0
     })>
 </cfloop>
 
@@ -170,7 +173,8 @@
         "startDate"          : dateFormat(sDate,"yyyy-mm-dd") & "T" & timeFormat(sDate, "HH:mm:ss"),
         "endDate"            : dateFormat(fDate,"yyyy-mm-dd") & "T" & timeFormat(fDate, "HH:mm:ss"),
         "text"               : (p_order_no ?: "Emir") & " | " & (color_code ?: "") & " " & (color_name ?: ""),
-        "resourceId"         : val(station_id)
+        "resourceId"         : val(station_id),
+        "plan_water_amount" : isNumeric(plan_water_amount) ? val(plan_water_amount) : 0
     })>
 </cfloop>
 
@@ -677,6 +681,10 @@
                     <div class="col-md-6">
                         <label class="form-label-sm">Bitiş Tarihi / Saati</label>
                         <input type="datetime-local" class="form-control-sm-custom" id="modalEndDate">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label-sm">Plan Su Miktarı</label>
+                        <input type="number" min="0" step="0.001" class="form-control-sm-custom" id="modalPlanWaterAmount" placeholder="Reçete kazan su miktarı">
                     </div>
                     <div class="col-12">
                         <label class="form-label-sm">Durum</label>
@@ -1575,6 +1583,7 @@ function openPlanModal(order, stationId, startDate, endDate) {
     document.getElementById('modalStartDate').value = toLocalDTInput(sd);
     document.getElementById('modalEndDate').value   = toLocalDTInput(ed);
     document.getElementById('modalStatus').value    = '1';
+    document.getElementById('modalPlanWaterAmount').value = order.plan_water_amount || '';
 
     planModalBs.show();
 }
@@ -1602,6 +1611,7 @@ function savePlan() {
     var startVal  = document.getElementById('modalStartDate').value;
     var endVal    = document.getElementById('modalEndDate').value;
     var statusVal = parseInt(document.getElementById('modalStatus').value, 10);
+    var planWaterVal = parseFloat(document.getElementById('modalPlanWaterAmount').value || '0') || 0;
 
     if (!stationId || isNaN(stationId)) {
         alert('Lütfen makina seçin.'); return;
@@ -1629,6 +1639,7 @@ function savePlan() {
             cell_start_date: startVal.replace('T',' '),
             finish_date: endVal.replace('T',' '),
             status     : statusVal,
+            plan_water_amount: planWaterVal,
             shift_following: pendingDrop.isEdit ? 0 : 1,
             interval_minutes: getCurrentCellDuration(),
             snap_back_minutes: getCurrentCellDuration()

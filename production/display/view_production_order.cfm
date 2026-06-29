@@ -178,7 +178,9 @@
 .vpo-action-btn.results { border-color: #7f8c8d; color: #7f8c8d; background: #fff; }
 .vpo-action-btn.results:hover { background: #7f8c8d; color: #fff; }
 .vpo-action-btn.edit    { border-color: var(--accent,#e67e22); color: var(--accent,#e67e22); background: #fff; }
+.vpo-action-btn.print   { border-color: #111827; color: #111827; background: #fff; }
 .vpo-action-btn.edit:hover { background: var(--accent,#e67e22); color: #fff; }
+.vpo-action-btn.print:hover { background: #111827; color: #fff; }
 #stocksGrid { height: 320px; }
 </style>
 
@@ -205,6 +207,7 @@
         </cfif>
         <a class="vpo-action-btn ops" href="index.cfm?fuseaction=production.view_production_operations&p_order_id=#pOrderId#"><i class="fas fa-cogs"></i>Operasyonlar</a>
         <a class="vpo-action-btn results" href="index.cfm?fuseaction=production.view_production_results&p_order_id=#pOrderId#"><i class="fas fa-clipboard-list"></i>Sonuçlar</a>
+        <a class="vpo-action-btn print" target="_blank" href="index.cfm?fuseaction=production.print_recipe&p_order_id=#pOrderId#"><i class="fas fa-print"></i>Reçete Yazdır</a>
         <cfif curStatus lt 5>
             <a class="vpo-action-btn edit" href="index.cfm?fuseaction=production.add_production_order&p_order_id=#pOrderId#"><i class="fas fa-edit"></i>Düzenle</a>
         </cfif>

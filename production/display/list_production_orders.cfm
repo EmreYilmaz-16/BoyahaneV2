@@ -204,7 +204,7 @@ function buildGrid() {
             },
             {
                 caption: 'İşlemler',
-                width: 180,
+                width: 220,
                 alignment: 'center',
                 allowFiltering: false,
                 allowSorting: false,
@@ -213,6 +213,8 @@ function buildGrid() {
                     var d = options.data;
                     $('<button class="btn btn-xs btn-outline-info me-1" title="Görüntüle"><i class="fas fa-eye"></i></button>')
                         .on('click', function(){ viewOrder(d.p_order_id); }).appendTo(container);
+                    $('<button class="btn btn-xs btn-outline-dark me-1" title="Reçete Yazdır"><i class="fas fa-print"></i></button>')
+                        .on('click', function(){ printRecipe(d.p_order_id); }).appendTo(container);
                     if (d.status < 5) {
                         $('<button class="btn btn-xs btn-outline-warning me-1" title="Düzenle"><i class="fas fa-edit"></i></button>')
                             .on('click', function(){ editOrder(d.p_order_id); }).appendTo(container);
@@ -230,6 +232,7 @@ function buildGrid() {
 function addOrder()       { window.location.href = 'index.cfm?fuseaction=production.add_production_order'; }
 function editOrder(id)    { window.location.href = 'index.cfm?fuseaction=production.add_production_order&p_order_id=' + id; }
 function viewOrder(id)    { window.location.href = 'index.cfm?fuseaction=production.view_production_order&p_order_id=' + id; }
+function printRecipe(id)  { window.open('index.cfm?fuseaction=production.print_recipe&p_order_id=' + id, '_blank'); }
 
 var _activeGroupField = null;
 function quickGroup(field) {
