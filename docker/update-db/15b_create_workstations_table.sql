@@ -21,6 +21,8 @@ CREATE TABLE workstations (
     active BOOLEAN,
     cost NUMERIC(18,6),
     cost_money VARCHAR(43),
+    min_water_amount NUMERIC(18,6),
+    max_water_amount NUMERIC(18,6),
     employee_number INTEGER,
     set_period_hour INTEGER,
     set_period_minute INTEGER,
@@ -72,3 +74,5 @@ CREATE INDEX idx_workstations_branch ON workstations(branch);
 COMMENT ON TABLE workstations IS 'Üretim iş istasyonları ve kapasiteleri';
 COMMENT ON COLUMN workstations.station_name IS 'İstasyon adı';
 COMMENT ON COLUMN workstations.capacity IS 'İstasyon kapasitesi';
+COMMENT ON COLUMN workstations.min_water_amount IS 'Minimum su miktarı';
+COMMENT ON COLUMN workstations.max_water_amount IS 'Maximum su miktarı';

@@ -134,6 +134,8 @@
 <cfset fActive   = editMode ? (getRec.active eq true OR getRec.active eq "true") : true>
 <cfset fCapacity = editMode ? (isNumeric(getRec.capacity) ? val(getRec.capacity) : 0) : 0>
 <cfset fCost     = editMode ? (isNumeric(getRec.cost) ? val(getRec.cost) : 0) : 0>
+<cfset fMinWater = editMode ? (isNumeric(getRec.min_water_amount) ? val(getRec.min_water_amount) : 0) : 0>
+<cfset fMaxWater = editMode ? (isNumeric(getRec.max_water_amount) ? val(getRec.max_water_amount) : 0) : 0>
 <cfset fCostMon  = editMode ? (getRec.cost_money ?: "") : "">
 <cfset fOutsrc   = editMode ? (isNumeric(getRec.outsource_partner) ? val(getRec.outsource_partner) : 0) : 0>
 <cfset fEmpNum   = editMode ? (isNumeric(getRec.employee_number) ? val(getRec.employee_number) : 0) : 0>
@@ -254,6 +256,14 @@ debug:
                     <div class="col-md-2">
                         <label class="form-label">Çalışan Sayısı</label>
                         <cfoutput><input type="number" min="0" class="form-control" id="f_employee_number" value="#fEmpNum#"></cfoutput>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Minimum Su Miktarı</label>
+                        <cfoutput><input type="number" min="0" step="any" class="form-control" id="f_min_water_amount" value="#fMinWater#"></cfoutput>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Maximum Su Miktarı</label>
+                        <cfoutput><input type="number" min="0" step="any" class="form-control" id="f_max_water_amount" value="#fMaxWater#"></cfoutput>
                     </div>
                 </div>
 
@@ -574,6 +584,8 @@ $(document).ready(function(){
                 capacity          : $('##f_capacity').val() || 0,
                 cost              : $('##f_cost').val() || 0,
                 cost_money        : $('##f_cost_money').val(),
+                min_water_amount  : $('##f_min_water_amount').val() || 0,
+                max_water_amount  : $('##f_max_water_amount').val() || 0,
                 outsource_partner : $('##f_outsource_partner').val() || 0,
                 employee_number   : $('##f_employee_number').val() || 0,
                 up_station        : $('##f_up_station').val() || 0,
