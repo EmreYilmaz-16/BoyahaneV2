@@ -12,6 +12,8 @@
     <cfparam name="form.capacity"          default="0">
     <cfparam name="form.cost"              default="0">
     <cfparam name="form.cost_money"        default="">
+    <cfparam name="form.min_water_amount"  default="0">
+    <cfparam name="form.max_water_amount"  default="0">
     <cfparam name="form.outsource_partner" default="0">
     <cfparam name="form.employee_number"   default="0">
     <cfparam name="form.up_station"        default="0">
@@ -30,6 +32,8 @@
     
     <cfset cap     = isNumeric(form.capacity) ? val(form.capacity) : 0>
     <cfset cost    = isNumeric(form.cost)     ? val(form.cost)     : 0>
+    <cfset minWater = isNumeric(form.min_water_amount) ? val(form.min_water_amount) : 0>
+    <cfset maxWater = isNumeric(form.max_water_amount) ? val(form.max_water_amount) : 0>
     <cfset empNum  = isNumeric(form.employee_number) ? val(form.employee_number) : 0>
     <cfset upSt    = isNumeric(form.up_station) AND val(form.up_station) gt 0 ? val(form.up_station) : javaCast("null","")>
     <cfset exitDepId  = isNumeric(form.exit_dep_id)       AND val(form.exit_dep_id)       gt 0 ? val(form.exit_dep_id)       : javaCast("null","")>
@@ -55,7 +59,8 @@
                 capacity          = <cfqueryparam value="#cap#"                      cfsqltype="cf_sql_integer">,
                 cost              = <cfqueryparam value="#cost#"                     cfsqltype="cf_sql_numeric">,
                 cost_money        = <cfqueryparam value="#trim(form.cost_money)#"    cfsqltype="cf_sql_varchar" null="#NOT len(trim(form.cost_money))#">,
-                
+                min_water_amount  = <cfqueryparam value="#minWater#"                 cfsqltype="cf_sql_numeric">,
+                max_water_amount  = <cfqueryparam value="#maxWater#"                 cfsqltype="cf_sql_numeric">,
                 employee_number   = <cfqueryparam value="#empNum#"                   cfsqltype="cf_sql_integer">,
                 up_station        = <cfqueryparam value="#isNull(upSt)?'':upSt#"     cfsqltype="cf_sql_integer" null="#isNull(upSt)#">,
                 comment           = <cfqueryparam value="#trim(form.comment)#"       cfsqltype="cf_sql_varchar" null="#NOT len(trim(form.comment))#">,
@@ -73,7 +78,8 @@
         <cfquery name="ins" datasource="boyahane">
             INSERT INTO workstations
                 (station_name, department, active, capacity, cost, cost_money,
-                  employee_number, up_station, comment,
+                 min_water_amount, max_water_amount,
+                 employee_number, up_station, comment,
                  exit_dep_id, exit_loc_id, enter_dep_id, enter_loc_id,
                  production_dep_id, production_loc_id, record_date)
             VALUES (
@@ -83,6 +89,8 @@
                 <cfqueryparam value="#cap#"                      cfsqltype="cf_sql_integer">,
                 <cfqueryparam value="#cost#"                     cfsqltype="cf_sql_numeric">,
                 <cfqueryparam value="#trim(form.cost_money)#"    cfsqltype="cf_sql_varchar" null="#NOT len(trim(form.cost_money))#">,
+                <cfqueryparam value="#minWater#"                 cfsqltype="cf_sql_numeric">,
+                <cfqueryparam value="#maxWater#"                 cfsqltype="cf_sql_numeric">,
                 <cfqueryparam value="#empNum#"                   cfsqltype="cf_sql_integer">,
                 <cfqueryparam value="#isNull(upSt)?'':upSt#"     cfsqltype="cf_sql_integer" null="#isNull(upSt)#">,
                 <cfqueryparam value="#trim(form.comment)#"       cfsqltype="cf_sql_varchar" null="#NOT len(trim(form.comment))#">,
