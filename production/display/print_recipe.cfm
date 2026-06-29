@@ -108,58 +108,82 @@
 <cfset partiCode = len(trim(getOrder.lot_no)) ? getOrder.lot_no : (len(trim(getOrder.group_lot_no)) ? getOrder.group_lot_no : getOrder.order_number)>
 
 <style>
-.recipe-page{width:210mm;min-height:297mm;margin:0 auto;background:##fff;color:##111;font-family:Arial,Helvetica,sans-serif;font-size:11px;padding:8mm;box-sizing:border-box}.recipe-box{border:2px solid ##111}.recipe-head{display:grid;grid-template-columns:1fr 235px 210px;border-bottom:2px solid ##111}.recipe-title{font-size:32px;font-weight:900;letter-spacing:16px;padding:8px 10px}.brand{font-family:Georgia,serif;font-style:italic;font-size:22px;letter-spacing:0;margin-left:12px}.head-mid{padding:6px 8px;font-size:14px;font-weight:700;line-height:1.7}.barcode{padding:5px 10px;text-align:center}.barcode-bars{height:44px;background:repeating-linear-gradient(90deg,##111 0 2px,transparent 2px 4px,##111 4px 5px,transparent 5px 8px)}.info-grid{display:grid;grid-template-columns:1.45fr .95fr;border-bottom:2px solid ##111}.info-left,.info-right{padding:7px 10px}.field{display:grid;grid-template-columns:120px 1fr;line-height:1.75;font-size:15px}.field .lbl{font-weight:700}.field .val{font-weight:800}.party-table,.program-table{width:100%;border-collapse:collapse}.party-table th,.party-table td,.program-table th,.program-table td{border:1px solid ##111;padding:3px 5px}.party-table th,.program-table th{font-weight:800;background:##eee}.program-wrap{display:grid;grid-template-columns:1.05fr 1fr;min-height:175mm}.program-left{border-right:2px solid ##111}.program-block{border-bottom:2px solid ##111}.program-head{display:grid;grid-template-columns:90px 1fr 115px;border-bottom:1px solid ##111;font-size:14px;font-weight:800;padding:5px}.num{text-align:right}.bold{font-weight:900}.lot-box{border-bottom:1px solid ##111;padding:8px;font-size:12px}.empty-space{min-height:120mm}.notes{display:grid;grid-template-columns:1fr 1fr;border-top:2px solid ##111}.note{min-height:28mm;border-right:2px solid ##111}.note:last-child{border-right:0}.note-title{font-weight:900;border-bottom:2px solid ##111;padding:4px 7px;background:##eee}.note-body{padding:7px;font-size:13px}@media print{body{margin:0;background:##fff}.page-header,.navbar,.sidebar,.btn-back{display:none!important}.recipe-page{width:210mm;min-height:297mm;padding:6mm;margin:0}.recipe-box{page-break-inside:avoid}@page{size:A4;margin:5mm}}
+:root{--ink:##172033;--muted:##637083;--line:##d8dee8;--soft:##f3f6fa;--accent:##173f70;--accent-soft:##eaf1f8}
+*{box-sizing:border-box}.recipe-screen{background:##edf1f5;margin:-15px;padding:22px;min-height:100vh;color:var(--ink);font-family:Arial,Helvetica,sans-serif}.print-toolbar{width:210mm;max-width:100%;margin:0 auto 12px;display:flex;align-items:center;justify-content:space-between}.toolbar-note{color:var(--muted);font-size:12px}.toolbar-actions{display:flex;gap:8px}.recipe-btn{border:0;border-radius:7px;padding:9px 14px;font-weight:700;cursor:pointer;background:##fff;color:var(--ink);box-shadow:0 1px 3px rgba(23,32,51,.14)}.recipe-btn.primary{background:var(--accent);color:##fff}.recipe-page{width:210mm;min-height:297mm;margin:0 auto;background:##fff;padding:10mm;box-shadow:0 8px 30px rgba(23,32,51,.12);font-size:10px}.recipe-box{min-height:277mm;border:1px solid var(--line);border-radius:10px;overflow:hidden;display:flex;flex-direction:column}.recipe-head{display:grid;grid-template-columns:1fr 180px 178px;align-items:stretch;background:var(--ink);color:##fff}.title-wrap{padding:16px 18px}.recipe-kicker{font-size:9px;font-weight:700;letter-spacing:2.3px;text-transform:uppercase;color:##b8c7da;margin-bottom:4px}.recipe-title{font-size:29px;line-height:1;font-weight:900;letter-spacing:8px}.brand{font-family:Georgia,serif;font-style:italic;font-size:16px;font-weight:400;letter-spacing:0;margin-left:5px;color:##dce7f3}.head-meta{display:grid;align-content:center;padding:10px 14px;border-left:1px solid rgba(255,255,255,.18)}.meta-line{display:flex;justify-content:space-between;gap:10px;padding:3px 0;font-size:10px;color:##dce7f3}.meta-line strong{font-size:12px;color:##fff}.barcode{padding:11px 14px;text-align:center;border-left:1px solid rgba(255,255,255,.18);display:flex;flex-direction:column;justify-content:center}.barcode-bars{height:34px;background:repeating-linear-gradient(90deg,##fff 0 2px,transparent 2px 4px,##fff 4px 5px,transparent 5px 8px,##fff 8px 11px,transparent 11px 13px);opacity:.94}.barcode-code{font-size:9px;letter-spacing:3px;margin-top:5px;color:##dce7f3}.recipe-content{display:flex;min-height:228mm;flex:1;flex-direction:column}.section{padding:12px 14px;border-bottom:1px solid var(--line)}.section-title{font-size:9px;line-height:1;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);margin-bottom:10px}.info-grid{display:grid;grid-template-columns:1.35fr .85fr;gap:22px}.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 18px}.field{min-width:0}.field.wide,.stat.wide{grid-column:1/-1}.field .lbl{display:block;color:var(--muted);font-size:8px;font-weight:700;letter-spacing:.45px;text-transform:uppercase;margin-bottom:2px}.field .val{display:block;font-weight:800;font-size:11px;line-height:1.25;overflow-wrap:anywhere}.stats{display:grid;grid-template-columns:1fr 1fr;gap:7px}.stat{background:var(--soft);border-radius:6px;padding:7px 9px}.stat .lbl{display:block;color:var(--muted);font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.4px}.stat .val{display:block;font-size:15px;font-weight:900;margin-top:2px}.stat.accent{background:var(--accent-soft);color:var(--accent)}.party-strip{display:grid;grid-template-columns:.6fr 1.45fr 1fr .55fr .55fr;background:var(--soft);border-bottom:1px solid var(--line)}.party-cell{padding:7px 10px;border-right:1px solid var(--line);min-width:0}.party-cell:last-child{border-right:0}.party-cell .lbl{display:block;color:var(--muted);font-size:7px;font-weight:700;text-transform:uppercase;letter-spacing:.45px;margin-bottom:2px}.party-cell .val{display:block;font-size:9px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.programs{padding:12px 14px 4px}.program-block{border:1px solid var(--line);border-radius:7px;overflow:hidden;margin-bottom:8px;break-inside:avoid}.program-head{display:grid;grid-template-columns:78px 1fr 70px;align-items:center;background:var(--accent-soft);color:var(--accent);min-height:32px}.program-head>div{padding:6px 9px;border-right:1px solid ##d0ddea}.program-head>div:last-child{border-right:0;text-align:center}.program-label{display:block;font-size:7px;text-transform:uppercase;letter-spacing:.55px;color:var(--muted);margin-bottom:1px}.program-value{display:block;font-size:10px;font-weight:900}.program-table{width:100%;border-collapse:collapse}.program-table th{padding:4px 7px;background:##f9fafc;color:var(--muted);font-size:7px;letter-spacing:.35px;text-transform:uppercase;text-align:left;border-bottom:1px solid var(--line)}.program-table td{padding:4px 7px;border-bottom:1px solid ##edf0f4;font-size:8.5px}.program-table tbody tr:last-child td{border-bottom:0}.program-table .group-pill{display:inline-block;border-radius:10px;background:var(--soft);padding:2px 6px;font-size:7px;font-weight:700;color:var(--muted)}.program-table .dye{background:var(--accent-soft);color:var(--accent)}.num{text-align:right!important;font-variant-numeric:tabular-nums}.bold{font-weight:900}.empty-recipe{padding:16px;color:var(--muted);text-align:center}.plan-note{margin:0 14px 10px;padding:7px 9px;border-left:3px solid var(--accent);background:var(--soft);color:var(--muted);font-size:8px}.notes{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:10px 14px 14px;margin-top:auto}.note{min-height:22mm;border:1px solid var(--line);border-radius:7px;overflow:hidden}.note-title{font-size:8px;font-weight:800;letter-spacing:.8px;color:var(--accent);background:var(--accent-soft);padding:6px 8px;text-transform:uppercase}.note-body{padding:8px;font-size:9px;line-height:1.35}.footer{display:flex;justify-content:space-between;align-items:center;padding:7px 14px;background:var(--ink);color:##b8c7da;font-size:7px;letter-spacing:.5px}.footer strong{color:##fff}
+@media (max-width:850px){.recipe-screen{padding:0;overflow-x:auto}.print-toolbar{padding:10px;margin:0}.recipe-page{box-shadow:none}.toolbar-note{display:none}}
+@media print{*{-webkit-print-color-adjust:exact;print-color-adjust:exact}body{margin:0!important;background:##fff!important}.page-header,.navbar,.sidebar,.btn-back,.print-toolbar{display:none!important}.recipe-screen{margin:0;padding:0;background:##fff;min-height:0}.recipe-page{width:210mm;min-height:297mm;padding:5mm;margin:0;box-shadow:none}.recipe-box{min-height:287mm;border-radius:0}.recipe-content{min-height:238mm}.program-block,.section,.notes{break-inside:avoid}@page{size:A4;margin:0}}
 </style>
 
 <cfoutput>
+<div class="recipe-screen">
+<div class="print-toolbar">
+    <div class="toolbar-note">A4 baskı önizlemesi</div>
+    <div class="toolbar-actions">
+        <button type="button" class="recipe-btn" onclick="history.back()">Geri Dön</button>
+        <button type="button" class="recipe-btn primary" onclick="window.print()">Yazdır</button>
+    </div>
+</div>
 <div class="recipe-page">
     <div class="recipe-box">
         <div class="recipe-head">
-            <div class="recipe-title">REÇETE <span class="brand">Boyahane</span></div>
-            <div class="head-mid">
-                Tarih : #dateFormat(printDate,"dd/mm/yyyy")#<br>
-                Plan/Şarj No : #htmlEditFormat(planNo)#
+            <div class="title-wrap">
+                <div class="recipe-kicker">Üretim ve Boya Takip Formu</div>
+                <div class="recipe-title">REÇETE <span class="brand">Rasih Çelik</span></div>
             </div>
-            <div class="barcode"><div class="barcode-bars"></div><div>#htmlEditFormat(planNo)#</div></div>
+            <div class="head-meta">
+                <div class="meta-line"><span>Tarih</span><strong>#dateFormat(printDate,"dd/mm/yyyy")#</strong></div>
+                <div class="meta-line"><span>Plan / Şarj No</span><strong>#htmlEditFormat(planNo)#</strong></div>
+            </div>
+            <div class="barcode"><div class="barcode-bars"></div><div class="barcode-code">#htmlEditFormat(planNo)#</div></div>
         </div>
-        <div class="info-grid">
-            <div class="info-left">
-                <div class="field"><span class="lbl">Müşteri</span><span class="val">: #htmlEditFormat(getOrder.company_name ?: "—")#</span></div>
-                <div class="field"><span class="lbl">Parti Kodu</span><span class="val">: #htmlEditFormat(partiCode ?: "—")#</span></div>
-                <div class="field"><span class="lbl">Kumaş Cinsi</span><span class="val">: #htmlEditFormat(getOrder.product_name ?: getOrder.product_cat ?: "—")#</span></div>
-                <div class="field"><span class="lbl">Renk Kodu</span><span class="val">: #htmlEditFormat(getOrder.color_code ?: "—")#</span></div>
-                <div class="field"><span class="lbl">Renk No/Adı</span><span class="val">: #htmlEditFormat((len(trim(getOrder.renk_no)) ? getOrder.renk_no & " / " : "") & (getOrder.color_name ?: "—"))#</span></div>
-                <div class="field"><span class="lbl">Kartela</span><span class="val">: #htmlEditFormat(getOrder.kartela_no ?: "NUMUNE YOK")#</span></div>
-                <div class="field"><span class="lbl">Kartela Tarihi</span><span class="val">: #isDate(getOrder.kartela_date) ? dateFormat(getOrder.kartela_date,"dd/mm/yyyy") : ""#</span></div>
-            </div>
-            <div class="info-right">
-                <div class="field"><span class="lbl">Makine No</span><span class="val">: #htmlEditFormat(getOrder.station_name ?: "—")#</span></div>
-                <div class="field"><span class="lbl">Metre</span><span class="val">: #val(getOrder.quantity_2) gt 0 ? numberFormat(getOrder.quantity_2,"_.___") : "—"#</span></div>
-                <div class="field"><span class="lbl">Kg</span><span class="val">: #numberFormat(val(getOrder.quantity),"_.___")#</span></div>
-                <div class="field"><span class="lbl">Top Adedi</span><span class="val">: #len(trim(getOrder.unit_2 ?: "")) ? htmlEditFormat(getOrder.unit_2) : "—"#</span></div>
-                <br>
-                <div class="field"><span class="lbl">Kazan Su Mik.</span><span class="val">: #numberFormat(planWater,"_.___")#</span></div>
-                <div class="field"><span class="lbl">Renk Tonu</span><span class="val">: #val(getOrder.renk_tonu) gt 0 ? val(getOrder.renk_tonu) : "—"#</span></div>
+        <div class="recipe-content">
+        <div class="section">
+            <div class="section-title">Parti ve renk bilgileri</div>
+            <div class="info-grid">
+                <div class="field-grid">
+                    <div class="field wide"><span class="lbl">Müşteri</span><span class="val">#htmlEditFormat(getOrder.company_name ?: "—")#</span></div>
+                    <div class="field"><span class="lbl">Parti Kodu</span><span class="val">#htmlEditFormat(partiCode ?: "—")#</span></div>
+                    <div class="field"><span class="lbl">Kumaş Cinsi</span><span class="val">#htmlEditFormat(getOrder.product_name ?: getOrder.product_cat ?: "—")#</span></div>
+                    <div class="field"><span class="lbl">Renk Kodu</span><span class="val">#htmlEditFormat(getOrder.color_code ?: "—")#</span></div>
+                    <div class="field"><span class="lbl">Renk No / Adı</span><span class="val">#htmlEditFormat((len(trim(getOrder.renk_no)) ? getOrder.renk_no & " / " : "") & (getOrder.color_name ?: "—"))#</span></div>
+                    <div class="field"><span class="lbl">Kartela</span><span class="val">#htmlEditFormat(getOrder.kartela_no ?: "NUMUNE YOK")#</span></div>
+                    <div class="field"><span class="lbl">Kartela Tarihi</span><span class="val">#isDate(getOrder.kartela_date) ? dateFormat(getOrder.kartela_date,"dd/mm/yyyy") : "—"#</span></div>
+                </div>
+                <div class="stats">
+                    <div class="stat wide"><span class="lbl">Makine No</span><span class="val">#htmlEditFormat(getOrder.station_name ?: "—")#</span></div>
+                    <div class="stat"><span class="lbl">Metre</span><span class="val">#val(getOrder.quantity_2) gt 0 ? numberFormat(getOrder.quantity_2,"_.___") : "—"#</span></div>
+                    <div class="stat"><span class="lbl">Kilogram</span><span class="val">#numberFormat(val(getOrder.quantity),"_.___")#</span></div>
+                    <div class="stat"><span class="lbl">Top Adedi</span><span class="val">#len(trim(getOrder.unit_2 ?: "")) ? htmlEditFormat(getOrder.unit_2) : "—"#</span></div>
+                    <div class="stat accent"><span class="lbl">Kazan Suyu</span><span class="val">#numberFormat(planWater,"_.___")#</span></div>
+                    <div class="stat"><span class="lbl">Renk Tonu</span><span class="val">#val(getOrder.renk_tonu) gt 0 ? val(getOrder.renk_tonu) : "—"#</span></div>
+                </div>
             </div>
         </div>
-        <table class="party-table">
-            <thead><tr><th>PartiRN</th><th>Müşteri</th><th>Parti Kodu</th><th>Metre</th><th>Kg</th></tr></thead>
-            <tbody><tr><td>#htmlEditFormat(getOrder.p_order_id)#</td><td>#htmlEditFormat(getOrder.company_name ?: "")#</td><td>#htmlEditFormat(partiCode ?: "")#</td><td class="num">#val(getOrder.quantity_2) gt 0 ? numberFormat(getOrder.quantity_2,"_.___") : ""#</td><td class="num">#numberFormat(val(getOrder.quantity),"_.___")#</td></tr></tbody>
-        </table>
-        <div class="program-wrap">
-            <div class="program-left">
+        <div class="party-strip">
+            <div class="party-cell"><span class="lbl">Parti RN</span><span class="val">#htmlEditFormat(getOrder.p_order_id)#</span></div>
+            <div class="party-cell"><span class="lbl">Müşteri</span><span class="val">#htmlEditFormat(getOrder.company_name ?: "")#</span></div>
+            <div class="party-cell"><span class="lbl">Parti Kodu</span><span class="val">#htmlEditFormat(partiCode ?: "")#</span></div>
+            <div class="party-cell"><span class="lbl">Metre</span><span class="val num">#val(getOrder.quantity_2) gt 0 ? numberFormat(getOrder.quantity_2,"_.___") : "—"#</span></div>
+            <div class="party-cell"><span class="lbl">Kg</span><span class="val num">#numberFormat(val(getOrder.quantity),"_.___")#</span></div>
+        </div>
+        <div class="programs">
+            <div class="section-title">Reçete programı</div>
                 <cfset programSeq = 0>
                 <cfloop array="#opOrder#" index="opKey">
                     <cfset programSeq = programSeq + 1>
                     <cfset op = opMap[opKey]>
                     <div class="program-block">
-                        <div class="program-head"><div>Program No<br>#htmlEditFormat(op.code ?: op.product_tree_id)#</div><div>Program Adı<br>#htmlEditFormat(op.name)#</div><div>Program Sıra<br><span class="bold">#programSeq#</span></div></div>
+                        <div class="program-head"><div><span class="program-label">Program No</span><span class="program-value">#htmlEditFormat(op.code ?: op.product_tree_id)#</span></div><div><span class="program-label">Program Adı</span><span class="program-value">#htmlEditFormat(op.name)#</span></div><div><span class="program-label">Sıra</span><span class="program-value">#programSeq#</span></div></div>
                         <table class="program-table">
-                            <thead><tr><th>Grup</th><th>Sıra</th><th>Ad</th><th>%-Gr/Lt</th><th>MiktarGr.</th></tr></thead>
+                            <thead><tr><th>Grup</th><th class="num">Sıra</th><th>Malzeme Adı</th><th class="num">% - Gr/Lt</th><th class="num">Miktar (Gr)</th></tr></thead>
                             <tbody>
                             <cfif arrayLen(op.rows)>
                                 <cfset rowSeq = 0>
-                                <cfloop array="#op.rows#" index="r"><cfset rowSeq = rowSeq + 1><tr><td>#htmlEditFormat(r.group)#</td><td class="num">#rowSeq#</td><td>#htmlEditFormat(r.name)#</td><td class="num">#numberFormat(r.ratio,"_.___")#</td><td class="num bold">#numberFormat(r.amount,"_.___")#</td></tr></cfloop>
+                                <cfloop array="#op.rows#" index="r">
+                                    <cfset rowSeq = rowSeq + 1>
+                                    <cfset groupClass = r.group eq "Boya" ? " dye" : "">
+                                    <tr><td><span class="group-pill#groupClass#">#htmlEditFormat(r.group)#</span></td><td class="num">#rowSeq#</td><td class="bold">#htmlEditFormat(r.name)#</td><td class="num">#numberFormat(r.ratio,"_.___")#</td><td class="num bold">#numberFormat(r.amount,"_.___")#</td></tr>
+                                </cfloop>
                             <cfelse>
                                 <tr><td colspan="5">Program satırı bulunamadı.</td></tr>
                             </cfif>
@@ -167,18 +191,17 @@
                         </table>
                     </div>
                 </cfloop>
-                <cfif NOT arrayLen(opOrder)><div class="program-block p-2">Ürün ağacında reçete/program satırı bulunamadı.</div></cfif>
-            </div>
-            <div>
-                <div class="lot-box"><strong>Kimyevi</strong><br><em>Lot:</em> Plan reçetesi — gerçekleşen tüketim basılmaz.</div>
-                <div class="empty-space"></div>
-            </div>
+                <cfif NOT arrayLen(opOrder)><div class="program-block empty-recipe">Ürün ağacında reçete / program satırı bulunamadı.</div></cfif>
         </div>
+        <div class="plan-note"><strong>Plan reçetesi:</strong> Bu form planlanan sarfiyatı gösterir; gerçekleşen tüketim ayrıca kaydedilir.</div>
         <div class="notes">
             <div class="note"><div class="note-title">PARTİ AÇIKLAMA</div><div class="note-body">#htmlEditFormat(getOrder.detail ?: getOrder.order_detail ?: "")#</div></div>
             <div class="note"><div class="note-title">RENK AÇIKLAMA</div><div class="note-body">#htmlEditFormat(getOrder.color_information ?: "")#</div></div>
         </div>
+        </div>
+        <div class="footer"><span><strong>RASİH ÇELİK</strong> &nbsp; Boyahane Üretim Sistemi</span><span>Reçete No: #htmlEditFormat(planNo)#</span></div>
     </div>
+</div>
 </div>
 <script>window.addEventListener('load', function(){ setTimeout(function(){ window.print(); }, 350); });</script>
 </cfoutput>
