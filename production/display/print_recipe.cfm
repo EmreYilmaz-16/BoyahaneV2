@@ -29,7 +29,7 @@
            COALESCE(ws.max_water_amount, 0) AS max_water_amount,
            COALESCE(o.order_number, '') AS order_number,
            COALESCE(oc.nickname, oc.fullname, cc.nickname, cc.fullname, '') AS company_name,
-           COALESCE(o.detail, '') AS order_detail
+           COALESCE(o.order_detail, '') AS order_detail
     FROM production_orders po
     LEFT JOIN stocks s       ON po.stock_id = s.stock_id
     LEFT JOIN product p      ON s.product_id = p.product_id
