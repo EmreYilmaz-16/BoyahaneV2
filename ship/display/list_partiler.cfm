@@ -34,8 +34,19 @@
     SELECT o.order_id, o.order_number, o.order_stage, o.order_date, o.deliverdate,
            o.nettotal, o.grosstotal, o.taxtotal, o.record_date,
            o.sarim_sekli, o.ambalaj,
-           ss.sarim_sekli_adi, ab.ambalaj_adi
+           ss.sarim_sekli_adi, ab.ambalaj_adi,
+           po.p_order_id
     FROM orders o
+    LEFT JOIN LATERAL (
+        SELECT p_order_id
+        FROM production_orders
+        WHERE order_id = o.order_id
+          AND station_id IS NOT NULL
+          AND start_date IS NOT NULL
+          AND COALESCE(status, 1) IN (1, 2)
+        ORDER BY p_order_id DESC
+        LIMIT 1
+    ) po ON true
     LEFT JOIN setup_sarim_sekli ss ON o.sarim_sekli = ss.sarim_sekli_id
     LEFT JOIN setup_ambalaj ab ON o.ambalaj = ab.ambalaj_id
     WHERE o.ref_ship_id = <cfqueryparam value="#shipId#" cfsqltype="cf_sql_integer">
@@ -119,6 +130,7 @@
         "order_number": order_number ?: "",
         "order_stage":  val(order_stage),
         "stage_label":  stageLabel,
+        "p_order_id":   isNumeric(p_order_id) ? val(p_order_id) : 0,
         "order_date":   isDate(order_date)  ? dateFormat(order_date,  "dd/mm/yyyy") : "",
         "deliverdate":  isDate(deliverdate) ? dateFormat(deliverdate, "dd/mm/yyyy") : "",
         "nettotal":     isNumeric(nettotal)   ? val(nettotal)   : 0,
@@ -464,9 +476,10 @@ window.addEventListener('load', function() {
                 { dataField:'sarim_sekli_adi', caption:'Sarım Şekli', width:120 },
                 { dataField:'ambalaj_adi',     caption:'Ambalaj',      width:120 },
                 {
-                    caption:'İşlemler', width:120, alignment:'center', allowSorting:false, allowFiltering:false,
+                    caption:'İşlemler', width:165, alignment:'center', allowSorting:false, allowFiltering:false,
                     cellTemplate: function(c,o){
                         var oid = o.data.ORDER_ID || o.data.order_id;
+                        var pOrderId = o.data.P_ORDER_ID || o.data.p_order_id || 0;
                         var g   = $('<div>').addClass('d-flex gap-1 justify-content-center');
                         $('<button>').addClass('btn btn-sm btn-outline-info').attr('title','Parti Detay')
                             .html('<i class="fas fa-eye"></i>')
@@ -475,6 +488,15 @@ window.addEventListener('load', function() {
                                 window.location.href='index.cfm?fuseaction=ship.detail_parti&order_id='+oid;
                             })
                             .appendTo(g);
+                        if (pOrderId > 0) {
+                            $('<button>').addClass('btn btn-sm btn-outline-dark').attr('title','Reçete Yazdır')
+                                .html('<i class="fas fa-print"></i>')
+                                .on('click', function(e2){
+                                    e2.stopPropagation();
+                                    window.open('index.cfm?fuseaction=production.print_recipe&p_order_id=' + pOrderId, '_blank');
+                                })
+                                .appendTo(g);
+                        }
                         $('<button>').addClass('btn btn-sm btn-outline-primary').attr('title','Partiyi Düzenle')
                             .html('<i class="fas fa-edit"></i>')
                             .on('click', function(e2){

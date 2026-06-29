@@ -25,7 +25,8 @@ VALUES
 -- -- MES — backend (menüde görünmez)
 -- ('production.save_production_pause',      '/production/form/save_production_pause.cfm',         'save_production_pause',      'Duruş Kaydet',                    'page', NULL, 49, true, false),
 ('production.send_order_to_production',  '/production/form/send_order_to_production.cfm',      'send_order_to_production',   'Siparişten Üretim Emri Oluştur',  'page', NULL, 50, true, false),
-('production.daily_dashboard',           '/production/display/daily_dashboard.cfm',             'daily_dashboard',            'Günlük Üretim Özeti',             'page', NULL, 51, true, true)
+('production.daily_dashboard',           '/production/display/daily_dashboard.cfm',             'daily_dashboard',            'Günlük Üretim Özeti',             'page', NULL, 51, true, true),
+('production.print_recipe',              '/production/display/print_recipe.cfm',                 'print_recipe',               'Üretim Reçete Yazdır',            'page', NULL, 52, true, false)
 ON CONFLICT (full_fuseaction) DO NOTHING;
 
 -- =====================================================
