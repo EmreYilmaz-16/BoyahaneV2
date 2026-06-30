@@ -7,6 +7,18 @@
 <cfif pOrderId eq 0>
     <cflocation url="index.cfm?fuseaction=production.list_production_orders" addtoken="false">
 </cfif>
+<cfquery name="getParams" datasource="boyahane">
+    SELECT parametre_adi,deger
+    FROM boyahane_params
+</cfquery>
+<cfloop query="getParams">
+    <cfset paramName = trim(parametre_adi)>
+    <cfset paramValue = trim(deger)>
+    <cfif len(paramName) AND NOT structKeyExists(application, paramName)>
+        <cfset application[paramName] = paramValue>
+    </cfif>
+</cfloop>
+<cfdump var="#application#" label="Application Scope Parameters" top="10" format="text">
 
 <cfquery name="getOrder" datasource="boyahane">
     SELECT po.*,
@@ -53,6 +65,7 @@
 <cfif planWater lte 0 AND val(getOrder.max_water_amount) gt 0>
     <cfset planWater = val(getOrder.max_water_amount)>
 </cfif>
+
 
 <cfquery name="getRecipe" datasource="boyahane">
     SELECT pt.product_tree_id,
