@@ -58,6 +58,7 @@ Description			:
 	<cffunction name="OnApplicationStart" access="public" returntype="boolean" output="false" hint="Uygulama başladığı anda çalıştırılacak kodlar. Tek defa çalıştırır.">
 		<!--- Application başlatma işlemleri buraya eklenebilir --->
 		<cfset application.userFavoritesTableReady = false>
+		<cfset application.fuseactionProductivityTablesReady = false>
 		<cfset loadSiteParams()>
 		<cfreturn true />
 	</cffunction>
@@ -123,6 +124,70 @@ Description			:
 		</cflock>
 	</cffunction>
 
+
+	<cffunction name="ensureFuseactionProductivityTables" access="private" returntype="void" output="false" hint="Fuseaction bazlı not, görev ve takip tablolarını hazırlar.">
+		<cflock scope="application" type="exclusive" timeout="10">
+			<cfif structKeyExists(application, "fuseactionProductivityTablesReady") AND application.fuseactionProductivityTablesReady>
+				<cfreturn>
+			</cfif>
+			<cftry>
+				<cfquery datasource="#this.datasource#">
+					CREATE TABLE IF NOT EXISTS fuseaction_notes (
+						note_id SERIAL PRIMARY KEY,
+						fuseaction VARCHAR(255) NOT NULL,
+						note_title VARCHAR(255) NOT NULL,
+						note_body TEXT NOT NULL DEFAULT '',
+						created_by INTEGER REFERENCES kullanicilar(id) ON DELETE SET NULL,
+						updated_by INTEGER REFERENCES kullanicilar(id) ON DELETE SET NULL,
+						created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+						updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+					)
+				</cfquery>
+				<cfquery datasource="#this.datasource#">CREATE INDEX IF NOT EXISTS idx_fuseaction_notes_fuseaction ON fuseaction_notes (fuseaction)</cfquery>
+				<cfquery datasource="#this.datasource#">
+					CREATE TABLE IF NOT EXISTS fuseaction_tasks (
+						task_id SERIAL PRIMARY KEY,
+						fuseaction VARCHAR(255) NOT NULL,
+						task_title VARCHAR(255) NOT NULL,
+						task_description TEXT NOT NULL DEFAULT '',
+						stage VARCHAR(30) NOT NULL DEFAULT 'beklemede',
+						created_by INTEGER REFERENCES kullanicilar(id) ON DELETE SET NULL,
+						updated_by INTEGER REFERENCES kullanicilar(id) ON DELETE SET NULL,
+						created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+						updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+						CONSTRAINT chk_fuseaction_tasks_stage CHECK (stage IN ('beklemede','calisiliyor','bitti'))
+					)
+				</cfquery>
+				<cfquery datasource="#this.datasource#">CREATE INDEX IF NOT EXISTS idx_fuseaction_tasks_fuseaction ON fuseaction_tasks (fuseaction)</cfquery>
+				<cfquery datasource="#this.datasource#">
+					CREATE TABLE IF NOT EXISTS fuseaction_task_followups (
+						followup_id SERIAL PRIMARY KEY,
+						task_id INTEGER NOT NULL REFERENCES fuseaction_tasks(task_id) ON DELETE CASCADE,
+						followup_note TEXT NOT NULL,
+						created_by INTEGER REFERENCES kullanicilar(id) ON DELETE SET NULL,
+						created_at TIMESTAMP NOT NULL DEFAULT NOW()
+					)
+				</cfquery>
+				<cfquery datasource="#this.datasource#">CREATE INDEX IF NOT EXISTS idx_fuseaction_task_followups_task ON fuseaction_task_followups (task_id)</cfquery>
+				<cfquery datasource="#this.datasource#">
+					INSERT INTO pbs_objects (object_name, module_id, show_menu, window_type, full_fuseaction, file_path, order_no, is_active)
+					SELECT 'Sayfa Notları', 21, false, 'standart', 'productivity.page_notes', '/productivity/display/page_notes.cfm', 980, true
+					WHERE NOT EXISTS (SELECT 1 FROM pbs_objects WHERE full_fuseaction = 'productivity.page_notes')
+				</cfquery>
+				<cfquery datasource="#this.datasource#">
+					INSERT INTO pbs_objects (object_name, module_id, show_menu, window_type, full_fuseaction, file_path, order_no, is_active)
+					SELECT 'Sayfa Görevleri', 21, false, 'standart', 'productivity.page_tasks', '/productivity/display/page_tasks.cfm', 981, true
+					WHERE NOT EXISTS (SELECT 1 FROM pbs_objects WHERE full_fuseaction = 'productivity.page_tasks')
+				</cfquery>
+				<cfset application.fuseactionProductivityTablesReady = true>
+				<cfcatch type="any">
+					<cfset application.fuseactionProductivityTablesReady = false>
+					<cflog file="application" type="warning" text="Fuseaction productivity tabloları hazırlanamadı: #cfcatch.message# - #cfcatch.detail#">
+				</cfcatch>
+			</cftry>
+		</cflock>
+	</cffunction>
+
 	<!---
 	*************************************************************************
 		OnSessionStart
@@ -163,6 +228,9 @@ Description			:
 		</cfif>
 		<cfif NOT structKeyExists(application, "siteParams")>
 			<cfset loadSiteParams()>
+		</cfif>
+		<cfif NOT structKeyExists(application, "fuseactionProductivityTablesReady") OR NOT application.fuseactionProductivityTablesReady>
+			<cfset ensureFuseactionProductivityTables()>
 		</cfif>
 			<cfscript>
                 attributes=structNew();

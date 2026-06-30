@@ -45,6 +45,10 @@
             <cfset requiredPermission = "update">
         </cfif>
 
+        <cfif listFindNoCase("productivity.page_notes,productivity.page_tasks", attributes.fuseaction)>
+            <cfset permissionEnforced = false>
+        </cfif>
+
         <cfif fuseactionDeniedForUser>
             <cfset accessDenied = true>
             <cfset accessDeniedMessage = "Bu sayfayı görüntüleme yetkiniz bulunmuyor.">
@@ -317,6 +321,22 @@
                             <li><span class="fav-hint text-light"><i class="fas fa-star me-1"></i>Sayfa başlığındaki yıldıza basarak kısayol ekleyin</span></li>
                         </ul>
                     </li>
+
+                    <!--- Sayfa notları ve görevleri --->
+                    <cfoutput>
+                    <cfif isDefined("attributes.fuseaction") AND attributes.fuseaction NEQ "" AND getObject.recordCount>
+                    <li class="nav-item me-1">
+                        <a class="nav-link px-2" href="index.cfm?fuseaction=productivity.page_notes&target_fuseaction=#urlEncodedFormat(attributes.fuseaction)#" title="Bu sayfanın notlarını ekle/listele">
+                            <i class="fas fa-note-sticky"></i> Notlar
+                        </a>
+                    </li>
+                    <li class="nav-item me-1">
+                        <a class="nav-link px-2" href="index.cfm?fuseaction=productivity.page_tasks&target_fuseaction=#urlEncodedFormat(attributes.fuseaction)#" title="Bu sayfanın görevlerini yönet">
+                            <i class="fas fa-list-check"></i> Görevler
+                        </a>
+                    </li>
+                    </cfif>
+                    </cfoutput>
 
                     <!--- Yıldız: Mevcut sayfayı favorile --->
                     <cfoutput>
