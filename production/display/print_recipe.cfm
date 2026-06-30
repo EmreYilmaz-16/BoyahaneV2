@@ -90,7 +90,7 @@
     WHERE pt.stock_id = <cfqueryparam value="#val(getOrder.stock_id)#" cfsqltype="cf_sql_integer">
     ORDER BY COALESCE(pt.related_product_tree_id, pt.product_tree_id), COALESCE(pt.line_number, 0), pt.product_tree_id
 </cfquery>
-
+<cfdump var="#getRecipe#" label="getRecipe">
 <cfset opOrder = []>
 <cfset opMap = {}>
 <cfloop query="getRecipe">
