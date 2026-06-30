@@ -106,7 +106,7 @@
         <cfif structKeyExists(opMap, opKey)>
             <cfset rowText = ucase((material_code ?: "") & " " & (material_name ?: "") & " " & (material_cat ?: "") & " " & (detail ?: ""))>
             <cfif structKeyExists(application, "boya_kategori_ids")>
-            <cfif findNoCase("," & application.boya_kategori_ids & ",", "," & val(product_catid) & ",")>
+            <cfif listFindNoCase(application.boya_kategori_ids, val(product_catid))>
                 <cfset isDye = true>
                 <cfelse>
                 <cfset isDye = false>
