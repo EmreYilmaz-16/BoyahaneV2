@@ -179,6 +179,11 @@ Description			:
 					SELECT 'Sayfa Görevleri', 21, false, 'standart', 'productivity.page_tasks', '/productivity/display/page_tasks.cfm', 981, true
 					WHERE NOT EXISTS (SELECT 1 FROM pbs_objects WHERE full_fuseaction = 'productivity.page_tasks')
 				</cfquery>
+				<cfquery datasource="#this.datasource#">
+					INSERT INTO pbs_objects (object_name, module_id, show_menu, window_type, full_fuseaction, file_path, order_no, is_active)
+					SELECT 'Not ve Görev Merkezi', 21, true, 'standart', 'productivity.overview', '/productivity/display/productivity_overview.cfm', 979, true
+					WHERE NOT EXISTS (SELECT 1 FROM pbs_objects WHERE full_fuseaction = 'productivity.overview')
+				</cfquery>
 				<cfset application.fuseactionProductivityTablesReady = true>
 				<cfcatch type="any">
 					<cfset application.fuseactionProductivityTablesReady = false>

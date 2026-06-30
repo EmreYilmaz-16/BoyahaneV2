@@ -57,7 +57,7 @@
         <div class="page-header-icon"><i class="fas fa-note-sticky"></i></div>
         <div class="page-header-title"><h4>Sayfa Notları</h4><small>#htmlEditFormat(targetFuseaction)# için not ekle, listele ve güncelle</small></div>
     </div>
-    <a class="btn btn-outline-primary btn-sm" href="index.cfm?fuseaction=productivity.page_tasks&target_fuseaction=#urlEncodedFormat(targetFuseaction)#"><i class="fas fa-list-check me-1"></i>Görevlere Git</a>
+    <div class="d-flex gap-2"><a class="btn btn-outline-secondary btn-sm" href="index.cfm?fuseaction=productivity.overview"><i class="fas fa-layer-group me-1"></i>Merkez</a><a class="btn btn-outline-primary btn-sm" href="index.cfm?fuseaction=productivity.page_tasks&target_fuseaction=#urlEncodedFormat(targetFuseaction)#"><i class="fas fa-list-check me-1"></i>Görevlere Git</a></div>
 </div>
 <cfif len(pageMessage)><div class="alert alert-success">#htmlEditFormat(pageMessage)#</div></cfif>
 <cfif len(pageError)><div class="alert alert-danger">#htmlEditFormat(pageError)#</div></cfif>
