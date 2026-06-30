@@ -18,7 +18,7 @@
         <cfset application[paramName] = paramValue>
     </cfif>
 </cfloop>
-<cfdump var="#application#" label="Application Scope Parameters" top="10" format="text">
+
 
 <cfquery name="getOrder" datasource="boyahane">
     SELECT po.*,
@@ -36,6 +36,7 @@
            COALESCE(s.property, '') AS stock_property,
            COALESCE(p.product_name, po.product_name2, '') AS product_name,
            COALESCE(pc.product_cat, '') AS product_cat,
+           COALESCE(pc.product_catid, 0) AS product_catid,
            COALESCE(ws.station_name, '') AS station_name,
            COALESCE(ws.min_water_amount, 0) AS min_water_amount,
            COALESCE(ws.max_water_amount, 0) AS max_water_amount,
@@ -77,6 +78,7 @@
            COALESCE(rs.stock_code, '') AS material_code,
            COALESCE(rp.product_name, '') AS material_name,
            COALESCE(rpc.product_cat, '') AS material_cat,
+           COALESCE(rpc.product_catid, 0) AS product_catid,
            COALESCE(pt.amount, 0) AS ratio_amount,
            COALESCE(pt.line_number, 0) AS line_number,
            COALESCE(pt.detail, '') AS detail
@@ -103,7 +105,14 @@
         <cfset opKey = "op_" & val(parent_tree_id)>
         <cfif structKeyExists(opMap, opKey)>
             <cfset rowText = ucase((material_code ?: "") & " " & (material_name ?: "") & " " & (material_cat ?: "") & " " & (detail ?: ""))>
-            <cfset isDye = findNoCase("BOYA", rowText) OR findNoCase("DYE", rowText) OR findNoCase("REAKTIF", rowText) OR findNoCase("REACTIVE", rowText)>
+            <cfif structKeyExists(application, "boya_kategori_ids")>
+            <cfif findNoCase("," & application.boya_kategori_ids & ",", "," & val(product_catid) & ",")>
+                <cfset isDye = true>
+            </cfif>
+            <cfelse>
+                <cfset isDye = findNoCase("BOYA", rowText) OR findNoCase("DYE", rowText) OR findNoCase("REAKTIF", rowText) OR findNoCase("REACTIVE", rowText)>
+            </cfif>
+            
             <cfset calcBase = isDye ? val(getOrder.quantity) : planWater>
             <cfset calcAmount = calcBase * val(ratio_amount)>
             <cfset arrayAppend(opMap[opKey].rows, {
