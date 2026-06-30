@@ -108,6 +108,8 @@
             <cfif structKeyExists(application, "boya_kategori_ids")>
             <cfif findNoCase("," & application.boya_kategori_ids & ",", "," & val(product_catid) & ",")>
                 <cfset isDye = true>
+                <cfelse>
+                <cfset isDye = false>
             </cfif>
             <cfelse>
                 <cfset isDye = findNoCase("BOYA", rowText) OR findNoCase("DYE", rowText) OR findNoCase("REAKTIF", rowText) OR findNoCase("REACTIVE", rowText)>
