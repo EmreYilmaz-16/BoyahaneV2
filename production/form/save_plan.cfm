@@ -315,6 +315,7 @@
     <cfset response.start_date       = startStr>
     <cfset response.finish_date      = finishStr>
     <cfset response.total_op_minutes = safeMins>
+    <cfset response.plan_water_amount = planWaterAmount>
 
 <cfcatch type="any">
     <cfset response.message = "Sunucu hatası: " & htmlEditFormat(cfcatch.message)>

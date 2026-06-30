@@ -39,6 +39,7 @@
                COALESCE(ws.station_name,'')         AS station_name,
                COALESCE(po.status, 1)               AS status,
                COALESCE(po.is_urgent, false)        AS is_urgent,
+               COALESCE(po.plan_water_amount, 0)  AS plan_water_amount,
                COALESCE((
                    SELECT SUM(COALESCE(po2.o_minute, 0))
                    FROM production_operation po2
@@ -93,6 +94,7 @@
             "station_name"       : station_name ?: "",
             "status"             : val(status),
             "is_urgent"          : is_urgent,
+            "plan_water_amount"   : isNumeric(plan_water_amount) ? val(plan_water_amount) : 0,
             "total_op_minutes"   : opMins,
             "active_pause_count" : isNumeric(active_pause_count) ? val(active_pause_count) : 0,
             "total_pause_minutes": isNumeric(total_pause_minutes) ? val(total_pause_minutes) : 0,
