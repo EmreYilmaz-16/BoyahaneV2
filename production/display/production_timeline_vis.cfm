@@ -51,9 +51,12 @@
            COALESCE(s.stock_code,'') AS stock_code,
            COALESCE(po.is_urgent, false) AS is_urgent,
            COALESCE(po.plan_water_amount, 0) AS plan_water_amount,
+           COALESCE(p.product_id, 0) AS product_id,
+           COALESCE(p.product_catid, 0) AS product_catid,
            COALESCE((SELECT SUM(COALESCE(pop.o_minute, 0)) FROM production_operation pop WHERE pop.p_order_id = po.p_order_id), 0) AS total_op_minutes
     FROM production_orders po
     LEFT JOIN stocks s ON po.stock_id = s.stock_id
+    LEFT JOIN product p ON s.product_id = p.product_id
     LEFT JOIN color_info ci ON po.stock_id = ci.stock_id
     LEFT JOIN company c ON ci.company_id = c.company_id
     WHERE (po.station_id IS NULL OR po.start_date IS NULL)
@@ -70,6 +73,8 @@
            COALESCE(ci.color_name,'') AS color_name,
            COALESCE(c.nickname, c.fullname,'') AS company_name,
            COALESCE(s.stock_code,'') AS stock_code,
+           COALESCE(p.product_id, 0) AS product_id,
+           COALESCE(p.product_catid, 0) AS product_catid,
            po.start_date,
            po.finish_date,
            po.station_id,
@@ -81,6 +86,7 @@
            COALESCE((SELECT COUNT(*) FROM setup_prod_pause sp WHERE sp.p_order_id = po.p_order_id AND sp.duration_finish_date IS NULL), 0) AS active_pause_count
     FROM production_orders po
     LEFT JOIN stocks s ON po.stock_id = s.stock_id
+    LEFT JOIN product p ON s.product_id = p.product_id
     LEFT JOIN color_info ci ON po.stock_id = ci.stock_id
     LEFT JOIN company c ON ci.company_id = c.company_id
     LEFT JOIN workstations ws ON po.station_id = ws.station_id
@@ -110,6 +116,8 @@
         "lot_no": lot_no ?: "", "color_code": color_code ?: "", "color_name": color_name ?: "",
         "company_name": company_name ?: "", "stock_code": stock_code ?: "", "is_urgent": is_urgent,
         "plan_water_amount": isNumeric(plan_water_amount) ? val(plan_water_amount) : 0,
+        "product_id": val(product_id),
+        "product_catid": val(product_catid),
         "total_op_minutes": val(total_op_minutes) gt 0 ? val(total_op_minutes) : 480
     })>
 </cfloop>
@@ -125,7 +133,9 @@
         "active_pause_count": val(active_pause_count),
         "total_op_minutes": val(total_op_minutes) gt 0 ? val(total_op_minutes) : 480,
         "startDate": dateFormat(start_date,"yyyy-mm-dd") & "T" & timeFormat(start_date,"HH:mm:ss"),
-        "endDate": dateFormat(finish_date,"yyyy-mm-dd") & "T" & timeFormat(finish_date,"HH:mm:ss")
+        "endDate": dateFormat(finish_date,"yyyy-mm-dd") & "T" & timeFormat(finish_date,"HH:mm:ss"),
+        "product_id": val(product_id),
+        "product_catid": val(product_catid)
     })>
 </cfloop>
 
