@@ -38,6 +38,25 @@
         <cfcatch></cfcatch>
     </cftry>
 </cfif>
+<cfquery name="getParams" datasource="boyahane">
+    SELECT parametre_adi,deger
+    FROM boyahane_params
+    where parametre_adi = 'ek_islem_kategori_ids'
+</cfquery>
+<cfset ekIslemArr=[]>
+<cfif getParams.recordCount>
+    <cfset ekIslemKategoriIds = getParams.deger>
+    <cfquery name="qEkIslemKategoriler" datasource="boyahane">
+        SELECT product_catid, product_cat
+        FROM product_cat
+        WHERE product_catid IN (<cfqueryparam value="#ekIslemKategoriIds#" cfsqltype="cf_sql_integer" list="true">)
+        ORDER BY product_cat
+    </cfquery>
+    <cfloop query="qEkIslemKategoriler">
+        <cfset arrayAppend(ekIslemArr, {id: val(product_catid), name: product_cat})>
+    </cfloop>
+</cfif>
+
 <cfset savedLabelFieldsArr = listToArray(savedLabelFields)>
 
 <cfquery name="qUnplanned" datasource="boyahane">
@@ -166,6 +185,9 @@
   <aside class="ptv-sidebar">
     <div class="ptv-head"><h2>Planlanmamış Emirler</h2><small>Kartı Vis Timeline üzerindeki makine satırına sürükleyin.</small></div>
     <div class="ptv-tools"><input id="visOrderSearch" placeholder="Emir, renk, müşteri ara..." style="width:100%"></div>
+    <div class="ptv-tools"><select id="visEkIslem"><cfloop array="#ekIslemArr#" item="it">
+      <cfoutput><option value="#it.id#">#it.name#</option></cfoutput>
+    </cfloop></select></div>
     <div id="visOrderList" class="ptv-order-list"></div>
   </aside>
   <main class="ptv-main">
@@ -209,7 +231,7 @@
 </div>
 <script src="https://unpkg.com/vis-timeline@7.7.3/standalone/umd/vis-timeline-graph2d.min.js"></script>
 <script>
-var UNPLANNED=#serializeJSON(unplannedArr)#, PLANNED=#serializeJSON(plannedArr)#, ALL_STATIONS=#serializeJSON(stationsArr)#, GROUPS=#serializeJSON(groupsArr)#, STATIONS=ALL_STATIONS.slice();
+var UNPLANNED=#serializeJSON(unplannedArr)#, PLANNED=#serializeJSON(plannedArr)#, ALL_STATIONS=#serializeJSON(stationsArr)#, GROUPS=#serializeJSON(groupsArr)#, STATIONS=ALL_STATIONS.slice() , EK_ISLEM_KATEGORILER=#serializeJSON(ekIslemArr)#;
 var activeGroupId=0;
 var START=new Date('#dateFormat(timelineStart,"yyyy-mm-dd")#T00:00:00'), END=new Date('#dateFormat(timelineEnd,"yyyy-mm-dd")#T00:00:00'), INITIAL_END=addMins(new Date('#dateFormat(timelineStart,"yyyy-mm-dd")#T00:00:00'),480), timeline, items, groups, draggedOrder=null, plannedLoadTimer=null, plannedLoadSeq=0;
 var VisTimeline=window.vis||{};
