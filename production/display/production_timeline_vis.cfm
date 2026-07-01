@@ -43,7 +43,17 @@
     FROM boyahane_params
     where parametre_adi = 'ek_islem_kategori_ids'
 </cfquery>
+<cfquery name="getParamsBoyama" datasource="boyahane">
+    SELECT parametre_adi,deger
+    FROM boyahane_params
+    where parametre_adi = 'boyama_kategori_id'
+</cfquery>
+<cfset boyamaKategoriId = 0>
+<cfif getParamsBoyama.recordCount>
+    <cfset boyamaKategoriId = val(getParamsBoyama.deger)>
+</cfif>
 <cfset ekIslemArr=[]>
+
 <cfif getParams.recordCount>
     <cfset ekIslemKategoriIds = getParams.deger>
     <cfquery name="qEkIslemKategoriler" datasource="boyahane">
@@ -185,7 +195,7 @@
   <aside class="ptv-sidebar">
     <div class="ptv-head"><h2>Planlanmamış Emirler</h2><small>Kartı Vis Timeline üzerindeki makine satırına sürükleyin.</small></div>
     <div class="ptv-tools"><input id="visOrderSearch" placeholder="Emir, renk, müşteri ara..." style="width:100%"></div>
-    <div class="ptv-tools"><select id="visEkIslem"><cfloop array="#ekIslemArr#" item="it">
+    <div class="ptv-tools"><select id="visEkIslem"><option value="<cfoutput>#boyamaKategoriId#</cfoutput>">BOYA</option><cfloop array="#ekIslemArr#" item="it">
       <cfoutput><option value="#it.id#">#it.name#</option></cfoutput>
     </cfloop></select></div>
     <div id="visOrderList" class="ptv-order-list"></div>
