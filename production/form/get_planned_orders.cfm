@@ -33,6 +33,8 @@
                COALESCE(ci.color_name,'')           AS color_name,
                COALESCE(c.nickname, c.fullname,'') AS company_name,
                COALESCE(s.stock_code,'')            AS stock_code,
+               COALESCE(p.product_id, 0)           AS product_id,
+               COALESCE(p.product_catid, 0)        AS product_catid,
                po.start_date,
                po.finish_date,
                po.station_id,
@@ -58,6 +60,7 @@
                ), 0) AS total_pause_minutes
         FROM production_orders po
         LEFT JOIN stocks       s  ON po.stock_id   = s.stock_id
+        LEFT JOIN product      p  ON s.product_id  = p.product_id
         LEFT JOIN color_info   ci ON po.stock_id   = ci.stock_id
         LEFT JOIN company      c  ON ci.company_id = c.company_id
         LEFT JOIN workstations ws ON po.station_id = ws.station_id
@@ -90,6 +93,8 @@
             "color_name"         : color_name   ?: "",
             "company_name"       : company_name ?: "",
             "stock_code"         : stock_code   ?: "",
+            "product_id"         : isNumeric(product_id) ? val(product_id) : 0,
+            "product_catid"      : isNumeric(product_catid) ? val(product_catid) : 0,
             "station_id"         : val(station_id),
             "station_name"       : station_name ?: "",
             "status"             : val(status),
