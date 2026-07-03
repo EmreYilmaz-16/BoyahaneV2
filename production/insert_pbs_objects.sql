@@ -26,7 +26,11 @@ VALUES
 -- ('production.save_production_pause',      '/production/form/save_production_pause.cfm',         'save_production_pause',      'Duruş Kaydet',                    'page', NULL, 49, true, false),
 ('production.send_order_to_production',  '/production/form/send_order_to_production.cfm',      'send_order_to_production',   'Siparişten Üretim Emri Oluştur',  'page', NULL, 50, true, false),
 ('production.daily_dashboard',           '/production/display/daily_dashboard.cfm',             'daily_dashboard',            'Günlük Üretim Özeti',             'page', NULL, 51, true, true),
-('production.print_recipe',              '/production/display/print_recipe.cfm',                 'print_recipe',               'Üretim Reçete Yazdır',            'page', NULL, 52, true, false)
+('production.print_recipe',              '/production/display/print_recipe.cfm',                 'print_recipe',               'Üretim Reçete Yazdır',            'page', NULL, 52, true, false),
+('production.list_productcategory_workstationgroup_relation', '/production/display/list_productcategory_workstationgroup_relation.cfm', 'list_productcategory_workstationgroup_relation', 'Kategori - İş İstasyonu Eşleştirmeleri', 'page', NULL, 53, true, true),
+('production.add_productcategory_workstationgroup_relation', '/production/form/add_productcategory_workstationgroup_relation.cfm', 'add_productcategory_workstationgroup_relation', 'Kategori - İş İstasyonu Eşleştirme Ekle', 'page', NULL, 54, true, false),
+('production.save_productcategory_workstationgroup_relation', '/production/form/save_productcategory_workstationgroup_relation.cfm', 'save_productcategory_workstationgroup_relation', 'Kategori - İş İstasyonu Eşleştirme Kaydet', 'page', NULL, 55, true, false),
+('production.delete_productcategory_workstationgroup_relation', '/production/form/delete_productcategory_workstationgroup_relation.cfm', 'delete_productcategory_workstationgroup_relation', 'Kategori - İş İstasyonu Eşleştirme Sil', 'page', NULL, 56, true, false)
 ON CONFLICT (full_fuseaction) DO NOTHING;
 
 -- =====================================================
