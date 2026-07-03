@@ -255,7 +255,8 @@ function mergeSelectedOrders() {
     var ids = selected.map(function(row) { return row.p_order_id; });
     var totalQty = selected.reduce(function(sum, row) { return sum + (parseFloat(row.quantity) || 0); }, 0);
     var msg = selected.length + ' üretim emri ' + (target.p_order_no || ('##' + target.p_order_id)) +
-        ' hedef emrinde birleştirilecek. Toplam miktar: ' + totalQty.toFixed(3) + ' kg. Devam edilsin mi?';
+        ' hedef emrinde birleştirilecek. Toplam miktar: ' + totalQty.toFixed(3) +
+        ' kg. Reçeteler birebir aynı değilse sistem birleştirmeye izin vermeyecek. Devam edilsin mi?';
 
     if (!confirm(msg)) return;
 

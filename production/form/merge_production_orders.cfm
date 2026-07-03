@@ -37,6 +37,47 @@
         <cfoutput>#serializeJSON(response)#</cfoutput><cfabort>
     </cfif>
 
+    <!---
+        Müşteri talebi: Personel istediği emirleri seçebilir; fakat reçete birebir aynı olmalıdır.
+        Miktar farklı olabileceği için üretim emri stok/tüketim satırları kg başına normalize edilerek karşılaştırılır.
+    --->
+    <cfquery name="recipeCheck" datasource="boyahane">
+        WITH recipe_rows AS (
+            SELECT po.p_order_id,
+                   pos.por_stock_id,
+                   COALESCE(pos.stock_id, 0) AS stock_id,
+                   COALESCE(pos.product_id, 0) AS product_id,
+                   COALESCE(pos.product_unit_id, 0) AS product_unit_id,
+                   COALESCE(pos.line_number, 0) AS line_number,
+                   ROUND((COALESCE(pos.amount, 0) / NULLIF(COALESCE(po.quantity, 0), 0))::numeric, 6) AS unit_amount
+            FROM production_orders po
+            LEFT JOIN production_orders_stocks pos ON pos.p_order_id = po.p_order_id
+            WHERE po.p_order_id IN (<cfqueryparam value="#arrayToList(orderIds)#" cfsqltype="cf_sql_integer" list="true">)
+        ),
+        recipe_signatures AS (
+            SELECT p_order_id,
+                   COUNT(por_stock_id) AS recipe_row_count,
+                   COALESCE(STRING_AGG(
+                       CONCAT_WS(':', stock_id, product_id, product_unit_id, line_number, COALESCE(unit_amount, 0)),
+                       '|' ORDER BY stock_id, product_id, product_unit_id, line_number, unit_amount
+                   ), '') AS recipe_signature
+            FROM recipe_rows
+            GROUP BY p_order_id
+        )
+        SELECT COUNT(DISTINCT recipe_signature) AS signature_count,
+               MIN(recipe_row_count) AS min_recipe_row_count
+        FROM recipe_signatures
+    </cfquery>
+
+    <cfif val(recipeCheck.min_recipe_row_count) eq 0>
+        <cfset response.message = "Reçetesi olmayan üretim emirleri birleştirilemez.">
+        <cfoutput>#serializeJSON(response)#</cfoutput><cfabort>
+    </cfif>
+    <cfif val(recipeCheck.signature_count) gt 1>
+        <cfset response.message = "Seçilen üretim emirlerinin reçeteleri birebir aynı olmadığı için birleştirme yapılamaz.">
+        <cfoutput>#serializeJSON(response)#</cfoutput><cfabort>
+    </cfif>
+
     <cfset sourceIds = []>
     <cfset sourceLabels = []>
     <cfset totalQty = 0>
