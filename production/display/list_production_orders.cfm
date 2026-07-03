@@ -115,6 +115,7 @@
                 <button class="btn btn-xs btn-outline-secondary" onclick="quickGroup('color_code')">Renk Kodu</button>
                 <button class="btn btn-xs btn-outline-secondary" onclick="quickGroup('lot_no')">Lot No</button>
                 <button class="btn btn-xs btn-outline-danger ms-1" onclick="clearGroups()" title="Gruplamayi kaldir"><i class="fas fa-times"></i> Temizle</button>
+                <button class="btn btn-xs btn-outline-primary ms-auto" onclick="mergeSelectedOrders()" title="Seçilen üretim emirlerini hedef emirde birleştir"><i class="fas fa-compress-arrows-alt"></i> Seçilenleri Birleştir</button>
             </div>
             <div id="ordersGrid"></div>
         </div>
@@ -138,6 +139,7 @@ function buildGrid() {
         dataSource: ordersData,
         keyExpr: 'p_order_id',
         showBorders: true,
+        selection: { mode: 'multiple', showCheckBoxesMode: 'always' },
         rowAlternationEnabled: true,
         columnAutoWidth: false,
         wordWrapEnabled: false,
@@ -233,6 +235,37 @@ function addOrder()       { window.location.href = 'index.cfm?fuseaction=product
 function editOrder(id)    { window.location.href = 'index.cfm?fuseaction=production.add_production_order&p_order_id=' + id; }
 function viewOrder(id)    { window.location.href = 'index.cfm?fuseaction=production.view_production_order&p_order_id=' + id; }
 function printRecipe(id)  { window.open('index.cfm?fuseaction=production.print_recipe&p_order_id=' + id, '_blank'); }
+
+function mergeSelectedOrders() {
+    var grid = $('##ordersGrid').dxDataGrid('instance');
+    var selected = grid.getSelectedRowsData();
+    if (!selected || selected.length < 2) {
+        DevExpress.ui.notify('Birleştirmek için en az iki üretim emri seçin.', 'warning', 3000);
+        return;
+    }
+
+    var target = selected[0];
+    var ids = selected.map(function(row) { return row.p_order_id; });
+    var totalQty = selected.reduce(function(sum, row) { return sum + (parseFloat(row.quantity) || 0); }, 0);
+    var msg = selected.length + ' üretim emri ' + (target.p_order_no || ('##' + target.p_order_id)) +
+        ' hedef emrinde birleştirilecek. Toplam miktar: ' + totalQty.toFixed(3) + ' kg. Devam edilsin mi?';
+
+    if (!confirm(msg)) return;
+
+    $.post('/production/form/merge_production_orders.cfm', {
+        p_order_ids: ids.join(','),
+        target_p_order_id: target.p_order_id
+    }, function(res) {
+        if (res && res.success) {
+            DevExpress.ui.notify(res.message || 'Üretim emirleri birleştirildi.', 'success', 3000);
+            setTimeout(function(){ window.location.reload(); }, 700);
+        } else {
+            DevExpress.ui.notify((res && res.message) || 'Birleştirme başarısız.', 'error', 4000);
+        }
+    }, 'json').fail(function(){
+        DevExpress.ui.notify('Sunucu hatası.', 'error', 3000);
+    });
+}
 
 var _activeGroupField = null;
 function quickGroup(field) {
