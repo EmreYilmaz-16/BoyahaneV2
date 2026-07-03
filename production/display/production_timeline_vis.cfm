@@ -168,6 +168,20 @@
     })>
 </cfloop>
 
+<cfquery name="qCategoryWorkstationGroups" datasource="boyahane">
+    SELECT product_catid, workstation_id
+    FROM productcategory_workstationgroup_relation
+    ORDER BY product_catid, workstation_id
+</cfquery>
+
+<cfset categoryGroupRelationsArr = []>
+<cfloop query="qCategoryWorkstationGroups">
+    <cfset arrayAppend(categoryGroupRelationsArr, {
+        "product_catid": val(product_catid),
+        "workstation_id": val(workstation_id)
+    })>
+</cfloop>
+
 <cfset groupsArr = []>
 <cfset stationsArr = []>
 <cfloop query="qStations">
@@ -241,7 +255,7 @@
 </div>
 <script src="https://unpkg.com/vis-timeline@7.7.3/standalone/umd/vis-timeline-graph2d.min.js"></script>
 <script>
-var UNPLANNED=#serializeJSON(unplannedArr)#, PLANNED=#serializeJSON(plannedArr)#, ALL_STATIONS=#serializeJSON(stationsArr)#, GROUPS=#serializeJSON(groupsArr)#, STATIONS=ALL_STATIONS.slice() , EK_ISLEM_KATEGORILER=#serializeJSON(ekIslemArr)#;
+var UNPLANNED=#serializeJSON(unplannedArr)#, PLANNED=#serializeJSON(plannedArr)#, ALL_STATIONS=#serializeJSON(stationsArr)#, GROUPS=#serializeJSON(groupsArr)#, STATIONS=ALL_STATIONS.slice() , EK_ISLEM_KATEGORILER=#serializeJSON(ekIslemArr)#, CATEGORY_GROUP_RELATIONS=#serializeJSON(categoryGroupRelationsArr)#;
 var activeGroupId=0, activeEkIslemId=parseInt((document.getElementById('visEkIslem')||{}).value,10)||0;
 var START=new Date('#dateFormat(timelineStart,"yyyy-mm-dd")#T00:00:00'), END=new Date('#dateFormat(timelineEnd,"yyyy-mm-dd")#T00:00:00'), INITIAL_END=addMins(new Date('#dateFormat(timelineStart,"yyyy-mm-dd")#T00:00:00'),480), timeline, items, groups, draggedOrder=null, plannedLoadTimer=null, plannedLoadSeq=0;
 var VisTimeline=window.vis||{};
@@ -279,7 +293,9 @@ function orderMatchesEkIslem(o){return !activeEkIslemId || Number(o.product_cati
 function refreshTimelineFilter(){STATIONS=getActiveStations();if(groups){groups.clear();groups.add(STATIONS);}if(items){var visible=activeStationMap(), nextIds={};PLANNED.forEach(function(o){if(visible[String(o.station_id)]&&orderMatchesEkIslem(o)){nextIds[o.p_order_id]=true;items.update({id:o.p_order_id,group:o.station_id,start:o.startDate,end:o.endDate,content:itemContent(o),className:itemClass(o),order:o});}});items.getIds().forEach(function(id){if(!nextIds[id])items.remove(id);});}}
 function populateGroupFilter(){var sel=document.getElementById('visGroupFilter');if(!sel)return;GROUPS.forEach(function(g){var opt=document.createElement('option');opt.value=g.id;opt.textContent=g.text;sel.appendChild(opt);});if(!GROUPS.length){var wrap=document.querySelector('.ptv-group-filter');if(wrap)wrap.style.display='none';}}
 function applyGroupFilter(val){activeGroupId=parseInt(val,10)||0;refreshTimelineFilter();}
-function applyEkIslemFilter(val){activeEkIslemId=parseInt(val,10)||0;renderOrders();refreshTimelineFilter();}
+function findDefaultGroupForCategory(categoryId){categoryId=parseInt(categoryId,10)||0;if(!categoryId)return 0;var rel=CATEGORY_GROUP_RELATIONS.filter(function(r){return Number(r.product_catid)===categoryId;});if(!rel.length)return 0;var groupIds={};GROUPS.forEach(function(g){groupIds[String(g.id)]=true;});for(var i=0;i<rel.length;i++){if(groupIds[String(rel[i].workstation_id)])return Number(rel[i].workstation_id)||0;}return 0;}
+function setGroupFilterValue(groupId){var sel=document.getElementById('visGroupFilter');activeGroupId=parseInt(groupId,10)||0;if(sel)sel.value=String(activeGroupId);}
+function applyEkIslemFilter(val){activeEkIslemId=parseInt(val,10)||0;setGroupFilterValue(findDefaultGroupForCategory(activeEkIslemId));renderOrders();refreshTimelineFilter();}
 function mergePlannedOrders(data){PLANNED=data||[];refreshTimelineFilter();}
 function initSabitlerDropdown(){var body=document.getElementById('sabitlerBody');if(!body)return;body.innerHTML='';LABEL_FIELDS.forEach(function(f){var lbl=document.createElement('label');lbl.className='sd-item';var chk=document.createElement('input');chk.type='checkbox';chk.checked=selectedFields.has(f.key);chk.onchange=function(e){toggleField(f.key,e.target.checked);};lbl.appendChild(chk);lbl.appendChild(document.createTextNode(f.label));body.appendChild(lbl);});}
 function toggleSabitlerDropdown(e){if(e)e.stopPropagation();var btn=document.getElementById('sabitlerBtn'),dd=document.getElementById('sabitlerDropdown');if(!btn||!dd)return;var open=dd.classList.toggle('open');btn.classList.toggle('open',open);}
