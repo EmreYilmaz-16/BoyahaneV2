@@ -12,11 +12,11 @@
         COALESCE(ci.color_name, s.property, '')                            AS color_name,
         COALESCE(
             oc.nickname,  oc.fullname,
-            orc.nickname, orc.fullname,
+            pori.row_company_name,
             ci_c.nickname, ci_c.fullname,
             ''
         )                                                                   AS company_name,
-        COALESCE(o.order_number, '')                                         AS order_number,
+        COALESCE(o.order_number, pori.row_order_number, '')                  AS order_number,
         po.station_id,
         COALESCE(ws.station_name,'')          AS station_name,
         COALESCE(po.quantity, 0)              AS quantity,
@@ -33,10 +33,17 @@
     LEFT JOIN company     ci_c ON ci.company_id  = ci_c.company_id
     LEFT JOIN orders      o    ON po.order_id    = o.order_id
     LEFT JOIN company     oc   ON o.company_id   = oc.company_id
-    LEFT JOIN production_orders_row por ON por.p_order_id = po.p_order_id
-    LEFT JOIN order_row   orw  ON por.order_row_id = orw.order_row_id
-    LEFT JOIN orders      or2  ON orw.order_id   = or2.order_id
-    LEFT JOIN company     orc  ON or2.company_id = orc.company_id
+    LEFT JOIN (
+        SELECT
+            por.p_order_id,
+            MAX(NULLIF(COALESCE(or2.order_number, ''), ''))                 AS row_order_number,
+            MAX(NULLIF(COALESCE(orc.nickname, orc.fullname, ''), ''))       AS row_company_name
+        FROM production_orders_row por
+        LEFT JOIN order_row orw ON por.order_row_id = orw.order_row_id
+        LEFT JOIN orders    or2 ON orw.order_id     = or2.order_id
+        LEFT JOIN company   orc ON or2.company_id   = orc.company_id
+        GROUP BY por.p_order_id
+    ) pori ON pori.p_order_id = po.p_order_id
     LEFT JOIN workstations ws  ON po.station_id  = ws.station_id
     ORDER BY po.p_order_id DESC
 </cfquery>
