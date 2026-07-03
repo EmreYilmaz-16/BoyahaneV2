@@ -209,7 +209,7 @@
   <aside class="ptv-sidebar">
     <div class="ptv-head"><h2>Planlanmamış Emirler</h2><small>Kartı Vis Timeline üzerindeki makine satırına sürükleyin.</small></div>
     <div class="ptv-tools"><input id="visOrderSearch" placeholder="Emir, renk, müşteri ara..." style="width:100%"></div>
-    <div class="ptv-tools"><select id="visEkIslem"><option value="<cfoutput>#boyamaKategoriId#</cfoutput>">BOYA</option><cfloop array="#ekIslemArr#" item="it">
+    <div class="ptv-tools"><select id="visEkIslem"><option value="0">Tümü</option><option value="<cfoutput>#boyamaKategoriId#</cfoutput>">BOYA</option><cfloop array="#ekIslemArr#" item="it">
       <cfoutput><option value="#it.id#">#it.name#</option></cfoutput>
     </cfloop></select></div>
     <div id="visOrderList" class="ptv-order-list"></div>
