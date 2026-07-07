@@ -44,7 +44,7 @@
 <cfquery name="getRows" datasource="boyahane">
     SELECT orw.order_row_id, orw.stock_id,
            orw.product_name, orw.product_name2,
-           orw.quantity, orw.unit, orw.price, orw.tax, orw.discount_1, orw.nettotal,
+           orw.quantity, orw.amount2, orw.unit, orw.price, orw.tax, orw.discount_1, orw.nettotal,
            COALESCE(st.property,     '') AS stock_property,
            COALESCE(st.stock_code,   '') AS stock_code,
            COALESCE(st.stock_code_2, '') AS stock_code_2,
@@ -54,6 +54,38 @@
     LEFT JOIN stocks st ON orw.stock_id = st.stock_id
     WHERE orw.order_id = <cfqueryparam value="#orderId#" cfsqltype="cf_sql_integer">
     ORDER BY orw.order_row_id
+</cfquery>
+
+<!--- Sevkiyat topları: yeni ship_roll tablosundan partiye bağlı top detayları --->
+<cfquery name="getShipRolls" datasource="boyahane">
+    SELECT roll_id, roll_no, roll_barcode, metre, kg, paket_durumu,
+           etiket_print_count, record_date
+    FROM ship_roll
+    WHERE order_id = <cfqueryparam value="#orderId#" cfsqltype="cf_sql_integer">
+    ORDER BY COALESCE(roll_no, 0), roll_id
+</cfquery>
+
+<!--- Ana parti metre/kg farkı için ana kumaş satırı ve eski kg satırı fallback'i --->
+<cfquery name="getMainRow" datasource="boyahane">
+    SELECT orw.quantity, orw.amount2
+    FROM order_row orw
+    LEFT JOIN stocks st ON orw.stock_id = st.stock_id
+    WHERE orw.order_id = <cfqueryparam value="#orderId#" cfsqltype="cf_sql_integer">
+      AND COALESCE(st.is_main_stock, true) = true
+    ORDER BY orw.order_row_id
+    LIMIT 1
+</cfquery>
+
+<cfquery name="getKgRow" datasource="boyahane">
+    SELECT orw.quantity AS kg_qty
+    FROM order_row orw
+    JOIN stocks  st ON orw.stock_id  = st.stock_id
+    JOIN product p  ON st.product_id = p.product_id
+    WHERE orw.order_id = <cfqueryparam value="#orderId#" cfsqltype="cf_sql_integer">
+      AND LOWER(TRIM(orw.unit)) = 'kg'
+      AND COALESCE(p.is_ek_islem, false) = false
+    ORDER BY orw.order_row_id
+    LIMIT 1
 </cfquery>
 
 <!--- Tekstil bilgileri (ilk ana stok satırından ürün üzerinden) --->
@@ -100,6 +132,36 @@
         "nettotal":      isNumeric(nettotal)  ? val(nettotal)  : 0
     })>
 </cfloop>
+
+<cfset rollsArr = []>
+<cfset rollTotalMetre = 0>
+<cfset rollTotalKg = 0>
+<cfloop query="getShipRolls">
+    <cfset rMetre = isNumeric(metre) ? val(metre) : 0>
+    <cfset rKg = isNumeric(kg) ? val(kg) : 0>
+    <cfset rollTotalMetre += rMetre>
+    <cfset rollTotalKg += rKg>
+    <cfset arrayAppend(rollsArr, {
+        "roll_id": roll_id,
+        "roll_no": isNumeric(roll_no) ? val(roll_no) : 0,
+        "roll_barcode": roll_barcode ?: "",
+        "metre": rMetre,
+        "kg": rKg,
+        "paket_durumu": paket_durumu ?: "",
+        "etiket_print_count": isNumeric(etiket_print_count) ? val(etiket_print_count) : 0,
+        "record_date": isDate(record_date) ? dateFormat(record_date, 'yyyy-mm-dd') & ' ' & timeFormat(record_date, 'HH:mm') : ""
+    })>
+</cfloop>
+<cfset partiMetre = (getMainRow.recordCount AND isNumeric(getMainRow.quantity)) ? val(getMainRow.quantity) : 0>
+<cfif getMainRow.recordCount AND isNumeric(getMainRow.amount2) AND val(getMainRow.amount2) gt 0>
+    <cfset partiKg = val(getMainRow.amount2)>
+<cfelseif getKgRow.recordCount AND isNumeric(getKgRow.kg_qty)>
+    <cfset partiKg = val(getKgRow.kg_qty)>
+<cfelse>
+    <cfset partiKg = 0>
+</cfif>
+<cfset rollDiffMetre = partiMetre - rollTotalMetre>
+<cfset rollDiffKg = partiKg - rollTotalKg>
 
 <!--- ================================================ HTML ================================================ --->
 <div class="page-header">
@@ -438,6 +500,27 @@
     </cfoutput>
     </cfif>
 
+    <!--- Sevkiyat Topları --->
+    <div class="grid-card mb-3">
+        <div class="grid-card-header">
+            <div class="grid-card-header-title"><i class="fas fa-boxes-stacked"></i>Sevkiyat Topları</div>
+            <span class="record-count"><cfoutput>#getShipRolls.recordCount#</cfoutput> top</span>
+        </div>
+        <div class="card-body p-2">
+            <div id="shipRollGrid"></div>
+        </div>
+        <div class="px-3 pb-3">
+            <div class="roll-summary-row">
+                <cfoutput>
+                <div><span>Toplam metre</span><strong>#numberFormat(rollTotalMetre,'0.00')# mt</strong></div>
+                <div><span>Toplam kg</span><strong>#numberFormat(rollTotalKg,'0.000')# kg</strong></div>
+                <div><span>Top adedi</span><strong>#getShipRolls.recordCount# adet</strong></div>
+                <div><span>Partiyle fark</span><strong>#numberFormat(rollDiffMetre,'0.00')# mt / #numberFormat(rollDiffKg,'0.000')# kg</strong></div>
+                </cfoutput>
+            </div>
+        </div>
+    </div>
+
     <!--- Parti Kalemleri --->
     <div class="grid-card">
         <div class="grid-card-header">
@@ -458,10 +541,16 @@
 .summary-label { font-size:.75rem; opacity:.85; display:block; }
 .summary-value { font-size:1.6rem; font-weight:700; display:block; }
 .tekstil-item  { min-width:120px; padding:8px 14px; background:##f8fafc; border:1px solid ##e2e8f0; border-radius:8px; }
+.roll-summary-row { display:grid; grid-template-columns:repeat(4,minmax(140px,1fr)); gap:10px; }
+.roll-summary-row > div { background:##f8fafc; border:1px solid ##e2e8f0; border-radius:8px; padding:10px 12px; }
+.roll-summary-row span { display:block; color:##64748b; font-size:.75rem; font-weight:600; text-transform:uppercase; }
+.roll-summary-row strong { display:block; color:##0f172a; font-size:1rem; margin-top:2px; }
+@media (max-width: 768px) { .roll-summary-row { grid-template-columns:1fr; } }
 </style>
 
 <script>
 var rowsData = #serializeJSON(rowsArr)#;
+var shipRollsData = #serializeJSON(rollsArr)#;
 
 var paletteBg = ['##6366f1','##2563ab','##15803d','##b45309','##be123c','##0e7490','##7c3aed','##c2410c','##166534','##1e40af'];
 function getBg(i) { return paletteBg[i % paletteBg.length]; }
@@ -470,6 +559,42 @@ window.addEventListener('load', function() {
     if (typeof DevExpress !== 'undefined') DevExpress.localization.locale('tr');
 
     if (typeof $ !== 'undefined' && $.fn.dxDataGrid) {
+        $('##shipRollGrid').dxDataGrid({
+            dataSource: shipRollsData,
+            showBorders: true,
+            showRowLines: true,
+            showColumnLines: true,
+            rowAlternationEnabled: true,
+            columnAutoWidth: true,
+            allowColumnResizing: true,
+            paging: { pageSize: 50 },
+            noDataText: 'Bu partiye ait sevkiyat topu bulunamadı',
+            export: { enabled: true, fileName: 'sevkiyat_toplari_#orderId#' },
+            columns: [
+                { dataField: 'roll_no', caption: 'Top No', width: 90, alignment: 'center', dataType: 'number' },
+                { dataField: 'roll_barcode', caption: 'Barkod', minWidth: 160 },
+                { dataField: 'metre', caption: 'Metre', width: 110, alignment: 'right', dataType: 'number', format: { type: 'fixedPoint', precision: 2 } },
+                { dataField: 'kg', caption: 'Kg', width: 110, alignment: 'right', dataType: 'number', format: { type: 'fixedPoint', precision: 3 } },
+                { dataField: 'paket_durumu', caption: 'Paket Durumu', width: 140, cellTemplate: function(container, options) {
+                    $('<span>').addClass('badge bg-light text-dark border').text(options.value || '—').appendTo(container);
+                } },
+                { caption: 'Etiket', width: 95, alignment: 'center', allowSorting: false, allowFiltering: false, cellTemplate: function(container, options) {
+                    $('<button>').addClass('btn btn-sm btn-outline-dark').attr('title','Etiket Yazdır')
+                        .html('<i class="fas fa-print"></i>')
+                        .on('click', function(e) {
+                            e.preventDefault(); e.stopPropagation();
+                            window.open('/ship/display/ship_roll_label.cfm?roll_id=' + (options.data.roll_id || options.data.ROLL_ID), '_blank', 'width=520,height=720,scrollbars=yes');
+                        }).appendTo(container);
+                } },
+                { dataField: 'record_date', caption: 'Kayıt Tarihi', width: 150 }
+            ],
+            summary: { totalItems: [
+                { column: 'metre', summaryType: 'sum', displayFormat: 'Toplam: {0}', valueFormat: { type: 'fixedPoint', precision: 2 } },
+                { column: 'kg', summaryType: 'sum', displayFormat: 'Toplam: {0}', valueFormat: { type: 'fixedPoint', precision: 3 } },
+                { column: 'roll_no', summaryType: 'count', displayFormat: '{0} top' }
+            ] }
+        });
+
         $('##rowGrid').dxDataGrid({
             dataSource: rowsData,
             showBorders: true,
