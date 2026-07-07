@@ -30,6 +30,7 @@
 <head>
 <meta charset="utf-8">
 <title>Top Etiketi - #xmlFormat(getRoll.roll_barcode)#</title>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 <style>
 @page { size: 100mm 70mm; margin: 5mm; }
 * { box-sizing: border-box; }
@@ -42,12 +43,17 @@ body { margin:0; font-family: Arial, Helvetica, sans-serif; color:##111827; back
 .row span:first-child { color:##6b7280; font-weight:700; }
 .row strong { text-align:right; }
 .barcode-box { margin-top:8px; border:1px dashed ##6b7280; padding:8px; text-align:center; font-family:'Courier New', monospace; font-size:15px; font-weight:700; letter-spacing:.08em; overflow-wrap:anywhere; }
+.barcode-box svg { display:block; width:100%; max-width:78mm; height:16mm; margin:0 auto 4px; }
+.barcode-value { font-size:12px; letter-spacing:.05em; }
 .footer { margin-top:6px; font-size:10px; color:##6b7280; display:flex; justify-content:space-between; }
 .no-print { margin:12px; }
 @media print { .no-print { display:none; } body { background:##fff; } }
 </style>
 </head>
 <body>
+<cfset barcodeValue = trim(getRoll.roll_barcode ?: "")>
+<cfset rollNoValue = trim(getRoll.roll_no ?: "")>
+<cfset barcodeDisplayValue = len(rollNoValue) ? "Top No: #rollNoValue# | #barcodeValue#" : barcodeValue>
 <div class="no-print"><button onclick="window.print()">Yazdır</button></div>
 <div class="label">
     <div class="header">
@@ -62,13 +68,33 @@ body { margin:0; font-family: Arial, Helvetica, sans-serif; color:##111827; back
     <div class="row"><span>Metre</span><strong>#numberFormat(isNumeric(getRoll.metre) ? val(getRoll.metre) : 0, '0.00')# mt</strong></div>
     <div class="row"><span>Kg</span><strong>#numberFormat(isNumeric(getRoll.kg) ? val(getRoll.kg) : 0, '0.000')# kg</strong></div>
     <div class="row"><span>Paket Durumu</span><strong>#xmlFormat(len(trim(getRoll.paket_durumu ?: '')) ? getRoll.paket_durumu : '—')#</strong></div>
-    <div class="barcode-box">#xmlFormat(getRoll.roll_barcode ?: '')#</div>
+    <div class="barcode-box">
+        <svg id="rollBarcode" data-barcode="#htmlEditFormat(barcodeDisplayValue)#"></svg>
+        <div class="barcode-value">#xmlFormat(barcodeDisplayValue)#</div>
+    </div>
     <div class="footer">
         <span>Kayıt: #isDate(getRoll.record_date) ? dateFormat(getRoll.record_date,'dd/mm/yyyy') & ' ' & timeFormat(getRoll.record_date,'HH:mm') : '—'#</span>
         <span>Yazdırma: #val(getRoll.etiket_print_count)#</span>
     </div>
 </div>
-<script>window.addEventListener('load', function(){ setTimeout(function(){ window.print(); }, 300); });</script>
+<script>
+window.addEventListener('load', function(){
+    var barcodeEl = document.getElementById('rollBarcode');
+    var barcodeValue = barcodeEl ? (barcodeEl.getAttribute('data-barcode') || '') : '';
+    if (barcodeEl && barcodeValue && typeof JsBarcode !== 'undefined') {
+        try {
+            JsBarcode(barcodeEl, barcodeValue, {
+                format: 'CODE128',
+                width: 1.25,
+                height: 42,
+                displayValue: false,
+                margin: 0
+            });
+        } catch(e) {}
+    }
+    setTimeout(function(){ window.print(); }, 300);
+});
+</script>
 </body>
 </html>
 </cfoutput>
