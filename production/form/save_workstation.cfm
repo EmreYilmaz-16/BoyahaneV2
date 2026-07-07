@@ -9,6 +9,7 @@
     <cfparam name="form.station_name"      default="">
     <cfparam name="form.department"        default="0">
     <cfparam name="form.active"            default="false">
+    <cfparam name="form.is_packaging"      default="false">
     <cfparam name="form.capacity"          default="0">
     <cfparam name="form.cost"              default="0">
     <cfparam name="form.cost_money"        default="">
@@ -28,6 +29,7 @@
     <cfset stId    = isNumeric(form.station_id) ? val(form.station_id) : 0>
     <cfset stName  = trim(form.station_name)>
     <cfset isActive= (form.active eq "true" OR form.active eq "1")>
+    <cfset isPackaging = (form.is_packaging eq "true" OR form.is_packaging eq "1")>
     <cfset deptId  = isNumeric(form.department) AND val(form.department) gt 0 ? val(form.department) : javaCast("null","")>
     
     <cfset cap     = isNumeric(form.capacity) ? val(form.capacity) : 0>
@@ -56,6 +58,7 @@
                 station_name      = <cfqueryparam value="#stName#"                   cfsqltype="cf_sql_varchar">,
                 department        = <cfqueryparam value="#isNull(deptId)?'':deptId#" cfsqltype="cf_sql_integer" null="#isNull(deptId)#">,
                 active            = <cfqueryparam value="#isActive#"                 cfsqltype="cf_sql_bit">,
+                is_packaging      = <cfqueryparam value="#isPackaging#"              cfsqltype="cf_sql_bit">,
                 capacity          = <cfqueryparam value="#cap#"                      cfsqltype="cf_sql_integer">,
                 cost              = <cfqueryparam value="#cost#"                     cfsqltype="cf_sql_numeric">,
                 cost_money        = <cfqueryparam value="#trim(form.cost_money)#"    cfsqltype="cf_sql_varchar" null="#NOT len(trim(form.cost_money))#">,
@@ -77,7 +80,7 @@
         <!--- INSERT --->
         <cfquery name="ins" datasource="boyahane">
             INSERT INTO workstations
-                (station_name, department, active, capacity, cost, cost_money,
+                (station_name, department, active, is_packaging, capacity, cost, cost_money,
                  min_water_amount, max_water_amount,
                  employee_number, up_station, comment,
                  exit_dep_id, exit_loc_id, enter_dep_id, enter_loc_id,
@@ -86,6 +89,7 @@
                 <cfqueryparam value="#stName#"                   cfsqltype="cf_sql_varchar">,
                 <cfqueryparam value="#isNull(deptId)?'':deptId#" cfsqltype="cf_sql_integer" null="#isNull(deptId)#">,
                 <cfqueryparam value="#isActive#"                 cfsqltype="cf_sql_bit">,
+                <cfqueryparam value="#isPackaging#"              cfsqltype="cf_sql_bit">,
                 <cfqueryparam value="#cap#"                      cfsqltype="cf_sql_integer">,
                 <cfqueryparam value="#cost#"                     cfsqltype="cf_sql_numeric">,
                 <cfqueryparam value="#trim(form.cost_money)#"    cfsqltype="cf_sql_varchar" null="#NOT len(trim(form.cost_money))#">,

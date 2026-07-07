@@ -132,6 +132,7 @@
 <cfset fName     = editMode ? (getRec.station_name     ?: "") : "">
 <cfset fDept     = editMode ? (isNumeric(getRec.department) ? val(getRec.department) : 0) : 0>
 <cfset fActive   = editMode ? (getRec.active eq true OR getRec.active eq "true") : true>
+<cfset fPackaging = editMode ? (getRec.is_packaging eq true OR getRec.is_packaging eq "true") : false>
 <cfset fCapacity = editMode ? (isNumeric(getRec.capacity) ? val(getRec.capacity) : 0) : 0>
 <cfset fCost     = editMode ? (isNumeric(getRec.cost) ? val(getRec.cost) : 0) : 0>
 <cfset fMinWater = editMode ? (isNumeric(getRec.min_water_amount) ? val(getRec.min_water_amount) : 0) : 0>
@@ -225,10 +226,14 @@ debug:
                             </cfoutput>
                         </select>
                     </div>
-                    <div class="col-md-3 d-flex align-items-end">
+                    <div class="col-md-3 d-flex align-items-end gap-3">
                         <div class="form-check form-switch ms-1">
                             <cfoutput><input class="form-check-input" type="checkbox" id="f_active" #fActive ? "checked" : ""#></cfoutput>
                             <label class="form-check-label" for="f_active">Aktif</label>
+                        </div>
+                        <div class="form-check form-switch ms-1">
+                            <cfoutput><input class="form-check-input" type="checkbox" id="f_is_packaging" #fPackaging ? "checked" : ""#></cfoutput>
+                            <label class="form-check-label" for="f_is_packaging">Paketleme</label>
                         </div>
                     </div>
                 </div>
@@ -581,6 +586,7 @@ $(document).ready(function(){
                 station_name      : name,
                 department        : $('##f_department').val() || 0,
                 active            : $('##f_active').is(':checked'),
+                is_packaging      : $('##f_is_packaging').is(':checked'),
                 capacity          : $('##f_capacity').val() || 0,
                 cost              : $('##f_cost').val() || 0,
                 cost_money        : $('##f_cost_money').val(),
