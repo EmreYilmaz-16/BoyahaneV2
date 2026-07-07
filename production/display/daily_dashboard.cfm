@@ -40,6 +40,35 @@
     ORDER BY active_count DESC, done_count DESC
 </cfquery>
 
+<!--- Paketleme metrikleri için tek kaynak: workstations.is_packaging = true.
+      Paketlemeye giren miktar üretim emrinin paketleme istasyonuna atanmasıyla,
+      paketlemeden geçen miktar ise aynı istasyondaki üretim sonuç satırlarıyla ölçülür. --->
+<cfquery name="qPackagingMetrics" datasource="boyahane">
+    WITH packaging_stations AS (
+        SELECT station_id
+        FROM workstations
+        WHERE COALESCE(is_packaging, false) = true
+    ), packaging_in AS (
+        SELECT COALESCE(SUM(COALESCE(po.quantity,0)),0) AS packaging_in_qty
+        FROM production_orders po
+        WHERE po.station_id IN (SELECT station_id FROM packaging_stations)
+          AND COALESCE(po.status,1) NOT IN (5,9)
+          AND (DATE(COALESCE(po.start_date, po.record_date)) = CURRENT_DATE
+               OR COALESCE(po.status,1) = 2)
+    ), packaging_done AS (
+        SELECT COALESCE(SUM(COALESCE(rr.amount,0)),0) AS packaging_done_qty
+        FROM production_order_results por
+        INNER JOIN production_order_results_row rr ON rr.pr_order_id = por.pr_order_id
+        WHERE por.station_id IN (SELECT station_id FROM packaging_stations)
+          AND DATE(COALESCE(por.finish_date, por.record_date, por.start_date)) = CURRENT_DATE
+    )
+    SELECT
+        packaging_in.packaging_in_qty,
+        packaging_done.packaging_done_qty
+    FROM packaging_in
+    CROSS JOIN packaging_done
+</cfquery>
+
 <!--- Aktif üretim emirleri (devam eden) --->
 <cfquery name="qActiveOrders" datasource="boyahane">
     SELECT
@@ -194,6 +223,7 @@
 .dd-stat-icon.done     { background: ##f0fdf4; color: ##16a34a; }
 .dd-stat-icon.overdue  { background: ##fef2f2; color: ##dc2626; }
 .dd-stat-icon.qty      { background: ##f5f3ff; color: ##7c3aed; }
+.dd-stat-icon.packaging { background: ##ecfeff; color: ##0891b2; }
 .dd-stat-label { font-size: 0.7rem; font-weight: 600; color: ##94a3b8; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 2px; }
 .dd-stat-val   { font-size: 1.65rem; font-weight: 800; line-height: 1.1; color: ##0f172a; }
 .dd-stat-sub   { font-size: 0.7rem; color: ##94a3b8; margin-top: 1px; }
@@ -337,6 +367,15 @@
                 <div class="dd-stat-label">Tamamlanan</div>
                 <div class="dd-stat-val">#val(qDailySummary.total_done)#</div>
                 <div class="dd-stat-sub">#val(qDailySummary.qty_done)# kg üretildi</div>
+            </div>
+        </div>
+
+        <div class="dd-stat">
+            <div class="dd-stat-icon packaging"><i class="bi bi-box-seam"></i></div>
+            <div>
+                <div class="dd-stat-label">Paketleme</div>
+                <div class="dd-stat-val">#val(qPackagingMetrics.packaging_done_qty)#</div>
+                <div class="dd-stat-sub">#val(qPackagingMetrics.packaging_in_qty)# kg paketlemede</div>
             </div>
         </div>
         <div class="dd-stat">

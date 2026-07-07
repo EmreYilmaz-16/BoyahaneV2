@@ -5,6 +5,7 @@
 CREATE TABLE workstations (
     station_id SERIAL PRIMARY KEY,
     is_capacity BOOLEAN,
+    is_packaging BOOLEAN DEFAULT false,
     project_id INTEGER,
     up_station INTEGER,
     station_name VARCHAR(100),
@@ -66,6 +67,7 @@ CREATE INDEX idx_workstations_department ON workstations(department);
 CREATE INDEX idx_workstations_product ON workstations(product);
 CREATE INDEX idx_workstations_partner ON workstations(outsource_partner);
 CREATE INDEX idx_workstations_active ON workstations(active);
+CREATE INDEX idx_workstations_is_packaging ON workstations(is_packaging);
 CREATE INDEX idx_workstations_branch ON workstations(branch);
 
 -- ================================================
@@ -73,6 +75,7 @@ CREATE INDEX idx_workstations_branch ON workstations(branch);
 -- ================================================
 COMMENT ON TABLE workstations IS 'Üretim iş istasyonları ve kapasiteleri';
 COMMENT ON COLUMN workstations.station_name IS 'İstasyon adı';
+COMMENT ON COLUMN workstations.is_packaging IS 'Paketleme metrikleri için tek kaynak: TRUE olan iş istasyonları paketleme istasyonudur.';
 COMMENT ON COLUMN workstations.capacity IS 'İstasyon kapasitesi';
 COMMENT ON COLUMN workstations.min_water_amount IS 'Minimum su miktarı';
 COMMENT ON COLUMN workstations.max_water_amount IS 'Maximum su miktarı';
