@@ -44,6 +44,9 @@ CREATE TABLE IF NOT EXISTS ship_roll (
     metre NUMERIC(18,6),
     kg NUMERIC(18,6),
     paket_durumu VARCHAR(50),
+    dispatch_ship_id INTEGER,
+    dispatch_date TIMESTAMP,
+    dispatch_emp INTEGER,
     etiket_print_count INTEGER DEFAULT 0,
     record_emp INTEGER,
     record_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -54,6 +57,7 @@ CREATE TABLE IF NOT EXISTS ship_roll (
     CONSTRAINT fk_ship_roll_plan FOREIGN KEY (plan_id) REFERENCES ship_roll_plan(plan_id) ON DELETE CASCADE,
     CONSTRAINT fk_ship_roll_order FOREIGN KEY (order_id) REFERENCES orders(order_id) ON DELETE SET NULL,
     CONSTRAINT fk_ship_roll_ship FOREIGN KEY (ship_id) REFERENCES ship(ship_id) ON DELETE CASCADE,
+    CONSTRAINT fk_ship_roll_dispatch_ship FOREIGN KEY (dispatch_ship_id) REFERENCES ship(ship_id) ON DELETE SET NULL,
 
     -- Unique Constraints
     CONSTRAINT uq_ship_roll_barcode UNIQUE (roll_barcode)
@@ -65,6 +69,8 @@ CREATE TABLE IF NOT EXISTS ship_roll (
 CREATE INDEX IF NOT EXISTS idx_ship_roll_plan ON ship_roll(plan_id);
 CREATE INDEX IF NOT EXISTS idx_ship_roll_order ON ship_roll(order_id);
 CREATE INDEX IF NOT EXISTS idx_ship_roll_ship ON ship_roll(ship_id);
+CREATE INDEX IF NOT EXISTS idx_ship_roll_dispatch_ship ON ship_roll(dispatch_ship_id);
+CREATE INDEX IF NOT EXISTS idx_ship_roll_dispatch_date ON ship_roll(dispatch_date);
 
 -- ================================================
 -- Açıklamalar / Comments
@@ -91,4 +97,7 @@ COMMENT ON COLUMN ship_roll.roll_barcode IS 'Top barkodu';
 COMMENT ON COLUMN ship_roll.metre IS 'Top metre bilgisi';
 COMMENT ON COLUMN ship_roll.kg IS 'Top kilogram bilgisi';
 COMMENT ON COLUMN ship_roll.paket_durumu IS 'Paket durumu';
+COMMENT ON COLUMN ship_roll.dispatch_ship_id IS 'Topun sevk edildiği irsaliye/sevkiyat ID';
+COMMENT ON COLUMN ship_roll.dispatch_date IS 'Topun sevk okutma tarihi';
+COMMENT ON COLUMN ship_roll.dispatch_emp IS 'Topu sevk okutan personel';
 COMMENT ON COLUMN ship_roll.etiket_print_count IS 'Etiket yazdırma sayısı';
