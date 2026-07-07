@@ -4,6 +4,7 @@
 <cfparam name="url.barcode" default="">
 <cfparam name="form.barcode" default="#url.barcode#">
 <cfset barcode = trim(form.barcode)>
+<cfset barcodeOrderId = isNumeric(barcode) ? val(barcode) : 0>
 <cfif NOT len(barcode)>
     <cfoutput>#serializeJSON({"success":false,"message":"Barkod boş olamaz."})#</cfoutput><cfabort>
 </cfif>
@@ -11,8 +12,8 @@
     <cfquery name="getParti" datasource="boyahane">
         SELECT o.order_id, o.order_number, o.order_head, o.company_id, o.ref_ship_id, o.ref_no,
                COALESCE(c.nickname, c.fullname, '') AS company_name,
-               COALESCE(SUM(CASE WHEN LOWER(orw.unit) IN ('mt','metre','m') THEN orw.quantity ELSE 0 END), 0) AS parti_metre,
-               COALESCE(SUM(CASE WHEN LOWER(orw.unit) = 'kg' THEN orw.quantity ELSE 0 END), 0) AS parti_kg,
+               COALESCE(SUM(CASE WHEN LOWER(TRIM(orw.unit)) IN ('mt','metre','m') THEN orw.quantity ELSE 0 END), 0) AS parti_metre,
+               COALESCE(SUM(CASE WHEN LOWER(TRIM(orw.unit)) = 'kg' THEN orw.quantity ELSE COALESCE(orw.amount2, 0) END), 0) AS parti_kg,
                COALESCE(MAX(o.top_adedi), 0) AS top_adedi,
                COALESCE(MAX(p.product_name), MAX(orw.product_name), '') AS product_name,
                COALESCE(MAX(st.stock_code), '') AS stock_code,
@@ -27,6 +28,7 @@
         LEFT JOIN ship s ON s.ship_id = o.ref_ship_id
         WHERE o.order_number = <cfqueryparam value="#barcode#" cfsqltype="cf_sql_varchar">
            OR o.ref_no = <cfqueryparam value="#barcode#" cfsqltype="cf_sql_varchar">
+           OR (<cfqueryparam value="#barcodeOrderId#" cfsqltype="cf_sql_integer"> > 0 AND o.order_id = <cfqueryparam value="#barcodeOrderId#" cfsqltype="cf_sql_integer">)
         GROUP BY o.order_id, o.order_number, o.order_head, o.company_id, o.ref_ship_id, o.ref_no, c.nickname, c.fullname, s.hk_metre, s.hk_kg, s.hk_top_adedi
         ORDER BY o.order_id DESC
         LIMIT 1
@@ -39,6 +41,7 @@
     <cfset topAdedi = val(getParti.top_adedi) GT 0 ? val(getParti.top_adedi) : val(getParti.ship_top_adedi)>
     <cfset data = {
         "order_id": val(getParti.order_id),
+        "ship_id": isNumeric(getParti.ref_ship_id) ? val(getParti.ref_ship_id) : 0,
         "parti_no": getParti.order_number ?: "",
         "parti_adi": getParti.order_head ?: "",
         "company_id": val(getParti.company_id),
