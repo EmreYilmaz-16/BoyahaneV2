@@ -177,5 +177,11 @@ INSERT INTO pbs_objects (object_id, object_name, module_id, show_menu, window_ty
 INSERT INTO pbs_objects (object_id, object_name, module_id, show_menu, window_type, full_fuseaction, file_path, order_no, is_active) VALUES (127, 'Siparişten Üretim Emri Oluştur', 27, false, 'standart', 'production.send_order_to_production', '/production/form/send_order_to_production.cfm', 50, true);
 INSERT INTO pbs_objects (object_id, object_name, module_id, show_menu, window_type, full_fuseaction, file_path, order_no, is_active) VALUES (128, 'Update Merkezi', 21, true, 'standart', 'setup.update_center', '/setup/display/update_center.cfm', 999, true);
 
+
+-- Fabrika Durum Ekranı fuseaction kaydı
+INSERT INTO pbs_objects (object_name, module_id, show_menu, window_type, full_fuseaction, file_path, order_no, is_active)
+SELECT 'Fabrika Durum Ekranı', 27, true, 'standart', 'production.factory_status_dashboard', '/production/display/factory_status_dashboard.cfm', 65, true
+WHERE NOT EXISTS (SELECT 1 FROM pbs_objects WHERE full_fuseaction = 'production.factory_status_dashboard');
+
 -- Sequence güncelle
 SELECT setval('pbs_objects_object_id_seq', (SELECT MAX(object_id) FROM pbs_objects));
