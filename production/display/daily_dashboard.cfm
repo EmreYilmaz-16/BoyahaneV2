@@ -94,6 +94,63 @@
     ORDER BY po.finish_date_real DESC
 </cfquery>
 
+
+<!--- Sevkiyat listesine okutulan üretim topları (barkod okutma ship_roll üzerinden kesinleşir; production_order_results_row.is_sevkiyat uygulamada güncellenmiyor) --->
+<cfquery name="qShipmentScannedByCustomer" datasource="boyahane">
+    WITH produced_lots AS (
+        SELECT
+            po.p_order_id,
+            po.order_id,
+            COALESCE(NULLIF(porr.lot_no, ''), NULLIF(po.lot_no, ''), o.order_number, '') AS lot_no,
+            o.company_id,
+            SUM(COALESCE(porr.amount, 0)) AS produced_amount
+        FROM production_order_results_row porr
+        INNER JOIN production_orders po ON po.p_order_id = porr.p_order_id
+        LEFT JOIN orders o ON o.order_id = po.order_id
+        WHERE porr.p_order_id IS NOT NULL
+        GROUP BY po.p_order_id, po.order_id, COALESCE(NULLIF(porr.lot_no, ''), NULLIF(po.lot_no, ''), o.order_number, ''), o.company_id
+    ),
+    dispatched_roll_lots AS (
+        SELECT DISTINCT ON (sr.roll_id)
+            sr.roll_id,
+            sr.metre,
+            sr.kg,
+            pl.company_id,
+            pl.p_order_id,
+            pl.order_id,
+            pl.lot_no,
+            pl.produced_amount
+        FROM ship_roll sr
+        INNER JOIN produced_lots pl ON pl.order_id = sr.order_id
+        WHERE (sr.dispatch_date IS NOT NULL OR LOWER(COALESCE(sr.paket_durumu, '')) = 'sevk edildi')
+        ORDER BY sr.roll_id, pl.p_order_id
+    ),
+    dispatched_lots AS (
+        SELECT
+            company_id,
+            p_order_id,
+            order_id,
+            lot_no,
+            MAX(produced_amount) AS produced_amount,
+            COUNT(*) AS scanned_roll_count,
+            SUM(COALESCE(metre, 0)) AS scanned_metre,
+            SUM(COALESCE(kg, 0)) AS scanned_kg
+        FROM dispatched_roll_lots
+        GROUP BY company_id, p_order_id, order_id, lot_no
+    )
+    SELECT
+        COALESCE(c.nickname, c.fullname, 'Müşterisiz') AS company_name,
+        COUNT(*) AS lot_count,
+        COALESCE(SUM(produced_amount), 0) AS produced_amount,
+        COALESCE(SUM(scanned_roll_count), 0) AS scanned_roll_count,
+        COALESCE(SUM(scanned_metre), 0) AS scanned_metre,
+        COALESCE(SUM(scanned_kg), 0) AS scanned_kg
+    FROM dispatched_lots dl
+    LEFT JOIN company c ON c.company_id = dl.company_id
+    GROUP BY c.company_id, COALESCE(c.nickname, c.fullname, 'Müşterisiz')
+    ORDER BY scanned_kg DESC, scanned_metre DESC, company_name
+</cfquery>
+
 <!--- Geciken emirler (bitiş tarihi geçmiş, tamamlanmamış) --->
 <cfquery name="qOverdue" datasource="boyahane">
     SELECT
@@ -116,6 +173,13 @@
     ORDER BY po.finish_date ASC
     LIMIT 20
 </cfquery>
+
+<cfset shipmentScannedRolls = 0>
+<cfset shipmentScannedKg = 0>
+<cfloop query="qShipmentScannedByCustomer">
+    <cfset shipmentScannedRolls = shipmentScannedRolls + val(scanned_roll_count)>
+    <cfset shipmentScannedKg = shipmentScannedKg + val(scanned_kg)>
+</cfloop>
 
 <cfset completionRate = 0>
 <cfif val(qDailySummary.total_orders) gt 0>
@@ -194,6 +258,7 @@
 .dd-stat-icon.done     { background: ##f0fdf4; color: ##16a34a; }
 .dd-stat-icon.overdue  { background: ##fef2f2; color: ##dc2626; }
 .dd-stat-icon.qty      { background: ##f5f3ff; color: ##7c3aed; }
+.dd-stat-icon.shipment { background: ##ecfeff; color: ##0891b2; }
 .dd-stat-label { font-size: 0.7rem; font-weight: 600; color: ##94a3b8; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 2px; }
 .dd-stat-val   { font-size: 1.65rem; font-weight: 800; line-height: 1.1; color: ##0f172a; }
 .dd-stat-sub   { font-size: 0.7rem; color: ##94a3b8; margin-top: 1px; }
@@ -355,6 +420,14 @@
                 <div class="dd-progress-bar-wrap" style="width:80px;">
                     <div class="dd-progress-bar-fill" style="width:#completionRate#%;"></div>
                 </div>
+            </div>
+        </div>
+        <div class="dd-stat">
+            <div class="dd-stat-icon shipment"><i class="bi bi-upc-scan"></i></div>
+            <div>
+                <div class="dd-stat-label">Sevkiyata Okutuldu</div>
+                <div class="dd-stat-val">#shipmentScannedRolls#</div>
+                <div class="dd-stat-sub">#numberFormat(shipmentScannedKg, "9,999.99")# kg</div>
             </div>
         </div>
     </div>
@@ -519,6 +592,44 @@
             </div>
         </div>
 
+    </div>
+
+    <!--- SEVKİYAT LİSTESİNE OKUTULANLAR --->
+    <p class="dd-section-title"><i class="bi bi-upc-scan" style="color:var(--primary);"></i> Sevkiyat Listesine Okutuldu (#shipmentScannedRolls# top)</p>
+    <div class="dd-table-card">
+        <cfif qShipmentScannedByCustomer.recordCount gt 0>
+            <div class="table-responsive">
+                <table class="table table-hover table-sm align-middle">
+                    <thead>
+                        <tr>
+                            <th>Müşteri</th>
+                            <th class="text-end">Parti</th>
+                            <th class="text-end">Top</th>
+                            <th class="text-end">Üretim Sonucu</th>
+                            <th class="text-end">Metre</th>
+                            <th class="text-end">Kg</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <cfloop query="qShipmentScannedByCustomer">
+                        <tr>
+                            <td class="fw-semibold">#htmlEditFormat(company_name)#</td>
+                            <td class="text-end">#val(lot_count)#</td>
+                            <td class="text-end">#val(scanned_roll_count)#</td>
+                            <td class="text-end">#numberFormat(produced_amount, "9,999.99")#</td>
+                            <td class="text-end">#numberFormat(scanned_metre, "9,999.99")#</td>
+                            <td class="text-end fw-semibold">#numberFormat(scanned_kg, "9,999.99")#</td>
+                        </tr>
+                        </cfloop>
+                    </tbody>
+                </table>
+            </div>
+        <cfelse>
+            <div class="dd-empty">
+                <i class="bi bi-upc-scan"></i>
+                <p>Sevkiyat listesine okutulmuş üretim topu bulunamadı.</p>
+            </div>
+        </cfif>
     </div>
 
     <!--- BUGÜN TAMAMLANANLAR --->
