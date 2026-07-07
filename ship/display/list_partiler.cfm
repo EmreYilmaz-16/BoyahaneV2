@@ -54,6 +54,24 @@
     ORDER BY o.order_id
 </cfquery>
 
+
+<!--- Sevkiyat topları: yeni ship_roll tablosundan irsaliyeye bağlı tüm top detayları --->
+<cfquery name="getShipRolls" datasource="boyahane">
+    SELECT sr.roll_id, sr.order_id, sr.roll_no, sr.roll_barcode, sr.metre, sr.kg,
+           sr.paket_durumu, sr.etiket_print_count, sr.record_date,
+           COALESCE(o.order_number, '') AS order_number
+    FROM ship_roll sr
+    LEFT JOIN orders o ON sr.order_id = o.order_id
+    WHERE sr.ship_id = <cfqueryparam value="#shipId#" cfsqltype="cf_sql_integer">
+       OR sr.order_id IN (
+           SELECT o2.order_id
+           FROM orders o2
+           WHERE o2.ref_ship_id = <cfqueryparam value="#shipId#" cfsqltype="cf_sql_integer">
+              OR (o2.ref_ship_id IS NULL AND o2.ref_no IS NOT NULL AND o2.ref_no <> '' AND o2.ref_no = <cfqueryparam value="#getShip.ship_number#" cfsqltype="cf_sql_varchar">)
+       )
+    ORDER BY COALESCE(o.order_number, ''), COALESCE(sr.roll_no, 0), sr.roll_id
+</cfquery>
+
 <!--- Ana ürünün tekstil bilgileri --->
 <cfquery name="getShipTekstil" datasource="boyahane">
     SELECT p.en, p.tuse, p.cekme, p.isi, p.hiz, p.gramaj, p.besleme_avans, p.kumas_tipi
@@ -144,6 +162,32 @@
     })>
 </cfloop>
 
+<cfset hkMetre = isNumeric(getShip.hk_metre) ? val(getShip.hk_metre) : 0>
+<cfset shipRollsArr = []>
+<cfset rollTotalMetre = 0>
+<cfset rollTotalKg = 0>
+<cfloop query="getShipRolls">
+    <cfset rMetre = isNumeric(metre) ? val(metre) : 0>
+    <cfset rKg = isNumeric(kg) ? val(kg) : 0>
+    <cfset rollTotalMetre += rMetre>
+    <cfset rollTotalKg += rKg>
+    <cfset arrayAppend(shipRollsArr, {
+        "roll_id": roll_id,
+        "order_id": isNumeric(order_id) ? val(order_id) : 0,
+        "order_number": order_number ?: "",
+        "roll_no": isNumeric(roll_no) ? val(roll_no) : 0,
+        "roll_barcode": roll_barcode ?: "",
+        "metre": rMetre,
+        "kg": rKg,
+        "paket_durumu": paket_durumu ?: "",
+        "etiket_print_count": isNumeric(etiket_print_count) ? val(etiket_print_count) : 0,
+        "record_date": isDate(record_date) ? dateFormat(record_date, "dd/mm/yyyy") & " " & timeFormat(record_date, "HH:mm") : ""
+    })>
+</cfloop>
+<cfset hkKg = isNumeric(getShip.hk_kg) ? val(getShip.hk_kg) : 0>
+<cfset rollDiffMetre = hkMetre - rollTotalMetre>
+<cfset rollDiffKg = hkKg - rollTotalKg>
+
 <cfset partiRowsArr = []>
 <cfloop query="getPartiRows">
     <cfset arrayAppend(partiRowsArr, {
@@ -173,7 +217,6 @@
         <cfset prevOrderId = order_id>
     </cfif>
 </cfloop>
-<cfset hkMetre = isNumeric(getShip.hk_metre) ? val(getShip.hk_metre) : 0>
 <cfif hkMetre gt 0 AND partiMetre gte hkMetre>
     <cfset partiDurum = "tamam">
     <cfset partiDurumLabel = "Tamamen Partilendi">
@@ -291,6 +334,28 @@
     </cfoutput>
     </cfif>
 
+
+    <!--- Sevkiyat Topları --->
+    <div class="grid-card mb-3">
+        <div class="grid-card-header">
+            <div class="grid-card-header-title"><i class="fas fa-boxes-stacked"></i>Sevkiyat Topları</div>
+            <span class="record-count"><cfoutput>#getShipRolls.recordCount#</cfoutput> top</span>
+        </div>
+        <div class="card-body p-2">
+            <div id="shipRollGrid"></div>
+        </div>
+        <div class="px-3 pb-3">
+            <div class="roll-summary-row">
+                <cfoutput>
+                <div><span>Toplam metre</span><strong>#numberFormat(rollTotalMetre,'0.00')# mt</strong></div>
+                <div><span>Toplam kg</span><strong>#numberFormat(rollTotalKg,'0.000')# kg</strong></div>
+                <div><span>Top adedi</span><strong>#getShipRolls.recordCount# adet</strong></div>
+                <div><span>Partiyle fark</span><strong>#numberFormat(rollDiffMetre,'0.00')# mt / #numberFormat(rollDiffKg,'0.000')# kg</strong></div>
+                </cfoutput>
+            </div>
+        </div>
+    </div>
+
     <!--- Parti Listesi --->
     <div class="grid-card mb-3">
         <div class="grid-card-header">
@@ -323,6 +388,11 @@
 .summary-icon { font-size:1.8rem; opacity:.85; }
 .summary-label { font-size:.75rem; opacity:.85; display:block; }
 .summary-value { font-size:1.6rem; font-weight:700; display:block; }
+.roll-summary-row { display:grid; grid-template-columns:repeat(4,minmax(140px,1fr)); gap:10px; }
+.roll-summary-row > div { background:##f8fafc; border:1px solid ##e2e8f0; border-radius:8px; padding:10px 12px; }
+.roll-summary-row span { display:block; color:##64748b; font-size:.75rem; font-weight:600; text-transform:uppercase; }
+.roll-summary-row strong { display:block; color:##0f172a; font-size:1rem; margin-top:2px; }
+@media (max-width: 768px) { .roll-summary-row { grid-template-columns:1fr; } }
 .parti-row-header { display:flex; align-items:center; justify-content:space-between; padding:6px 12px; background:##f1f5f9; border-radius:6px; margin-bottom:6px; }
 .parti-filter-badge { display:inline-flex; align-items:center; gap:6px; background:##2563ab; color:##fff; border-radius:20px; padding:3px 10px; font-size:.8rem; }
 .color-badge { display:inline-flex; align-items:center; gap:5px; padding:2px 8px; border-radius:12px; font-size:.78rem; font-weight:600; color:##fff; background:##6366f1; }
@@ -365,6 +435,7 @@
 <script>
 var partilerData    = #serializeJSON(partilerArr)#;
 var partiRowsData   = #serializeJSON(partiRowsArr)#;
+var shipRollsData   = #serializeJSON(shipRollsArr)#;
 var colorVariants   = #serializeJSON(colorVariantsArr)#;
 var shipId          = #shipId#;
 
@@ -422,6 +493,40 @@ window.addEventListener('load', function() {
                 $('##rowFilterInfo').html('<span class="text-muted small">Tüm partiler gösteriliyor — partiye tıklayarak filtreleyin</span>');
             }
         }
+
+
+        /* ─── Sevkiyat topları grid ─── */
+        $('##shipRollGrid').dxDataGrid({
+            dataSource: shipRollsData,
+            showBorders: true, showRowLines: true, showColumnLines: true,
+            rowAlternationEnabled: true, columnAutoWidth: true,
+            allowColumnResizing: true, columnResizingMode: 'widget',
+            paging: { pageSize: 50 },
+            filterRow: { visible: true },
+            sorting: { mode:'multiple' },
+            noDataText: 'Bu irsaliyeye ait sevkiyat topu bulunamadı',
+            export: { enabled: true, fileName: 'sevkiyat_toplari_' + shipId },
+            columns: [
+                { dataField:'order_number', caption:'Parti', width:150 },
+                { dataField:'roll_no', caption:'Top No', width:90, alignment:'center', dataType:'number' },
+                { dataField:'roll_barcode', caption:'Barkod', minWidth:160 },
+                { dataField:'metre', caption:'Metre', width:110, alignment:'right', dataType:'number', format:{type:'fixedPoint',precision:2} },
+                { dataField:'kg', caption:'Kg', width:110, alignment:'right', dataType:'number', format:{type:'fixedPoint',precision:3} },
+                { dataField:'paket_durumu', caption:'Paket Durumu', width:140, cellTemplate: function(c,o){ $('<span>').addClass('badge bg-light text-dark border').text(o.value || '—').appendTo(c); } },
+                { caption:'Etiket', width:95, alignment:'center', allowSorting:false, allowFiltering:false, cellTemplate: function(c,o){
+                    $('<button>').addClass('btn btn-sm btn-outline-dark').attr('title','Etiket Yazdır').html('<i class="fas fa-print"></i>').on('click', function(e){
+                        e.preventDefault(); e.stopPropagation();
+                        window.open('/ship/display/ship_roll_label.cfm?roll_id=' + (o.data.ROLL_ID || o.data.roll_id), '_blank', 'width=520,height=720,scrollbars=yes');
+                    }).appendTo(c);
+                } },
+                { dataField:'record_date', caption:'Kayıt Tarihi', width:150 }
+            ],
+            summary: { totalItems: [
+                { column:'metre', summaryType:'sum', displayFormat:'Toplam: {0}', valueFormat:{type:'fixedPoint',precision:2} },
+                { column:'kg', summaryType:'sum', displayFormat:'Toplam: {0}', valueFormat:{type:'fixedPoint',precision:3} },
+                { column:'roll_no', summaryType:'count', displayFormat:'{0} top' }
+            ] }
+        });
 
         /* ─── Partiler grid ─── */
         $('##partiGrid').dxDataGrid({
