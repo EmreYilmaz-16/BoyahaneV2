@@ -5,6 +5,7 @@
            ws.station_name,
            COALESCE(ws.up_station, 0)        AS up_station,
            COALESCE(ws.active, false)        AS active,
+           COALESCE(ws.is_packaging, false)  AS is_packaging,
            COALESCE(ws.capacity, 0)          AS capacity,
            COALESCE(ws.cost, 0)              AS cost,
            COALESCE(ws.cost_money,'')        AS cost_money,
@@ -28,6 +29,7 @@
         "station_name"        : station_name        ?: "",
         "up_station"          : val(up_station),
         "active"              : active,
+        "is_packaging"        : is_packaging,
         "capacity"            : val(capacity),
         "cost"                : isNumeric(cost) ? val(cost) : 0,
         "cost_money"          : cost_money           ?: "",
@@ -138,6 +140,9 @@ window.addEventListener('load', function() {
                 },
                 { dataField:'active',            caption:'Durum',        width:85, alignment:'center',
                     cellTemplate: function(c,o){ $('<span>').addClass(o.value ? 'badge bg-success' : 'badge bg-secondary').text(o.value ? 'Aktif' : 'Pasif').appendTo(c); }
+                },
+                { dataField:'is_packaging',      caption:'Paketleme',    width:105, alignment:'center',
+                    cellTemplate: function(c,o){ if (o.value) $('<span>').addClass('badge bg-info text-dark').text('Paketleme').appendTo(c); else $('<span>').addClass('text-muted small').text('-').appendTo(c); }
                 },
                 { dataField:'capacity',          caption:'Kapasite',     width:90, alignment:'right', dataType:'number' },
                 { dataField:'cost',              caption:'Maliyet',      width:100, alignment:'right', dataType:'number', format:{type:'fixedPoint',precision:2} },

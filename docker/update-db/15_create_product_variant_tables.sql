@@ -343,6 +343,7 @@ CREATE TABLE operation_types (
 CREATE TABLE workstations (
     station_id SERIAL PRIMARY KEY,
     is_capacity BOOLEAN,
+    is_packaging BOOLEAN DEFAULT false,
     project_id INTEGER,
     up_station INTEGER,
     station_name VARCHAR(100),
@@ -478,6 +479,7 @@ CREATE INDEX idx_workstations_department ON workstations(department);
 CREATE INDEX idx_workstations_product ON workstations(product);
 CREATE INDEX idx_workstations_partner ON workstations(outsource_partner);
 CREATE INDEX idx_workstations_active ON workstations(active);
+CREATE INDEX idx_workstations_is_packaging ON workstations(is_packaging);
 CREATE INDEX idx_workstations_branch ON workstations(branch);
 
 -- ================================================
@@ -508,5 +510,6 @@ COMMENT ON COLUMN spects.is_mix_product IS 'Karma ürün mü?';
 COMMENT ON COLUMN operation_types.operation_type IS 'Operasyon tipi adı';
 COMMENT ON COLUMN operation_types.operation_cost IS 'Operasyon maliyeti';
 COMMENT ON COLUMN workstations.station_name IS 'İstasyon adı';
+COMMENT ON COLUMN workstations.is_packaging IS 'Paketleme metrikleri için tek kaynak: TRUE olan iş istasyonları paketleme istasyonudur.';
 COMMENT ON COLUMN workstations.capacity IS 'İstasyon kapasitesi';
 COMMENT ON COLUMN workstations_products.production_time IS 'Üretim süresi';
