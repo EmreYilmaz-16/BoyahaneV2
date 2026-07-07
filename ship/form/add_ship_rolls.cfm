@@ -1,28 +1,145 @@
 <cfprocessingdirective pageEncoding="utf-8">
-<style>
-.roll-card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 4px 14px rgba(15,23,42,.06);margin-bottom:18px;overflow:hidden}.roll-card-h{background:linear-gradient(135deg,#1a3a5c,#2563ab);color:#fff;padding:14px 18px;font-weight:700}.roll-card-b{padding:18px}.metric{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px}.metric small{color:#64748b;display:block}.metric strong{font-size:1.15rem}.roll-table input{text-align:right}.summary-neg{color:#dc2626}.summary-pos{color:#16a34a}
-</style>
-<div class="page-header mb-3"><div class="page-header-left"><div class="page-header-icon"><i class="fas fa-barcode"></i></div><div class="page-header-title"><h1>Sarım Topları Oluştur</h1><small>Refakat kartı barkodu ile parti okut, sarım tipine göre topları hazırla.</small></div></div></div>
-<div class="roll-card"><div class="roll-card-h">1. Barkod Okutma</div><div class="roll-card-b"><div class="row g-3 align-items-end"><div class="col-md-6"><label class="form-label">Refakat Kartı Barkodu</label><div class="input-group"><span class="input-group-text"><i class="fas fa-barcode"></i></span><input type="text" class="form-control" id="barcode" placeholder="Barkodu okutun veya yazın" autofocus><button class="btn btn-primary" type="button" onclick="loadParti()">Getir</button></div></div><div class="col-md-6"><div id="partiAlert" class="text-muted">Henüz parti seçilmedi.</div></div></div><div id="partiInfo" class="row g-3 mt-2 d-none"><div class="col-md-3"><div class="metric"><small>Parti</small><strong id="pParti">-</strong></div></div><div class="col-md-3"><div class="metric"><small>Müşteri</small><strong id="pCompany">-</strong></div></div><div class="col-md-3"><div class="metric"><small>Ürün</small><strong id="pProduct">-</strong></div></div><div class="col-md-3"><div class="metric"><small>Metre / Kg / Top</small><strong><span id="pMetre">0</span> mt / <span id="pKg">0</span> kg / <span id="pTop">0</span></strong></div></div></div></div></div>
-<div class="roll-card"><div class="roll-card-h">2. Sarım Tipi</div><div class="roll-card-b"><div class="btn-group" role="group"><input class="btn-check" type="radio" name="rollType" id="rtStandard" value="standard" checked onchange="changeType()"><label class="btn btn-outline-primary" for="rtStandard">Standart Sarım</label><input class="btn-check" type="radio" name="rollType" id="rtKg" value="kg" onchange="changeType()"><label class="btn btn-outline-primary" for="rtKg">Kg Bazlı Sarım</label><input class="btn-check" type="radio" name="rollType" id="rtTop" value="top" onchange="changeType()"><label class="btn btn-outline-primary" for="rtTop">Topa Top Sarım</label></div></div></div>
-<div class="roll-card mode-panel" id="panelStandard"><div class="roll-card-h">3. Standart Sarım</div><div class="roll-card-b"><div class="row g-3 align-items-end"><div class="col-md-3"><label class="form-label">Top Başı Metre</label><input type="number" step="0.01" class="form-control" id="stdMetre"></div><div class="col-md-3"><label class="form-label">Top Başı Kg</label><input type="number" step="0.01" class="form-control" id="stdKg"></div><div class="col-md-3"><label class="form-label">Top Adedi</label><input type="number" step="1" class="form-control" id="stdCount"></div><div class="col-md-3"><button class="btn btn-success w-100" type="button" onclick="generateStandard()">Topları Oluştur</button></div><div class="col-12"><small class="text-muted">Örnek: 1000 mt / 100 kg için 10 top girildiğinde 10 satır x 100 mt / 10 kg oluşur.</small></div></div></div></div>
-<div class="roll-card mode-panel d-none" id="panelKg"><div class="roll-card-h">4. Kg Bazlı Sarım</div><div class="roll-card-b"><div class="row g-3 align-items-end"><div class="col-md-4"><label class="form-label">Top Başı Kg</label><input type="number" step="0.01" class="form-control" id="kgKg"></div><div class="col-md-4"><label class="form-label">Top Adedi</label><input type="number" step="1" class="form-control" id="kgCount"></div><div class="col-md-4"><button class="btn btn-success w-100" type="button" onclick="generateKg()">Topları Oluştur</button></div><div class="col-12"><small class="text-muted">Metre alanı kg bazlı sarımda opsiyoneldir ve satırlarda boş/0 bırakılır.</small></div></div></div></div>
-<div class="roll-card mode-panel d-none" id="panelTop"><div class="roll-card-h">5. Topa Top Sarım</div><div class="roll-card-b"><button class="btn btn-outline-primary btn-sm mb-2" type="button" onclick="addRollRow()"><i class="fas fa-plus"></i> Satır Ekle</button><small class="text-muted ms-2">Her top için manuel metre ve kg girilir.</small></div></div>
-<div class="roll-card"><div class="roll-card-h">Top Listesi</div><div class="roll-card-b"><div class="table-responsive"><table class="table table-sm roll-table"><thead><tr><th>Top</th><th style="width:30%">Metre</th><th style="width:30%">Kg</th><th style="width:80px"></th></tr></thead><tbody id="rollBody"></tbody></table></div><button class="btn btn-primary" type="button" onclick="saveRolls()"><i class="fas fa-save me-1"></i>Kaydet</button></div></div>
-<div class="roll-card"><div class="roll-card-h">6. Özet</div><div class="roll-card-b"><div class="row g-3"><div class="col-md-2"><div class="metric"><small>Parti Metre/Kg</small><strong><span id="sPartiMetre">0</span> / <span id="sPartiKg">0</span></strong></div></div><div class="col-md-2"><div class="metric"><small>Girilen Metre/Kg</small><strong><span id="sMetre">0</span> / <span id="sKg">0</span></strong></div></div><div class="col-md-2"><div class="metric"><small>Fark Metre/Kg</small><strong><span id="sDiffMetre">0</span> / <span id="sDiffKg">0</span></strong></div></div><div class="col-md-3"><div class="metric"><small>Çekme/Salma %</small><strong><span id="sPctMetre">0</span>% / <span id="sPctKg">0</span>%</strong></div></div><div class="col-md-3"><div class="metric"><small>Top Adedi Farkı</small><strong id="sTopDiff">0</strong></div></div></div></div></div>
+
+<cfset shipId = isDefined("url.ship_id") AND isNumeric(url.ship_id) ? val(url.ship_id) : 0>
+<cfset partiMetre = isDefined("url.parti_metre") AND isNumeric(url.parti_metre) ? val(url.parti_metre) : 0>
+<cfset partiKg = isDefined("url.parti_kg") AND isNumeric(url.parti_kg) ? val(url.parti_kg) : 0>
+<cfset metreTolerancePercent = isDefined("url.metre_tolerance_percent") AND isNumeric(url.metre_tolerance_percent) ? val(url.metre_tolerance_percent) : 0>
+<cfset kgTolerancePercent = isDefined("url.kg_tolerance_percent") AND isNumeric(url.kg_tolerance_percent) ? val(url.kg_tolerance_percent) : 0>
+
+<cfif shipId gt 0 AND (partiMetre lte 0 OR partiKg lte 0)>
+    <cfquery name="getPartiExpected" datasource="boyahane">
+        SELECT COALESCE(hk_metre, 0) AS parti_metre,
+               COALESCE(hk_kg, 0) AS parti_kg
+        FROM ship
+        WHERE ship_id = <cfqueryparam value="#shipId#" cfsqltype="cf_sql_integer">
+    </cfquery>
+    <cfif getPartiExpected.recordCount>
+        <cfif partiMetre lte 0><cfset partiMetre = isNumeric(getPartiExpected.parti_metre) ? val(getPartiExpected.parti_metre) : 0></cfif>
+        <cfif partiKg lte 0><cfset partiKg = isNumeric(getPartiExpected.parti_kg) ? val(getPartiExpected.parti_kg) : 0></cfif>
+    </cfif>
+</cfif>
+
+<div class="card shadow-sm" id="shipRollsCard">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <div>
+            <h5 class="mb-0">Top / Metre-Kg Kontrolü</h5>
+            <small class="text-muted">Girilen top satırları parti miktarları ile canlı karşılaştırılır.</small>
+        </div>
+        <button type="button" class="btn btn-sm btn-primary" id="addShipRollRowBtn">
+            <i class="fas fa-plus me-1"></i>Top Ekle
+        </button>
+    </div>
+    <div class="card-body">
+        <input type="hidden" id="ship_id" name="ship_id" value="<cfoutput>#shipId#</cfoutput>">
+        <input type="hidden" id="parti_metre" name="parti_metre" value="<cfoutput>#partiMetre#</cfoutput>">
+        <input type="hidden" id="parti_kg" name="parti_kg" value="<cfoutput>#partiKg#</cfoutput>">
+        <input type="hidden" id="metre_tolerance_percent" name="metre_tolerance_percent" value="<cfoutput>#metreTolerancePercent#</cfoutput>">
+        <input type="hidden" id="kg_tolerance_percent" name="kg_tolerance_percent" value="<cfoutput>#kgTolerancePercent#</cfoutput>">
+        <input type="hidden" id="ship_rolls_json" name="ship_rolls" value="[]">
+
+        <div class="table-responsive mb-3">
+            <table class="table table-sm align-middle" id="shipRollsTable">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width:70px">Top No</th>
+                        <th>Metre</th>
+                        <th>Kg</th>
+                        <th style="width:60px"></th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <div class="row g-3" id="shipRollsSummary">
+            <div class="col-md-6">
+                <div class="border rounded p-3 h-100" data-summary-unit="metre">
+                    <div class="fw-semibold mb-2">Metre Özeti</div>
+                    <div>Beklenen: <strong data-field="expected">0.00</strong> mt</div>
+                    <div>Gerçekleşen: <strong data-field="actual">0.00</strong> mt</div>
+                    <div>Fark: <strong data-field="diff">0.00</strong> mt (<span data-field="percent">0.00</span>%)</div>
+                    <div>Durum: <span class="badge" data-field="status">uygun</span></div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="border rounded p-3 h-100" data-summary-unit="kg">
+                    <div class="fw-semibold mb-2">Kg Özeti</div>
+                    <div>Beklenen: <strong data-field="expected">0.00</strong> kg</div>
+                    <div>Gerçekleşen: <strong data-field="actual">0.00</strong> kg</div>
+                    <div>Fark: <strong data-field="diff">0.00</strong> kg (<span data-field="percent">0.00</span>%)</div>
+                    <div>Durum: <span class="badge" data-field="status">uygun</span></div>
+                </div>
+            </div>
+        </div>
+        <div class="alert alert-warning mt-3 d-none" id="shipRollsToleranceWarning"></div>
+    </div>
+</div>
+
 <script>
-var parti={order_id:0,metre:0,kg:0,top_adedi:0};
-function n(v){v=parseFloat(String(v||'').replace(',','.'));return isNaN(v)?0:v} function fmt(v){return (Math.round(n(v)*100)/100).toLocaleString('tr-TR')}
-function setAlert(msg,cls){document.getElementById('partiAlert').className=cls||'text-muted';document.getElementById('partiAlert').innerHTML=msg}
-function loadParti(){var b=$('#barcode').val(); if(!b){setAlert('Barkod giriniz.','text-danger');return} $.getJSON('/ship/form/get_parti_by_barcode.cfm',{barcode:b},function(r){if(!r.success){setAlert(r.message||'Parti bulunamadı.','text-danger');return} parti=r.data; $('#partiInfo').removeClass('d-none'); $('#pParti').text(parti.parti_no); $('#pCompany').text(parti.company_name); $('#pProduct').text(parti.product_name); $('#pMetre,#sPartiMetre').text(fmt(parti.metre)); $('#pKg,#sPartiKg').text(fmt(parti.kg)); $('#pTop').text(fmt(parti.top_adedi)); setAlert('Parti bilgileri yüklendi.','text-success'); updateSummary();});}
-$('#barcode').on('keydown',function(e){if(e.key==='Enter'){e.preventDefault();loadParti();}});
-function type(){return $('input[name=rollType]:checked').val()} function changeType(){$('.mode-panel').addClass('d-none'); if(type()==='standard')$('#panelStandard').removeClass('d-none'); if(type()==='kg')$('#panelKg').removeClass('d-none'); if(type()==='top')$('#panelTop').removeClass('d-none');}
-function rowHtml(i,m,k){return '<tr><td class="roll-no">Top '+i+'</td><td><input class="form-control form-control-sm roll-metre" type="number" step="0.01" value="'+(m||'')+'" oninput="updateSummary()" '+(type()==='kg'?'disabled':'')+'></td><td><input class="form-control form-control-sm roll-kg" type="number" step="0.01" value="'+(k||'')+'" oninput="updateSummary()"></td><td><button class="btn btn-sm btn-outline-danger" type="button" onclick="$(this).closest(\'tr\').remove();renumber();updateSummary();"><i class="fas fa-trash"></i></button></td></tr>'}
-function renumber(){$('#rollBody tr').each(function(i){$(this).find('.roll-no').text('Top '+(i+1));});}
-function generateStandard(){var c=parseInt($('#stdCount').val()||0,10),m=n($('#stdMetre').val()),k=n($('#stdKg').val()); $('#rollBody').empty(); for(var i=1;i<=c;i++)$('#rollBody').append(rowHtml(i,m,k)); updateSummary();}
-function generateKg(){var c=parseInt($('#kgCount').val()||0,10),k=n($('#kgKg').val()); $('#rollBody').empty(); for(var i=1;i<=c;i++)$('#rollBody').append(rowHtml(i,'',k)); updateSummary();}
-function addRollRow(){var i=$('#rollBody tr').length+1; $('#rollBody').append(rowHtml(i,'','')); updateSummary();}
-function getRolls(){var a=[]; $('#rollBody tr').each(function(){a.push({metre:n($(this).find('.roll-metre').val()),kg:n($(this).find('.roll-kg').val())});}); return a;}
-function updateSummary(){var rolls=getRolls(),tm=0,tk=0; rolls.forEach(function(r){tm+=r.metre;tk+=r.kg}); var dm=tm-n(parti.metre), dk=tk-n(parti.kg), pctm=parti.metre?dm/parti.metre*100:0, pctk=parti.kg?dk/parti.kg*100:0; $('#sMetre').text(fmt(tm));$('#sKg').text(fmt(tk));$('#sDiffMetre').text(fmt(dm));$('#sDiffKg').text(fmt(dk));$('#sPctMetre').text(fmt(pctm));$('#sPctKg').text(fmt(pctk));$('#sTopDiff').text(rolls.length-n(parti.top_adedi));}
-function saveRolls(){if(!parti.order_id){setAlert('Önce parti okutunuz.','text-danger');return} var rolls=getRolls(); if(!rolls.length){alert('Top satırı oluşturunuz.');return} $.ajax({url:'/ship/form/save_ship_rolls.cfm',method:'POST',dataType:'json',data:{order_id:parti.order_id,roll_type:type(),rolls_json:JSON.stringify(rolls)},success:function(r){alert(r.message || (r.success?'Kaydedildi':'Kayıt hatası'));},error:function(){alert('Kayıt sırasında hata oluştu.');}});}
+(function(){
+    var tbody = document.querySelector('#shipRollsTable tbody');
+    var rollsInput = document.getElementById('ship_rolls_json');
+    var warningEl = document.getElementById('shipRollsToleranceWarning');
+    function parseNumber(value){ return parseFloat(String(value || '').replace(',', '.')) || 0; }
+    function fmt(value){ return Number(value || 0).toLocaleString('tr-TR', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+    function statusFor(diff, percent, tolerance){
+        if (Math.abs(percent) <= tolerance || Math.abs(diff) < 0.000001) return 'uygun';
+        return diff < 0 ? 'çekme' : 'salma/artış';
+    }
+    function badgeClass(status){ return status === 'uygun' ? 'bg-success' : (status === 'çekme' ? 'bg-warning text-dark' : 'bg-danger'); }
+    function renderSummary(unit, data){
+        var box = document.querySelector('[data-summary-unit="' + unit + '"]');
+        box.querySelector('[data-field="expected"]').textContent = fmt(data.expected);
+        box.querySelector('[data-field="actual"]').textContent = fmt(data.actual);
+        box.querySelector('[data-field="diff"]').textContent = fmt(data.diff);
+        box.querySelector('[data-field="percent"]').textContent = fmt(data.percent);
+        var status = box.querySelector('[data-field="status"]');
+        status.textContent = data.status;
+        status.className = 'badge ' + badgeClass(data.status);
+    }
+    function collectRolls(){
+        return Array.prototype.map.call(tbody.querySelectorAll('tr'), function(row){
+            return { roll_no: row.querySelector('[data-roll-no]').value || '', metre: parseNumber(row.querySelector('[data-metre]').value), kg: parseNumber(row.querySelector('[data-kg]').value) };
+        });
+    }
+    function calculate(){
+        var rolls = collectRolls();
+        var expectedMetre = parseNumber(document.getElementById('parti_metre').value);
+        var expectedKg = parseNumber(document.getElementById('parti_kg').value);
+        var actualMetre = rolls.reduce(function(sum, roll){ return sum + roll.metre; }, 0);
+        var actualKg = rolls.reduce(function(sum, roll){ return sum + roll.kg; }, 0);
+        var metreDiff = actualMetre - expectedMetre;
+        var kgDiff = actualKg - expectedKg;
+        var metrePercent = expectedMetre > 0 ? (metreDiff / expectedMetre) * 100 : 0;
+        var kgPercent = expectedKg > 0 ? (kgDiff / expectedKg) * 100 : 0;
+        var metreTolerance = parseNumber(document.getElementById('metre_tolerance_percent').value);
+        var kgTolerance = parseNumber(document.getElementById('kg_tolerance_percent').value);
+        var metreStatus = statusFor(metreDiff, metrePercent, metreTolerance);
+        var kgStatus = statusFor(kgDiff, kgPercent, kgTolerance);
+        renderSummary('metre', { expected: expectedMetre, actual: actualMetre, diff: metreDiff, percent: metrePercent, status: metreStatus });
+        renderSummary('kg', { expected: expectedKg, actual: actualKg, diff: kgDiff, percent: kgPercent, status: kgStatus });
+        rollsInput.value = JSON.stringify(rolls);
+        var warnings = [];
+        if (metreStatus !== 'uygun') warnings.push('Metre farkı tolerans dışında: ' + metreStatus + ' (' + fmt(metrePercent) + '%).');
+        if (kgStatus !== 'uygun') warnings.push('Kg farkı tolerans dışında: ' + kgStatus + ' (' + fmt(kgPercent) + '%).');
+        warningEl.classList.toggle('d-none', warnings.length === 0);
+        warningEl.textContent = warnings.join(' ');
+    }
+    function addRow(data){
+        var tr = document.createElement('tr');
+        tr.innerHTML = '<td><input type="text" class="form-control form-control-sm" data-roll-no></td>' +
+            '<td><input type="number" step="0.0001" class="form-control form-control-sm" data-metre></td>' +
+            '<td><input type="number" step="0.0001" class="form-control form-control-sm" data-kg></td>' +
+            '<td><button type="button" class="btn btn-sm btn-outline-danger" data-remove>&times;</button></td>';
+        tbody.appendChild(tr);
+        tr.querySelector('[data-roll-no]').value = data && data.roll_no ? data.roll_no : '';
+        tr.querySelector('[data-metre]').value = data && data.metre ? data.metre : '';
+        tr.querySelector('[data-kg]').value = data && data.kg ? data.kg : '';
+        tr.addEventListener('input', calculate);
+        tr.querySelector('[data-remove]').addEventListener('click', function(){ tr.remove(); calculate(); });
+        calculate();
+    }
+    document.getElementById('addShipRollRowBtn').addEventListener('click', function(){ addRow({}); });
+    addRow({});
+})();
 </script>
