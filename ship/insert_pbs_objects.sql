@@ -17,7 +17,10 @@ VALUES
 ('ship.list_giris_fis',         '/ship/display/list_giris_fis.cfm',          'list_giris_fis',         'Ham Kumaş Girişleri',        'page', NULL, 17, true, true),
 ('ship.update_order_row_stock', '/ship/form/update_order_row_stock.cfm',     'update_order_row_stock', 'Sipariş Satırı Stok Güncelle','page', NULL, 18, true, false),
 ('ship.detail_parti',          '/ship/display/detail_parti.cfm',            'detail_parti',           'Parti Detay',               'page', NULL, 19, true, false),
-('ship.giris_fis_panel',       '/ship/display/giris_fis_panel.cfm',         'giris_fis_panel',        'Giriş Fişi Paneli',         'page', NULL, 20, true, true)
+('ship.giris_fis_panel',       '/ship/display/giris_fis_panel.cfm',         'giris_fis_panel',        'Giriş Fişi Paneli',         'page', NULL, 20, true, true),
+('ship.add_ship_rolls',        '/ship/form/add_ship_rolls.cfm',             'add_ship_rolls',         'Sarım Topları',            'page', NULL, 21, true, true),
+('ship.save_ship_rolls',       '/ship/form/save_ship_rolls.cfm',            'save_ship_rolls',        'Sarım Topları Kaydet',     'page', NULL, 22, true, false),
+('ship.get_parti_by_barcode',  '/ship/form/get_parti_by_barcode.cfm',       'get_parti_by_barcode',   'Barkoddan Parti Getir',    'page', NULL, 23, true, false)
 ;
 
 -- Minimal (full_fuseaction + file_path yeterli ise):
