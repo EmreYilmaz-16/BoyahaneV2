@@ -10,7 +10,8 @@
         SELECT o.order_id, o.order_number, o.ref_no, o.order_head, o.main_color,
                COALESCE(c.nickname, c.fullname, '') AS customer_name,
                COALESCE(MAX(p.product_name), MAX(orw.product_name), '') AS product_name,
-               COALESCE(MAX(st.stock_code), '') AS stock_code
+               COALESCE(MAX(st.stock_code), '') AS stock_code,
+               o.ek_aciklama as kalite_talimati
         FROM orders o
         LEFT JOIN order_row orw ON orw.order_id = o.order_id
         LEFT JOIN stocks st ON st.stock_id = orw.stock_id
@@ -25,6 +26,6 @@
     </cfquery>
     <cfif NOT getParti.recordCount><cfheader statuscode="404" statustext="Not Found"><cfoutput>#serializeJSON({"success"=false,"message"="Barkoda ait parti bulunamadı."})#</cfoutput><cfabort></cfif>
     <cfset kalite = len(trim(getParti.product_name ?: "")) ? getParti.product_name : getParti.stock_code>
-    <cfoutput>#serializeJSON({"barcode"=barcode,"customer"=getParti.customer_name ?: "","party_no"=getParti.order_number ?: "","party_id"=toString(getParti.order_id),"sarj_no"=len(trim(getParti.ref_no ?: "")) ? getParti.ref_no : getParti.order_head,"kalite"=kalite,"renk"=getParti.main_color ?: ""})#</cfoutput>
+    <cfoutput>#serializeJSON({"barcode"=barcode,"customer"=getParti.customer_name ?: "","party_no"=getParti.order_number ?: "","party_id"=toString(getParti.order_id),"sarj_no"=len(trim(getParti.ref_no ?: "")) ? getParti.ref_no : getParti.order_head,"kalite"=kalite,"renk"=getParti.main_color ?: "","kalite_talimati"=getParti.kalite_talimati ?: ""})#</cfoutput>
     <cfcatch type="any"><cfheader statuscode="500" statustext="Internal Server Error"><cfoutput>#serializeJSON({"success"=false,"message"=cfcatch.message})#</cfoutput></cfcatch>
 </cftry>
