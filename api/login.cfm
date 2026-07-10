@@ -19,7 +19,7 @@
     <cfif NOT getUser.recordCount>
         <cfheader statuscode="401" statustext="Unauthorized"><cfoutput>#serializeJSON({"success"=false,"message"="Geçersiz operatör şifresi."})#</cfoutput><cfabort>
     </cfif>
-    <cfset role = compareNoCase(trim(getUser.username), "admin") eq 0 ? "admin" : "user">
+    <cfset role = "admin">
     <cfoutput>#serializeJSON({"name"=getUser.name ?: "","surname"=getUser.surname ?: "","userid"=len(trim(getUser.w3userid ?: "")) ? getUser.w3userid : toString(getUser.id),"userrole"=role})#</cfoutput>
     <cfcatch type="any"><cfheader statuscode="500" statustext="Internal Server Error"><cfoutput>#serializeJSON({"success"=false,"message"=cfcatch.message})#</cfoutput></cfcatch>
 </cftry>
