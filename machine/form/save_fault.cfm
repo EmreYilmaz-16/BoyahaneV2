@@ -10,7 +10,10 @@
     <cfset rootCauseCode  = listFindNoCase("mechanical,electrical,pneumatic,hydraulic,operator_error,wear,other", trim(form.root_cause_code ?: "")) ? trim(form.root_cause_code) : "">
     <cfset downtimeCat    = listFindNoCase("unplanned,planned,production_change,cleaning", trim(form.downtime_category ?: "")) ? trim(form.downtime_category) : "unplanned">
 
-    <cfset faultNo = "ARZ-" & dateFormat(now(),"yyyymmdd") & "-" & right("0000" & randRange(1,9999),4)>
+    <cfquery name="getFaultNo" datasource="boyahane">
+        SELECT 'ARZ-' || to_char(CURRENT_DATE, 'YYYYMMDD') || '-' || lpad(nextval('machine_fault_no_seq')::text, 6, '0') AS fault_no
+    </cfquery>
+    <cfset faultNo = getFaultNo.fault_no>
 
     <cfquery name="insFault" datasource="boyahane">
         INSERT INTO machine_faults (
@@ -63,6 +66,12 @@
     </cfquery>
 
     <cfset response = {"success":true,"fault_id":val(insFault.fault_id),"fault_no":insFault.fault_no}>
-    <cfcatch type="any"><cfset response.message = cfcatch.message></cfcatch>
+    <cfcatch type="any">
+        <cfif structKeyExists(cfcatch, "sqlState") AND cfcatch.sqlState EQ "23505">
+            <cfset response.message = "Arıza kaydı oluşturulamadı. Lütfen birkaç saniye sonra tekrar deneyin.">
+        <cfelse>
+            <cfset response.message = "Arıza kaydı oluşturulurken beklenmeyen bir hata oluştu. Lütfen tekrar deneyin veya sistem yöneticinize başvurun.">
+        </cfif>
+    </cfcatch>
 </cftry>
 <cfoutput>#serializeJSON(response)#</cfoutput>

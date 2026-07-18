@@ -68,6 +68,8 @@ CREATE TABLE IF NOT EXISTS machine_maintenance_logs (
     CONSTRAINT fk_machine_maintenance_plan FOREIGN KEY (plan_id) REFERENCES machine_maintenance_plans(plan_id) ON DELETE SET NULL
 );
 
+CREATE SEQUENCE IF NOT EXISTS machine_fault_no_seq START WITH 1 INCREMENT BY 1;
+
 CREATE TABLE IF NOT EXISTS machine_faults (
     fault_id SERIAL PRIMARY KEY,
     machine_id INTEGER NOT NULL,
