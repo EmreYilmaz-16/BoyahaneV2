@@ -8,6 +8,7 @@
         COALESCE(d.department_head, 'Diğer') AS department_name,
         COALESCE(m.current_status_code, 1) AS current_status_code,
         COALESCE(m.current_status_note, '') AS current_status_note,
+        COALESCE(active_fault.last_event_type, '') AS active_fault_stage,
         COALESCE(m.is_active, true) AS is_active,
         (
             SELECT COUNT(*)
@@ -17,6 +18,28 @@
         ) AS open_fault_count
     FROM machine_machines m
     LEFT JOIN department d ON d.department_id = m.department_id
+    LEFT JOIN LATERAL (
+        SELECT COALESCE(last_event.event_type, 'opened') AS last_event_type
+        FROM machine_faults f
+        LEFT JOIN LATERAL (
+            SELECT fe.event_type
+            FROM machine_fault_events fe
+            WHERE fe.fault_id = f.fault_id
+            ORDER BY fe.event_date DESC, fe.fault_event_id DESC
+            LIMIT 1
+        ) last_event ON true
+        WHERE f.machine_id = m.machine_id
+          AND f.fault_status IN ('open', 'in_progress')
+        ORDER BY
+            CASE COALESCE(last_event.event_type, 'opened')
+                WHEN 'intervention' THEN 3
+                WHEN 'assigned' THEN 2
+                ELSE 1
+            END DESC,
+            COALESCE(f.assigned_at, f.opened_at) DESC,
+            f.fault_id DESC
+        LIMIT 1
+    ) active_fault ON true
     ORDER BY COALESCE(d.department_head, 'Diğer'), m.machine_name
 </cfquery>
 
@@ -99,7 +122,7 @@
 }
 .sb-stat-icon.total    { background: ##eff6ff; color: ##3b82f6; }
 .sb-stat-icon.ok       { background: ##f0fdf4; color: ##16a34a; }
-.sb-stat-icon.maint    { background: ##fffbeb; color: ##d97706; }
+.sb-stat-icon.maint    { background: ##f3f4f6; color: ##4b5563; }
 .sb-stat-icon.fault    { background: ##fef2f2; color: ##dc2626; }
 .sb-stat-icon.inactive { background: ##f8fafc; color: ##6b7280; }
 .sb-stat-label { font-size: 0.72rem; font-weight: 600; color: ##94a3b8; text-transform: uppercase; letter-spacing: .04em; }
@@ -191,7 +214,9 @@
 .sb-tile-open-fault:hover { transform: none !important; box-shadow: 0 3px 10px rgba(0,0,0,.18) !important; }
 
 .sb-tile-ok      { background: linear-gradient(160deg, ##22c55e 0%, ##15803d 100%); }
-.sb-tile-maint   { background: linear-gradient(160deg, ##fbbf24 0%, ##b45309 100%); }
+.sb-tile-maint   { background: linear-gradient(160deg, ##9ca3af 0%, ##4b5563 100%); }
+.sb-tile-assigned{ background: linear-gradient(160deg, ##60a5fa 0%, ##1d4ed8 100%); }
+.sb-tile-intervention { background: linear-gradient(160deg, ##facc15 0%, ##ca8a04 100%); color: ##1f2937; }
 .sb-tile-fault   { background: linear-gradient(160deg, ##f87171 0%, ##b91c1c 100%); }
 .sb-tile-inactive{ background: linear-gradient(160deg, ##cbd5e1 0%, ##64748b 100%); }
 
@@ -257,7 +282,7 @@
         </div>
         <div class="sb-stat">
             <div class="sb-stat-icon maint"><i class="fas fa-tools"></i></div>
-            <div><div class="sb-stat-label">Bakımda</div><div class="sb-stat-val" style="color:##d97706">#val(qSummary.status_maintenance)#</div></div>
+            <div><div class="sb-stat-label">Bakımda</div><div class="sb-stat-val" style="color:##4b5563">#val(qSummary.status_maintenance)#</div></div>
         </div>
         <div class="sb-stat">
             <div class="sb-stat-icon fault"><i class="fas fa-triangle-exclamation"></i></div>
@@ -271,8 +296,10 @@
 
     <!--- Legend --->
     <div class="sb-legend">
-        <span><i class="sb-legend-dot" style="background:##16a34a"></i>Çalışıyor</span>
-        <span><i class="sb-legend-dot" style="background:##d97706"></i>Bakımda</span>
+        <span><i class="sb-legend-dot" style="background:##16a34a"></i>Çözüldü</span>
+        <span><i class="sb-legend-dot" style="background:##4b5563"></i>Bakımda</span>
+        <span><i class="sb-legend-dot" style="background:##1d4ed8"></i>Personel Atandı</span>
+        <span><i class="sb-legend-dot" style="background:##ca8a04"></i>Müdahale Ediliyor</span>
         <span><i class="sb-legend-dot" style="background:##dc2626"></i>Arızalı</span>
         <span><i class="sb-legend-dot" style="background:##64748b"></i>Pasif</span>
         <span class="sb-legend-hint"><i class="fas fa-circle-exclamation me-1"></i>Sağ üstteki sayı: mevcut açık arıza adedi</span>
@@ -309,7 +336,13 @@
             <cfelseif qMachineBoard.current_status_code EQ 2>
                 <cfset tileClass = "sb-tile-maint">
                 <cfset tileIcon  = "fa-tools">
-            <cfelseif qMachineBoard.current_status_code EQ 3>
+            <cfelseif qMachineBoard.active_fault_stage EQ "intervention">
+                <cfset tileClass = "sb-tile-intervention">
+                <cfset tileIcon  = "fa-screwdriver-wrench">
+            <cfelseif qMachineBoard.active_fault_stage EQ "assigned">
+                <cfset tileClass = "sb-tile-assigned">
+                <cfset tileIcon  = "fa-user-check">
+            <cfelseif val(qMachineBoard.open_fault_count) GT 0>
                 <cfset tileClass = "sb-tile-fault">
                 <cfset tileIcon  = "fa-triangle-exclamation">
             </cfif>

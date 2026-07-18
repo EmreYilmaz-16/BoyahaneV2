@@ -7,6 +7,7 @@
            m.is_active,
            COALESCE(m.current_status_code, 1) AS current_status_code,
            COALESCE(m.current_status_note, '') AS current_status_note,
+       COALESCE(active_fault.last_event_type, '') AS active_fault_stage,
            m.next_maintenance_date,
            (
                SELECT COUNT(*)
@@ -16,6 +17,28 @@
            ) AS open_fault_count
     FROM machine_machines m
     LEFT JOIN department d ON d.department_id = m.department_id
+  LEFT JOIN LATERAL (
+    SELECT COALESCE(last_event.event_type, 'opened') AS last_event_type
+    FROM machine_faults f
+    LEFT JOIN LATERAL (
+      SELECT fe.event_type
+      FROM machine_fault_events fe
+      WHERE fe.fault_id = f.fault_id
+      ORDER BY fe.event_date DESC, fe.fault_event_id DESC
+      LIMIT 1
+    ) last_event ON true
+    WHERE f.machine_id = m.machine_id
+      AND f.fault_status IN ('open', 'in_progress')
+    ORDER BY
+      CASE COALESCE(last_event.event_type, 'opened')
+        WHEN 'intervention' THEN 3
+        WHEN 'assigned' THEN 2
+        ELSE 1
+      END DESC,
+      COALESCE(f.assigned_at, f.opened_at) DESC,
+      f.fault_id DESC
+    LIMIT 1
+  ) active_fault ON true
     ORDER BY m.machine_name
 </cfquery>
 
@@ -181,6 +204,7 @@
         "is_active": is_active,
         "current_status_code": val(current_status_code),
         "current_status_note": current_status_note ?: "",
+        "active_fault_stage": active_fault_stage ?: "",
         "next_maintenance_date": isDate(next_maintenance_date) ? dateFormat(next_maintenance_date, "dd/mm/yyyy") & " " & timeFormat(next_maintenance_date, "HH:mm") : "",
         "open_fault_count": val(open_fault_count)
     })>
@@ -313,7 +337,7 @@
     <div class="row g-3 mb-3">
         <div class="col-md-2"><div class="card shadow-sm border-0"><div class="card-body"><small>Toplam Makine</small><h3>#val(qSummary.total_machine)#</h3></div></div></div>
         <div class="col-md-2"><div class="card shadow-sm border-0"><div class="card-body"><small>Arıza Yok</small><h3 class="text-success">#val(qSummary.status_ok)#</h3></div></div></div>
-        <div class="col-md-2"><div class="card shadow-sm border-0"><div class="card-body"><small>Bakımda</small><h3 class="text-warning">#val(qSummary.status_maintenance)#</h3></div></div></div>
+        <div class="col-md-2"><div class="card shadow-sm border-0"><div class="card-body"><small>Bakımda</small><h3 class="text-secondary">#val(qSummary.status_maintenance)#</h3></div></div></div>
         <div class="col-md-2"><div class="card shadow-sm border-0"><div class="card-body"><small>Arızalı</small><h3 class="text-danger">#val(qSummary.status_fault)#</h3></div></div></div>
         <div class="col-md-2"><div class="card shadow-sm border-0"><div class="card-body"><small>Açık Arıza</small><h3 class="text-danger">#val(qFaultSummary.open_count)#</h3></div></div></div>
         <div class="col-md-2"><div class="card shadow-sm border-0"><div class="card-body"><small>Devam Eden</small><h3 class="text-primary">#val(qFaultSummary.in_progress_count)#</h3></div></div></div>
@@ -489,6 +513,15 @@ function priorityText(code){ return ({1:'Düşük',2:'Orta',3:'Yüksek',4:'Kriti
 function stageText(code){ return ({assigned:'Atandı',intervention:'Müdahale',resolved:'Çöz',cancelled:'İptal',opened:'Açıldı'})[code] || code || '-'; }
 function rootCauseText(code){ return ({mechanical:'Mekanik',electrical:'Elektrik',pneumatic:'Pnömatik',hydraulic:'Hidrolik',operator_error:'Operatör Hatası',wear:'Yıpranma',other:'Diğer'})[code] || (code || '-'); }
 function downtimeCatText(code){ return ({unplanned:'Planlanmamış',planned:'Planlı',production_change:'Ürün Değişimi',cleaning:'Temizlik'})[code] || (code || '-'); }
+function machineDisplayStatus(row){
+  if(!row){ return {text:'-', badge:'secondary'}; }
+  if(row.is_active === false){ return {text:'Pasif', badge:'secondary'}; }
+  if(Number(row.current_status_code) === 2){ return {text:'Bakımda', badge:'secondary'}; }
+  if(row.active_fault_stage === 'intervention'){ return {text:'Müdahale Ediliyor', badge:'warning text-dark'}; }
+  if(row.active_fault_stage === 'assigned'){ return {text:'Personel Atandı', badge:'primary'}; }
+  if(Number(row.open_fault_count) > 0){ return {text:'Arızalı', badge:'danger'}; }
+  return {text:'Çözüldü', badge:'success'};
+}
 
 $(function(){
     if (typeof DevExpress !== 'undefined') DevExpress.localization.locale('tr');
@@ -507,7 +540,7 @@ function buildGrids(){
       {dataField:'machine_name',caption:'Makine',minWidth:180},
       {dataField:'department_name',caption:'Departman',width:150},
       {dataField:'location_text',caption:'Lokasyon',width:120},
-      {dataField:'current_status_code',caption:'Durum',width:120, cellTemplate:function(c,o){ c.html('<span class="badge bg-'+(o.value==1?'success':o.value==2?'warning text-dark':'danger')+'">'+statusText(o.value)+'</span>'); }},
+      {dataField:'current_status_code',caption:'Durum',width:160, cellTemplate:function(c,o){ var status = machineDisplayStatus(o.data); c.html('<span class="badge bg-'+status.badge+'">'+status.text+'</span>'); }},
       {dataField:'open_fault_count',caption:'Açık Arıza',width:95,alignment:'center'},
       {dataField:'next_maintenance_date',caption:'Sonraki Bakım',width:150},
       {caption:'İşlem',width:80,allowFiltering:false,allowSorting:false,cellTemplate:function(c,o){ $('<button class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i></button>').on('click',function(){showMachineModal(o.data);}).appendTo(c);} }
