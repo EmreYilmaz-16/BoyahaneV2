@@ -75,6 +75,8 @@ CREATE TABLE IF NOT EXISTS machine_faults (
     fault_title VARCHAR(200) NOT NULL,
     fault_description VARCHAR(4000),
     priority_level INTEGER NOT NULL DEFAULT 2, -- 1:Düşük 2:Orta 3:Yüksek 4:Kritik
+    root_cause_code VARCHAR(30), -- mechanical/electrical/pneumatic/hydraulic/operator_error/wear/other
+    downtime_category VARCHAR(30) NOT NULL DEFAULT 'unplanned', -- unplanned/planned/production_change/cleaning
     fault_status VARCHAR(20) NOT NULL DEFAULT 'open', -- open/in_progress/resolved/cancelled
     opened_at TIMESTAMP NOT NULL DEFAULT NOW(),
     assigned_at TIMESTAMP,
@@ -98,14 +100,61 @@ CREATE TABLE IF NOT EXISTS machine_fault_events (
     CONSTRAINT fk_machine_fault_event_fault FOREIGN KEY (fault_id) REFERENCES machine_faults(fault_id) ON DELETE CASCADE
 );
 
+
+CREATE TABLE IF NOT EXISTS machine_used_materials (
+    material_id SERIAL PRIMARY KEY,
+    source_type VARCHAR(30) NOT NULL, -- fault/maintenance
+    source_id INTEGER NOT NULL,
+    product_id INTEGER,
+    product_name VARCHAR(250) NOT NULL,
+    product_code VARCHAR(100),
+    quantity NUMERIC(18,4) NOT NULL DEFAULT 1,
+    unit VARCHAR(30) NOT NULL DEFAULT 'adet',
+    note VARCHAR(1000),
+    record_date TIMESTAMP NOT NULL DEFAULT NOW(),
+    CONSTRAINT chk_machine_used_materials_source_type CHECK (source_type IN ('fault', 'maintenance')),
+    CONSTRAINT chk_machine_used_materials_quantity CHECK (quantity > 0)
+);
+
+CREATE TABLE IF NOT EXISTS machine_sla_rules (
+    sla_rule_id SERIAL PRIMARY KEY,
+    priority_level INTEGER NOT NULL UNIQUE,
+    response_target_min INTEGER NOT NULL,
+    close_target_min INTEGER NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    record_date TIMESTAMP NOT NULL DEFAULT NOW(),
+    update_date TIMESTAMP,
+    CONSTRAINT chk_machine_sla_rules_priority CHECK (priority_level BETWEEN 1 AND 4),
+    CONSTRAINT chk_machine_sla_rules_response CHECK (response_target_min > 0),
+    CONSTRAINT chk_machine_sla_rules_close CHECK (close_target_min > 0)
+);
+
+INSERT INTO machine_sla_rules (priority_level, response_target_min, close_target_min, is_active)
+VALUES
+    (1, 240, 2880, true),
+    (2, 120, 1440, true),
+    (3, 60, 480, true),
+    (4, 30, 240, true)
+ON CONFLICT (priority_level) DO NOTHING;
+
+ALTER TABLE machine_faults ADD COLUMN IF NOT EXISTS root_cause_code VARCHAR(30);
+ALTER TABLE machine_faults ADD COLUMN IF NOT EXISTS downtime_category VARCHAR(30) NOT NULL DEFAULT 'unplanned';
+
 CREATE INDEX IF NOT EXISTS idx_machine_machines_status ON machine_machines(current_status_code);
 CREATE INDEX IF NOT EXISTS idx_machine_plans_next_date ON machine_maintenance_plans(next_planned_date);
 CREATE INDEX IF NOT EXISTS idx_machine_faults_status ON machine_faults(fault_status);
 CREATE INDEX IF NOT EXISTS idx_machine_faults_machine ON machine_faults(machine_id);
 CREATE INDEX IF NOT EXISTS idx_machine_faults_opened_at ON machine_faults(opened_at);
+CREATE INDEX IF NOT EXISTS idx_machine_faults_root_cause ON machine_faults(root_cause_code);
+CREATE INDEX IF NOT EXISTS idx_machine_faults_downtime_category ON machine_faults(downtime_category);
+CREATE INDEX IF NOT EXISTS idx_machine_used_materials_source ON machine_used_materials(source_type, source_id);
+CREATE INDEX IF NOT EXISTS idx_machine_used_materials_product ON machine_used_materials(product_id);
+CREATE INDEX IF NOT EXISTS idx_machine_sla_rules_active ON machine_sla_rules(is_active, priority_level);
 
 COMMENT ON TABLE machine_machines IS 'Makine ana kayıtları';
 COMMENT ON TABLE machine_maintenance_plans IS 'Makine periyodik bakım planları';
 COMMENT ON TABLE machine_maintenance_logs IS 'Gerçekleşen bakım kayıtları';
 COMMENT ON TABLE machine_faults IS 'Makine arıza kayıtları';
 COMMENT ON TABLE machine_fault_events IS 'Arıza yaşam döngüsü olayları';
+COMMENT ON TABLE machine_used_materials IS 'Arıza ve bakım kayıtlarında kullanılan malzemeler';
+COMMENT ON TABLE machine_sla_rules IS 'Makine arıza önceliklerine göre SLA hedefleri';
