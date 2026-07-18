@@ -1,46 +1,51 @@
 <cfprocessingdirective pageEncoding="utf-8">
 
 <cfquery name="qMachineBoard" datasource="boyahane">
-    SELECT
-        m.machine_id,
-        COALESCE(m.machine_code, '') AS machine_code,
-        COALESCE(m.machine_name, '') AS machine_name,
-        COALESCE(d.department_head, 'Diğer') AS department_name,
-        COALESCE(m.current_status_code, 1) AS current_status_code,
-        COALESCE(m.current_status_note, '') AS current_status_note,
-        COALESCE(active_fault.last_event_type, '') AS active_fault_stage,
-        COALESCE(m.is_active, true) AS is_active,
-        (
-            SELECT COUNT(*)
+    WITH machine_status AS (
+        SELECT
+            m.machine_id,
+            COALESCE(m.machine_code, '') AS machine_code,
+            COALESCE(m.machine_name, '') AS machine_name,
+            COALESCE(d.department_head, 'Diğer') AS department_name,
+            COALESCE(m.current_status_code, 1) AS current_status_code,
+            COALESCE(m.current_status_note, '') AS current_status_note,
+            COALESCE(active_fault.last_event_type, '') AS active_fault_stage,
+            COALESCE(m.is_active, true) AS is_active,
+            COALESCE(fault_counts.open_fault_count, 0) AS open_fault_count
+        FROM machine_machines m
+        LEFT JOIN department d ON d.department_id = m.department_id
+        LEFT JOIN LATERAL (
+            SELECT COUNT(*) AS open_fault_count
             FROM machine_faults f
             WHERE f.machine_id = m.machine_id
               AND f.fault_status IN ('open', 'in_progress')
-        ) AS open_fault_count
-    FROM machine_machines m
-    LEFT JOIN department d ON d.department_id = m.department_id
-    LEFT JOIN LATERAL (
-        SELECT COALESCE(last_event.event_type, 'opened') AS last_event_type
-        FROM machine_faults f
+        ) fault_counts ON true
         LEFT JOIN LATERAL (
-            SELECT fe.event_type
-            FROM machine_fault_events fe
-            WHERE fe.fault_id = f.fault_id
-            ORDER BY fe.event_date DESC, fe.fault_event_id DESC
+            SELECT COALESCE(last_event.event_type, 'opened') AS last_event_type
+            FROM machine_faults f
+            LEFT JOIN LATERAL (
+                SELECT fe.event_type
+                FROM machine_fault_events fe
+                WHERE fe.fault_id = f.fault_id
+                ORDER BY fe.event_date DESC, fe.fault_event_id DESC
+                LIMIT 1
+            ) last_event ON true
+            WHERE f.machine_id = m.machine_id
+              AND f.fault_status IN ('open', 'in_progress')
+            ORDER BY
+                CASE COALESCE(last_event.event_type, 'opened')
+                    WHEN 'intervention' THEN 3
+                    WHEN 'assigned' THEN 2
+                    ELSE 1
+                END DESC,
+                COALESCE(f.intervention_at, f.assigned_at, f.opened_at) DESC,
+                f.fault_id DESC
             LIMIT 1
-        ) last_event ON true
-        WHERE f.machine_id = m.machine_id
-          AND f.fault_status IN ('open', 'in_progress')
-        ORDER BY
-            CASE COALESCE(last_event.event_type, 'opened')
-                WHEN 'intervention' THEN 3
-                WHEN 'assigned' THEN 2
-                ELSE 1
-            END DESC,
-            COALESCE(f.intervention_at, f.assigned_at, f.opened_at) DESC,
-            f.fault_id DESC
-        LIMIT 1
-    ) active_fault ON true
-    ORDER BY COALESCE(d.department_head, 'Diğer'), m.machine_name
+        ) active_fault ON true
+    )
+    SELECT *
+    FROM machine_status
+    ORDER BY department_name, machine_name
 </cfquery>
 
 <cfquery name="qSummary" datasource="boyahane">
@@ -67,6 +72,46 @@
         SUM(CASE WHEN is_active = true
                   AND (open_fault_count > 0 OR current_status_code = 3) THEN 1 ELSE 0 END) AS status_fault,
         SUM(CASE WHEN is_active = false THEN 1 ELSE 0 END) AS status_inactive
+            COALESCE(active_fault.last_event_type, '') AS active_fault_stage,
+            COALESCE(fault_counts.open_fault_count, 0) AS open_fault_count
+        FROM machine_machines m
+        LEFT JOIN LATERAL (
+            SELECT COUNT(*) AS open_fault_count
+            FROM machine_faults f
+            WHERE f.machine_id = m.machine_id
+              AND f.fault_status IN ('open', 'in_progress')
+        ) fault_counts ON true
+        LEFT JOIN LATERAL (
+            SELECT COALESCE(last_event.event_type, 'opened') AS last_event_type
+            FROM machine_faults f
+            LEFT JOIN LATERAL (
+                SELECT fe.event_type
+                FROM machine_fault_events fe
+                WHERE fe.fault_id = f.fault_id
+                ORDER BY fe.event_date DESC, fe.fault_event_id DESC
+                LIMIT 1
+            ) last_event ON true
+            WHERE f.machine_id = m.machine_id
+              AND f.fault_status IN ('open', 'in_progress')
+            ORDER BY
+                CASE COALESCE(last_event.event_type, 'opened')
+                    WHEN 'intervention' THEN 3
+                    WHEN 'assigned' THEN 2
+                    ELSE 1
+                END DESC,
+                COALESCE(f.intervention_at, f.assigned_at, f.opened_at) DESC,
+                f.fault_id DESC
+            LIMIT 1
+        ) active_fault ON true
+    )
+    SELECT
+        COUNT(*) AS total_machine,
+        SUM(CASE WHEN is_active = false THEN 1 ELSE 0 END) AS status_inactive,
+        SUM(CASE WHEN is_active = true AND current_status_code = 2 THEN 1 ELSE 0 END) AS status_maintenance,
+        SUM(CASE WHEN is_active = true AND current_status_code <> 2 AND active_fault_stage = 'intervention' THEN 1 ELSE 0 END) AS status_intervention,
+        SUM(CASE WHEN is_active = true AND current_status_code <> 2 AND active_fault_stage <> 'intervention' AND active_fault_stage = 'assigned' THEN 1 ELSE 0 END) AS status_assigned,
+        SUM(CASE WHEN is_active = true AND current_status_code <> 2 AND active_fault_stage NOT IN ('intervention', 'assigned') AND open_fault_count > 0 THEN 1 ELSE 0 END) AS status_fault,
+        SUM(CASE WHEN is_active = true AND current_status_code = 1 AND open_fault_count = 0 THEN 1 ELSE 0 END) AS status_ok
     FROM machine_status
 </cfquery>
 
@@ -204,6 +249,7 @@
     box-shadow: 0 1px 3px rgba(0,0,0,.2);
 }
 .sb-legend-hint { font-size: 0.75rem; color: ##94a3b8; font-style: italic; }
+<cfinclude template="_status_board_styles.cfm">
 
 /* Department card */
 .sb-dept-card {
@@ -253,12 +299,6 @@
 .sb-tile-inactive { cursor: default; }
 .sb-tile-inactive:hover { transform: none !important; box-shadow: 0 3px 10px rgba(0,0,0,.18) !important; }
 
-.sb-tile-ok      { background: linear-gradient(160deg, ##22c55e 0%, ##15803d 100%); }
-.sb-tile-maint   { background: linear-gradient(160deg, ##9ca3af 0%, ##4b5563 100%); }
-.sb-tile-assigned{ background: linear-gradient(160deg, ##60a5fa 0%, ##1d4ed8 100%); }
-.sb-tile-intervention { background: linear-gradient(160deg, ##facc15 0%, ##ca8a04 100%); color: ##1f2937; }
-.sb-tile-fault   { background: linear-gradient(160deg, ##f87171 0%, ##b91c1c 100%); }
-.sb-tile-inactive{ background: linear-gradient(160deg, ##cbd5e1 0%, ##64748b 100%); }
 
 .sb-tile-icon { font-size: 1.2rem; opacity: .9; line-height: 1; }
 .sb-tile-code { font-size: 0.95rem; font-weight: 800; line-height: 1.1; text-transform: uppercase; letter-spacing: .03em; }
@@ -332,12 +372,12 @@
 
     <!--- Legend --->
     <div class="sb-legend">
-        <span><i class="sb-legend-dot" style="background:##16a34a"></i>Çözüldü</span>
-        <span><i class="sb-legend-dot" style="background:##4b5563"></i>Bakımda</span>
-        <span><i class="sb-legend-dot" style="background:##1d4ed8"></i>Personel Atandı</span>
-        <span><i class="sb-legend-dot" style="background:##ca8a04"></i>Müdahale Ediliyor</span>
-        <span><i class="sb-legend-dot" style="background:##dc2626"></i>Arızalı</span>
-        <span><i class="sb-legend-dot" style="background:##64748b"></i>Pasif</span>
+        <span><i class="sb-legend-dot sb-legend-dot-ok"></i>Çözüldü</span>
+        <span><i class="sb-legend-dot sb-legend-dot-maint"></i>Bakımda</span>
+        <span><i class="sb-legend-dot sb-legend-dot-assigned"></i>Personel Atandı</span>
+        <span><i class="sb-legend-dot sb-legend-dot-intervention"></i>Müdahale Ediliyor</span>
+        <span><i class="sb-legend-dot sb-legend-dot-fault"></i>Arızalı</span>
+        <span><i class="sb-legend-dot sb-legend-dot-inactive"></i>Pasif</span>
         <span class="sb-legend-hint"><i class="fas fa-circle-exclamation me-1"></i>Sağ üstteki sayı: açık arıza adedi</span>
     </div>
 
