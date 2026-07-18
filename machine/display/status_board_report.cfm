@@ -16,17 +16,27 @@
             FROM machine_faults f
             WHERE f.machine_id = m.machine_id
               AND f.fault_status IN ('open', 'in_progress')
-        ) AS open_fault_count
-    FROM machine_machines m
-    LEFT JOIN department d ON d.department_id = m.department_id
-    LEFT JOIN LATERAL (
-        SELECT COALESCE(last_event.event_type, 'opened') AS last_event_type
-        FROM machine_faults f
+        ) fault_counts ON true
         LEFT JOIN LATERAL (
-            SELECT fe.event_type
-            FROM machine_fault_events fe
-            WHERE fe.fault_id = f.fault_id
-            ORDER BY fe.event_date DESC, fe.fault_event_id DESC
+            SELECT COALESCE(last_event.event_type, 'opened') AS last_event_type
+            FROM machine_faults f
+            LEFT JOIN LATERAL (
+                SELECT fe.event_type
+                FROM machine_fault_events fe
+                WHERE fe.fault_id = f.fault_id
+                ORDER BY fe.event_date DESC, fe.fault_event_id DESC
+                LIMIT 1
+            ) last_event ON true
+            WHERE f.machine_id = m.machine_id
+              AND f.fault_status IN ('open', 'in_progress')
+            ORDER BY
+                CASE COALESCE(last_event.event_type, 'opened')
+                    WHEN 'intervention' THEN 3
+                    WHEN 'assigned' THEN 2
+                    ELSE 1
+                END DESC,
+                COALESCE(f.intervention_at, f.assigned_at, f.opened_at) DESC,
+                f.fault_id DESC
             LIMIT 1
         ) last_event ON true
         WHERE f.machine_id = m.machine_id
@@ -45,6 +55,18 @@
 </cfquery>
 
 <cfquery name="qSummary" datasource="boyahane">
+    WITH machine_status AS (
+        SELECT
+            COALESCE(m.current_status_code, 1) AS current_status_code,
+            COALESCE(m.is_active, true) AS is_active,
+            (
+                SELECT COUNT(*)
+                FROM machine_faults f
+                WHERE f.machine_id = m.machine_id
+                  AND f.fault_status IN ('open', 'in_progress')
+            ) AS open_fault_count
+        FROM machine_machines m
+    )
     SELECT
         COUNT(*) AS total_machine,
         SUM(CASE WHEN COALESCE(current_status_code, <cfqueryparam value="#STATUS_OK#" cfsqltype="cf_sql_integer">) = <cfqueryparam value="#STATUS_OK#" cfsqltype="cf_sql_integer"> THEN 1 ELSE 0 END) AS status_ok,
@@ -55,6 +77,12 @@
 </cfquery>
 
 <cfset hasMachine = qMachineBoard.recordCount GT 0>
+<cfset openedFaultMachineCount = 0>
+<cfloop query="qMachineBoard">
+    <cfif val(open_fault_count) GT 0 AND active_fault_stage EQ "opened">
+        <cfset openedFaultMachineCount = openedFaultMachineCount + 1>
+    </cfif>
+</cfloop>
 
 <cfoutput>
 <style>
@@ -125,6 +153,7 @@
 .sb-stat-icon.ok       { background: ##f0fdf4; color: ##16a34a; }
 .sb-stat-icon.maint    { background: ##f3f4f6; color: ##4b5563; }
 .sb-stat-icon.fault    { background: ##fef2f2; color: ##dc2626; }
+.sb-stat-icon.openfault{ background: ##fff7ed; color: ##ea580c; }
 .sb-stat-icon.inactive { background: ##f8fafc; color: ##6b7280; }
 .sb-stat-label { font-size: 0.72rem; font-weight: 600; color: ##94a3b8; text-transform: uppercase; letter-spacing: .04em; }
 .sb-stat-val   { font-size: 1.6rem; font-weight: 800; line-height: 1.1; color: ##0f172a; }
@@ -148,6 +177,7 @@
     box-shadow: 0 1px 3px rgba(0,0,0,.2);
 }
 .sb-legend-hint { font-size: 0.75rem; color: ##94a3b8; font-style: italic; }
+<cfinclude template="_status_board_styles.cfm">
 
 /* Info banner */
 .sb-info-banner {
@@ -217,6 +247,7 @@
 .sb-tile-ok      { background: linear-gradient(160deg, ##22c55e 0%, ##15803d 100%); }
 .sb-tile-maint   { background: linear-gradient(160deg, ##9ca3af 0%, ##4b5563 100%); }
 .sb-tile-assigned{ background: linear-gradient(160deg, ##60a5fa 0%, ##1d4ed8 100%); }
+.sb-tile-open-fault { background: linear-gradient(160deg, ##fb923c 0%, ##ea580c 100%); }
 .sb-tile-intervention { background: linear-gradient(160deg, ##facc15 0%, ##ca8a04 100%); color: ##1f2937; }
 .sb-tile-fault   { background: linear-gradient(160deg, ##f87171 0%, ##b91c1c 100%); }
 .sb-tile-inactive{ background: linear-gradient(160deg, ##cbd5e1 0%, ##64748b 100%); }
@@ -224,6 +255,24 @@
 .sb-tile-icon { font-size: 1.2rem; opacity: .9; line-height: 1; }
 .sb-tile-code { font-size: 0.95rem; font-weight: 800; line-height: 1.1; text-transform: uppercase; letter-spacing: .03em; }
 .sb-tile-name { font-size: 0.68rem; font-weight: 600; opacity: .85; line-height: 1.2; }
+.sb-tile-status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    max-width: 100%;
+    padding: 2px 6px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.22);
+    border: 1px solid rgba(255,255,255,.3);
+    font-size: 0.58rem;
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: .02em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+.sb-tile-intervention .sb-tile-status { background: rgba(255,255,255,.45); border-color: rgba(31,41,55,.18); }
 
 .sb-fault-badge {
     position: absolute;
@@ -360,6 +409,7 @@
                 <div class="sb-tile-icon"><i class="fas #tileIcon#"></i></div>
                 <div class="sb-tile-code">#htmlEditFormat(qMachineBoard.machine_code)#</div>
                 <div class="sb-tile-name">#htmlEditFormat(qMachineBoard.machine_name)#</div>
+                <div class="sb-tile-status"><i class="fas #tileIcon#"></i> #htmlEditFormat(tileStatusLabel)#</div>
             </div>
         </cfloop>
                     </div>
