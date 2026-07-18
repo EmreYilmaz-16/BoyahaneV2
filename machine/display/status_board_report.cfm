@@ -371,21 +371,27 @@
 
             <cfset tileClass = machineStatusDefinitions[STATUS_OK].tileClass>
             <cfset tileIcon  = machineStatusDefinitions[STATUS_OK].icon>
+            <cfset tileStatusLabel = machineStatusDefinitions[STATUS_OK].label>
             <cfif NOT qMachineBoard.is_active>
                 <cfset tileClass = machineStatusInactive.tileClass>
                 <cfset tileIcon  = machineStatusInactive.icon>
+                <cfset tileStatusLabel = machineStatusInactive.label>
             <cfelseif qMachineBoard.current_status_code EQ STATUS_MAINTENANCE>
                 <cfset tileClass = machineStatusDefinitions[STATUS_MAINTENANCE].tileClass>
                 <cfset tileIcon  = machineStatusDefinitions[STATUS_MAINTENANCE].icon>
+                <cfset tileStatusLabel = machineStatusDefinitions[STATUS_MAINTENANCE].label>
             <cfelseif qMachineBoard.active_fault_stage EQ "intervention">
                 <cfset tileClass = machineFaultStageDefinitions.intervention.tileClass>
                 <cfset tileIcon  = machineFaultStageDefinitions.intervention.icon>
+                <cfset tileStatusLabel = machineFaultStageDefinitions.intervention.label>
             <cfelseif qMachineBoard.active_fault_stage EQ "assigned">
                 <cfset tileClass = machineFaultStageDefinitions.assigned.tileClass>
                 <cfset tileIcon  = machineFaultStageDefinitions.assigned.icon>
+                <cfset tileStatusLabel = machineFaultStageDefinitions.assigned.label>
             <cfelseif val(qMachineBoard.open_fault_count) GT 0>
                 <cfset tileClass = machineStatusDefinitions[STATUS_FAULT].tileClass>
                 <cfset tileIcon  = machineStatusDefinitions[STATUS_FAULT].icon>
+                <cfset tileStatusLabel = machineStatusDefinitions[STATUS_FAULT].label>
             </cfif>
 
             <cfset isClickable = (tileClass NEQ machineStatusInactive.tileClass) AND (val(qMachineBoard.open_fault_count) EQ 0)>
