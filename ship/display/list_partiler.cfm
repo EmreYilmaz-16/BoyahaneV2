@@ -243,6 +243,9 @@
         <a href="index.cfm?fuseaction=ship.add_parti&ship_id=#shipId#" class="btn btn-success btn-sm">
             <i class="fas fa-cut me-1"></i>Yeni Parti
         </a>
+        <a href="/ship/display/sevkiyat_cikis_fisi.cfm?ship_id=#shipId#" target="_blank" class="btn btn-dark btn-sm">
+            <i class="fas fa-print me-1"></i>Sevkiyat Çıkış Fişi
+        </a>
         </cfoutput>
         <a href="index.cfm?fuseaction=ship.list_giris_fis" class="btn-back">
             <i class="fas fa-arrow-left"></i>Giriş Fişi Listesi

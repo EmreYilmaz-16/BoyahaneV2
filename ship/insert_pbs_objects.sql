@@ -27,7 +27,8 @@ VALUES
 ('ship.dispatch_roll_scan',    '/ship/form/dispatch_roll_scan.cfm',         'dispatch_roll_scan',     'Top Barkod Sevkiyat',      'page', NULL, 27, true, true),
 ('ship.get_roll_by_barcode',   '/ship/form/get_roll_by_barcode.cfm',        'get_roll_by_barcode',    'Top Barkoddan Getir',      'page', NULL, 28, true, false),
 ('ship.save_dispatch_rolls',   '/ship/form/save_dispatch_rolls.cfm',        'save_dispatch_rolls',    'Topları Sevk Et',          'page', NULL, 29, true, false),
-('ship.parti_paket_toplari',   '/ship/display/parti_paket_toplari.cfm',     'parti_paket_toplari',    'Parti Paket Topları',      'page', NULL, 30, true, true)
+('ship.parti_paket_toplari',   '/ship/display/parti_paket_toplari.cfm',     'parti_paket_toplari',    'Parti Paket Topları',      'page', NULL, 30, true, true),
+('ship.sevkiyat_cikis_fisi', '/ship/display/sevkiyat_cikis_fisi.cfm', 'sevkiyat_cikis_fisi', 'Sevkiyat Çıkış Fişi', 'page', NULL, 31, true, false)
 ;
 
 -- Minimal (full_fuseaction + file_path yeterli ise):
