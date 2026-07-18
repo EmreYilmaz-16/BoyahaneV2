@@ -1,4 +1,5 @@
 <cfprocessingdirective pageEncoding="utf-8">
+<cfinclude template="../includes/status_codes.cfm">
 <cfcontent type="application/json; charset=utf-8"><cfsetting showdebugoutput="false">
 <cfset response = {"success":false,"message":""}>
 
@@ -59,11 +60,11 @@
         <cfoutput>#serializeJSON(response)#</cfoutput><cfabort>
     </cfif>
 
-    <cfset machineStatusCode = 1>
+    <cfset machineStatusCode = STATUS_OK>
     <cfset machineStatusNote = "Bakım tamamlandı">
     <cfset machineHistoryNote = "Bakım sonucu girildi">
     <cfif NOT isNull(startDate) AND isNull(endDate)>
-        <cfset machineStatusCode = 2>
+        <cfset machineStatusCode = STATUS_MAINTENANCE>
         <cfset machineStatusNote = "Bakımda">
         <cfset machineHistoryNote = "Bakım başlatıldı">
     <cfelseif NOT isNull(endDate)>
@@ -92,12 +93,12 @@
         )
     </cfquery>
 
-    <cfset machineStatusCode = 1>
+    <cfset machineStatusCode = STATUS_OK>
     <cfset machineStatusNote = "Bakım tamamlandı">
     <cfset historyStatusNote = "Bakım sonucu girildi">
 
     <cfif resultStatus eq "partial">
-        <cfset machineStatusCode = 2>
+        <cfset machineStatusCode = STATUS_MAINTENANCE>
         <cfset machineStatusNote = "Bakım kısmi tamamlandı; plan sonraki tarihi otomatik ileri alınmadı. Lütfen ayrı bir sonraki bakım tarihi seçin.">
         <cfset historyStatusNote = "Bakım kısmi tamamlandı">
     <cfelseif resultStatus eq "failed">
@@ -107,8 +108,8 @@
             WHERE machine_id = <cfqueryparam value="#machineId#" cfsqltype="cf_sql_integer">
               AND fault_status IN ('open','in_progress')
         </cfquery>
-        <cfset machineStatusCode = val(qOpenFaults.open_count) gt 0 ? 3 : 2>
-        <cfset machineStatusNote = machineStatusCode eq 3 ? "Bakım başarısız; aktif arıza mevcut" : "Bakım başarısız; makine bakımda bırakıldı">
+        <cfset machineStatusCode = val(qOpenFaults.open_count) gt 0 ? STATUS_FAULT : STATUS_MAINTENANCE>
+        <cfset machineStatusNote = machineStatusCode eq STATUS_FAULT ? "Bakım başarısız; aktif arıza mevcut" : "Bakım başarısız; makine bakımda bırakıldı">
         <cfset historyStatusNote = "Bakım başarısız">
     </cfif>
 
@@ -126,7 +127,7 @@
         VALUES (
             <cfqueryparam value="#machineId#" cfsqltype="cf_sql_integer">,
             <cfqueryparam value="#machineStatusCode#" cfsqltype="cf_sql_integer">,
-            <cfqueryparam value="#machineHistoryNote#" cfsqltype="cf_sql_varchar">,
+            <cfqueryparam value="#historyStatusNote#" cfsqltype="cf_sql_varchar">,
             'maintenance',
             NULL,
             <cfqueryparam value="#session.user.employee_id ?: 0#" cfsqltype="cf_sql_integer" null="#NOT isDefined('session.user.employee_id')#">

@@ -1,4 +1,5 @@
 <cfprocessingdirective pageEncoding="utf-8">
+<cfinclude template="../includes/status_codes.cfm">
 <cfcontent type="application/json; charset=utf-8"><cfsetting showdebugoutput="false">
 <cfset response = {"success":false,"message":""}>
 
@@ -63,7 +64,7 @@
         )
     </cfquery>
 
-    <cfset machineStatus = 3>
+    <cfset machineStatus = STATUS_FAULT>
     <cfset machineStatusNote = "Aktif arıza mevcut">
     <cfif newStatus eq "resolved" OR newStatus eq "cancelled">
         <cfquery name="qOpen" datasource="boyahane">
@@ -73,7 +74,7 @@
               AND fault_status IN ('open','in_progress')
         </cfquery>
         <cfif val(qOpen.open_count) eq 0>
-            <cfset machineStatus = 1>
+            <cfset machineStatus = STATUS_OK>
             <cfset machineStatusNote = "Arıza yok">
         </cfif>
     </cfif>

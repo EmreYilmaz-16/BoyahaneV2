@@ -1,4 +1,5 @@
 <cfprocessingdirective pageEncoding="utf-8">
+<cfinclude template="../includes/status_codes.cfm">
 <cfcontent type="application/json; charset=utf-8"><cfsetting showdebugoutput="false">
 <cfset response = {"success":false,"message":""}>
 
@@ -69,7 +70,7 @@
 
     <cfquery datasource="boyahane">
         UPDATE machine_machines
-        SET current_status_code = 3,
+        SET current_status_code = <cfqueryparam value="#STATUS_FAULT#" cfsqltype="cf_sql_integer">,
             current_status_note = <cfqueryparam value="#'Aktif arıza: ' & faultTitle#" cfsqltype="cf_sql_varchar">,
             update_date = CURRENT_TIMESTAMP
         WHERE machine_id = <cfqueryparam value="#machineId#" cfsqltype="cf_sql_integer">
@@ -79,7 +80,7 @@
         INSERT INTO machine_status_history (machine_id, status_code, status_note, source_type, source_id, record_emp)
         VALUES (
             <cfqueryparam value="#machineId#" cfsqltype="cf_sql_integer">,
-            3,
+            <cfqueryparam value="#STATUS_FAULT#" cfsqltype="cf_sql_integer">,
             <cfqueryparam value="#faultTitle#" cfsqltype="cf_sql_varchar">,
             'fault',
             <cfqueryparam value="#insFault.fault_id#" cfsqltype="cf_sql_integer">,
