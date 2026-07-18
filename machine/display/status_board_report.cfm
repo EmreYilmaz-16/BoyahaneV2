@@ -296,7 +296,7 @@
 
     <!--- Legend --->
     <div class="sb-legend">
-        <span><i class="sb-legend-dot" style="background:##16a34a"></i>Çözüldü</span>
+        <span><i class="sb-legend-dot" style="background:##16a34a"></i>Çalışıyor</span>
         <span><i class="sb-legend-dot" style="background:##4b5563"></i>Bakımda</span>
         <span><i class="sb-legend-dot" style="background:##1d4ed8"></i>Personel Atandı</span>
         <span><i class="sb-legend-dot" style="background:##ca8a04"></i>Müdahale Ediliyor</span>
