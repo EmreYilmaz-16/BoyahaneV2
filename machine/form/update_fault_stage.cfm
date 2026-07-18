@@ -29,6 +29,11 @@
         <cfoutput>#serializeJSON(response)#</cfoutput><cfabort>
     </cfif>
 
+    <cfif listFindNoCase("resolved,cancelled", getFault.fault_status)>
+        <cfset response.message = "Kapatılmış arıza üzerinde aşama değiştirilemez.">
+        <cfoutput>#serializeJSON(response)#</cfoutput><cfabort>
+    </cfif>
+
     <cfset newStatus = getFault.fault_status>
     <cfif stage eq "assigned" OR stage eq "intervention"><cfset newStatus = "in_progress"></cfif>
     <cfif stage eq "resolved"><cfset newStatus = "resolved"></cfif>
