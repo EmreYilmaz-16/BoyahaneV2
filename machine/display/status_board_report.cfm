@@ -223,6 +223,24 @@
 .sb-tile-icon { font-size: 1.2rem; opacity: .9; line-height: 1; }
 .sb-tile-code { font-size: 0.95rem; font-weight: 800; line-height: 1.1; text-transform: uppercase; letter-spacing: .03em; }
 .sb-tile-name { font-size: 0.68rem; font-weight: 600; opacity: .85; line-height: 1.2; }
+.sb-tile-status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    max-width: 100%;
+    padding: 2px 6px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.22);
+    border: 1px solid rgba(255,255,255,.3);
+    font-size: 0.58rem;
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: .02em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+.sb-tile-intervention .sb-tile-status { background: rgba(255,255,255,.45); border-color: rgba(31,41,55,.18); }
 
 .sb-fault-badge {
     position: absolute;
@@ -330,26 +348,32 @@
 
             <cfset tileClass = "sb-tile-ok">
             <cfset tileIcon  = "fa-circle-check">
+            <cfset tileStatusLabel = "Çalışıyor">
             <cfif NOT qMachineBoard.is_active>
                 <cfset tileClass = "sb-tile-inactive">
                 <cfset tileIcon  = "fa-circle-pause">
+                <cfset tileStatusLabel = "Pasif">
             <cfelseif qMachineBoard.current_status_code EQ 2>
                 <cfset tileClass = "sb-tile-maint">
                 <cfset tileIcon  = "fa-tools">
+                <cfset tileStatusLabel = "Bakımda">
             <cfelseif qMachineBoard.active_fault_stage EQ "intervention">
                 <cfset tileClass = "sb-tile-intervention">
                 <cfset tileIcon  = "fa-screwdriver-wrench">
+                <cfset tileStatusLabel = "Müdahale">
             <cfelseif qMachineBoard.active_fault_stage EQ "assigned">
                 <cfset tileClass = "sb-tile-assigned">
                 <cfset tileIcon  = "fa-user-check">
+                <cfset tileStatusLabel = "Atandı">
             <cfelseif val(qMachineBoard.open_fault_count) GT 0>
                 <cfset tileClass = "sb-tile-fault">
                 <cfset tileIcon  = "fa-triangle-exclamation">
+                <cfset tileStatusLabel = "Arızalı">
             </cfif>
 
             <cfset isClickable = (tileClass NEQ "sb-tile-inactive") AND (val(qMachineBoard.open_fault_count) EQ 0)>
             <cfset tileExtraClass = isClickable ? "" : (tileClass EQ "sb-tile-inactive" ? "" : " sb-tile-open-fault")>
-            <cfset tileTitle = htmlEditFormat(qMachineBoard.machine_name) & (len(trim(qMachineBoard.current_status_note)) ? ' — ' & htmlEditFormat(qMachineBoard.current_status_note) : '') & (val(qMachineBoard.open_fault_count) GT 0 AND tileClass NEQ 'sb-tile-inactive' ? ' (Açık arıza mevcut, yeni kayıt açılamaz)' : '')>
+            <cfset tileTitle = htmlEditFormat(qMachineBoard.machine_name) & " | Durum: " & htmlEditFormat(tileStatusLabel) & " | Açık arıza: " & val(qMachineBoard.open_fault_count) & (len(trim(qMachineBoard.current_status_note)) ? " | Not: " & htmlEditFormat(qMachineBoard.current_status_note) : "") & (val(qMachineBoard.open_fault_count) GT 0 AND tileClass NEQ "sb-tile-inactive" ? " | Açık arıza mevcut, yeni kayıt açılamaz" : "")>
             <div class="sb-tile #tileClass##tileExtraClass#"
                  title="#tileTitle#"
                  <cfif isClickable>onclick="openSbFaultModal(#val(qMachineBoard.machine_id)#,'#jsStringFormat(qMachineBoard.machine_name)#')"</cfif>>
@@ -359,6 +383,7 @@
                 <div class="sb-tile-icon"><i class="fas #tileIcon#"></i></div>
                 <div class="sb-tile-code">#htmlEditFormat(qMachineBoard.machine_code)#</div>
                 <div class="sb-tile-name">#htmlEditFormat(qMachineBoard.machine_name)#</div>
+                <div class="sb-tile-status"><i class="fas #tileIcon#"></i> #htmlEditFormat(tileStatusLabel)#</div>
             </div>
         </cfloop>
                     </div>
