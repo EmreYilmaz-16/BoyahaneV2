@@ -8,8 +8,13 @@
     <cfset maintenanceType= left(trim(form.maintenance_type ?: "planned"), 30)>
     <cfset startRaw       = trim(form.maintenance_start ?: "")>
     <cfset endRaw         = trim(form.maintenance_end ?: "")>
-    <cfset resultStatus   = left(trim(form.maintenance_result ?: "completed"), 30)>
+    <cfset resultStatus   = lcase(left(trim(form.maintenance_result ?: "completed"), 30))>
     <cfset resultNote     = left(trim(form.result_note ?: ""), 2000)>
+
+    <cfif NOT listFindNoCase("completed,partial,failed", resultStatus)>
+        <cfset response.message = "Geçersiz bakım sonucu. İzinli değerler: completed, partial, failed.">
+        <cfoutput>#serializeJSON(response)#</cfoutput><cfabort>
+    </cfif>
 
     <cfif machineId lte 0>
         <cfset response.message = "Makine seçimi zorunludur.">
@@ -56,6 +61,26 @@
             <cfqueryparam value="#session.user.employee_id ?: 0#" cfsqltype="cf_sql_integer" null="#NOT isDefined('session.user.employee_id')#">
         )
     </cfquery>
+
+    <cfset machineStatusCode = 1>
+    <cfset machineStatusNote = "Bakım tamamlandı">
+    <cfset historyStatusNote = "Bakım sonucu girildi">
+
+    <cfif resultStatus eq "partial">
+        <cfset machineStatusCode = 2>
+        <cfset machineStatusNote = "Bakım kısmi tamamlandı; plan sonraki tarihi otomatik ileri alınmadı. Lütfen ayrı bir sonraki bakım tarihi seçin.">
+        <cfset historyStatusNote = "Bakım kısmi tamamlandı">
+    <cfelseif resultStatus eq "failed">
+        <cfquery name="qOpenFaults" datasource="boyahane">
+            SELECT COUNT(*) AS open_count
+            FROM machine_faults
+            WHERE machine_id = <cfqueryparam value="#machineId#" cfsqltype="cf_sql_integer">
+              AND fault_status IN ('open','in_progress')
+        </cfquery>
+        <cfset machineStatusCode = val(qOpenFaults.open_count) gt 0 ? 3 : 2>
+        <cfset machineStatusNote = machineStatusCode eq 3 ? "Bakım başarısız; aktif arıza mevcut" : "Bakım başarısız; makine bakımda bırakıldı">
+        <cfset historyStatusNote = "Bakım başarısız">
+    </cfif>
 
     <cfquery datasource="boyahane">
         UPDATE machine_machines
