@@ -256,7 +256,7 @@
     border-radius: 999px;
     background: rgba(255,255,255,.22);
     border: 1px solid rgba(255,255,255,.3);
-    font-size: 0.58rem;
+    font-size: 0.4rem;
     font-weight: 800;
     line-height: 1.15;
     letter-spacing: .02em;
