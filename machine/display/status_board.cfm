@@ -1,56 +1,118 @@
 <cfprocessingdirective pageEncoding="utf-8">
 
 <cfquery name="qMachineBoard" datasource="boyahane">
-    SELECT
-        m.machine_id,
-        COALESCE(m.machine_code, '') AS machine_code,
-        COALESCE(m.machine_name, '') AS machine_name,
-        COALESCE(d.department_head, 'Diğer') AS department_name,
-        COALESCE(m.current_status_code, 1) AS current_status_code,
-        COALESCE(m.current_status_note, '') AS current_status_note,
-        COALESCE(active_fault.last_event_type, '') AS active_fault_stage,
-        COALESCE(m.is_active, true) AS is_active,
-        (
-            SELECT COUNT(*)
+    WITH machine_status AS (
+        SELECT
+            m.machine_id,
+            COALESCE(m.machine_code, '') AS machine_code,
+            COALESCE(m.machine_name, '') AS machine_name,
+            COALESCE(d.department_head, 'Diğer') AS department_name,
+            COALESCE(m.current_status_code, 1) AS current_status_code,
+            COALESCE(m.current_status_note, '') AS current_status_note,
+            COALESCE(active_fault.last_event_type, '') AS active_fault_stage,
+            COALESCE(m.is_active, true) AS is_active,
+            COALESCE(fault_counts.open_fault_count, 0) AS open_fault_count
+        FROM machine_machines m
+        LEFT JOIN department d ON d.department_id = m.department_id
+        LEFT JOIN LATERAL (
+            SELECT COUNT(*) AS open_fault_count
             FROM machine_faults f
             WHERE f.machine_id = m.machine_id
               AND f.fault_status IN ('open', 'in_progress')
-        ) AS open_fault_count
-    FROM machine_machines m
-    LEFT JOIN department d ON d.department_id = m.department_id
-    LEFT JOIN LATERAL (
-        SELECT COALESCE(last_event.event_type, 'opened') AS last_event_type
-        FROM machine_faults f
+        ) fault_counts ON true
         LEFT JOIN LATERAL (
-            SELECT fe.event_type
-            FROM machine_fault_events fe
-            WHERE fe.fault_id = f.fault_id
-            ORDER BY fe.event_date DESC, fe.fault_event_id DESC
+            SELECT COALESCE(last_event.event_type, 'opened') AS last_event_type
+            FROM machine_faults f
+            LEFT JOIN LATERAL (
+                SELECT fe.event_type
+                FROM machine_fault_events fe
+                WHERE fe.fault_id = f.fault_id
+                ORDER BY fe.event_date DESC, fe.fault_event_id DESC
+                LIMIT 1
+            ) last_event ON true
+            WHERE f.machine_id = m.machine_id
+              AND f.fault_status IN ('open', 'in_progress')
+            ORDER BY
+                CASE COALESCE(last_event.event_type, 'opened')
+                    WHEN 'intervention' THEN 3
+                    WHEN 'assigned' THEN 2
+                    ELSE 1
+                END DESC,
+                COALESCE(f.intervention_at, f.assigned_at, f.opened_at) DESC,
+                f.fault_id DESC
             LIMIT 1
-        ) last_event ON true
-        WHERE f.machine_id = m.machine_id
-          AND f.fault_status IN ('open', 'in_progress')
-        ORDER BY
-            CASE COALESCE(last_event.event_type, 'opened')
-                WHEN 'intervention' THEN 3
-                WHEN 'assigned' THEN 2
-                ELSE 1
-            END DESC,
-            COALESCE(f.intervention_at, f.assigned_at, f.opened_at) DESC,
-            f.fault_id DESC
-        LIMIT 1
-    ) active_fault ON true
-    ORDER BY COALESCE(d.department_head, 'Diğer'), m.machine_name
+        ) active_fault ON true
+    )
+    SELECT *
+    FROM machine_status
+    ORDER BY department_name, machine_name
 </cfquery>
 
 <cfquery name="qSummary" datasource="boyahane">
+    WITH machine_status AS (
+        SELECT
+            COALESCE(m.current_status_code, 1) AS current_status_code,
+            COALESCE(m.is_active, true) AS is_active,
+            (
+                SELECT COUNT(*)
+                FROM machine_faults f
+                WHERE f.machine_id = m.machine_id
+                  AND f.fault_status IN ('open', 'in_progress')
+            ) AS open_fault_count
+        FROM machine_machines m
+    )
     SELECT
         COUNT(*) AS total_machine,
-        SUM(CASE WHEN COALESCE(current_status_code, 1) = 1 THEN 1 ELSE 0 END) AS status_ok,
-        SUM(CASE WHEN COALESCE(current_status_code, 1) = 2 THEN 1 ELSE 0 END) AS status_maintenance,
-        SUM(CASE WHEN COALESCE(current_status_code, 1) = 3 THEN 1 ELSE 0 END) AS status_fault,
-        SUM(CASE WHEN COALESCE(is_active, true) = false THEN 1 ELSE 0 END) AS status_inactive
-    FROM machine_machines
+        SUM(CASE WHEN is_active = true
+                  AND open_fault_count = 0
+                  AND current_status_code = 1 THEN 1 ELSE 0 END) AS status_ok,
+        SUM(CASE WHEN is_active = true
+                  AND open_fault_count = 0
+                  AND current_status_code = 2 THEN 1 ELSE 0 END) AS status_maintenance,
+        SUM(CASE WHEN is_active = true
+                  AND (open_fault_count > 0 OR current_status_code = 3) THEN 1 ELSE 0 END) AS status_fault,
+        SUM(CASE WHEN is_active = false THEN 1 ELSE 0 END) AS status_inactive
+            COALESCE(active_fault.last_event_type, '') AS active_fault_stage,
+            COALESCE(fault_counts.open_fault_count, 0) AS open_fault_count
+        FROM machine_machines m
+        LEFT JOIN LATERAL (
+            SELECT COUNT(*) AS open_fault_count
+            FROM machine_faults f
+            WHERE f.machine_id = m.machine_id
+              AND f.fault_status IN ('open', 'in_progress')
+        ) fault_counts ON true
+        LEFT JOIN LATERAL (
+            SELECT COALESCE(last_event.event_type, 'opened') AS last_event_type
+            FROM machine_faults f
+            LEFT JOIN LATERAL (
+                SELECT fe.event_type
+                FROM machine_fault_events fe
+                WHERE fe.fault_id = f.fault_id
+                ORDER BY fe.event_date DESC, fe.fault_event_id DESC
+                LIMIT 1
+            ) last_event ON true
+            WHERE f.machine_id = m.machine_id
+              AND f.fault_status IN ('open', 'in_progress')
+            ORDER BY
+                CASE COALESCE(last_event.event_type, 'opened')
+                    WHEN 'intervention' THEN 3
+                    WHEN 'assigned' THEN 2
+                    ELSE 1
+                END DESC,
+                COALESCE(f.intervention_at, f.assigned_at, f.opened_at) DESC,
+                f.fault_id DESC
+            LIMIT 1
+        ) active_fault ON true
+    )
+    SELECT
+        COUNT(*) AS total_machine,
+        SUM(CASE WHEN is_active = false THEN 1 ELSE 0 END) AS status_inactive,
+        SUM(CASE WHEN is_active = true AND current_status_code = 2 THEN 1 ELSE 0 END) AS status_maintenance,
+        SUM(CASE WHEN is_active = true AND current_status_code <> 2 AND active_fault_stage = 'intervention' THEN 1 ELSE 0 END) AS status_intervention,
+        SUM(CASE WHEN is_active = true AND current_status_code <> 2 AND active_fault_stage <> 'intervention' AND active_fault_stage = 'assigned' THEN 1 ELSE 0 END) AS status_assigned,
+        SUM(CASE WHEN is_active = true AND current_status_code <> 2 AND active_fault_stage NOT IN ('intervention', 'assigned') AND open_fault_count > 0 THEN 1 ELSE 0 END) AS status_fault,
+        SUM(CASE WHEN is_active = true AND current_status_code = 1 AND open_fault_count = 0 THEN 1 ELSE 0 END) AS status_ok
+    FROM machine_status
 </cfquery>
 
 <cfset hasMachine = qMachineBoard.recordCount GT 0>
@@ -194,6 +256,7 @@
     box-shadow: 0 1px 3px rgba(0,0,0,.2);
 }
 .sb-legend-hint { font-size: 0.75rem; color: ##94a3b8; font-style: italic; }
+<cfinclude template="_status_board_styles.cfm">
 
 /* Department card */
 .sb-dept-card {
@@ -254,6 +317,24 @@
 .sb-tile-icon { font-size: 1.2rem; opacity: .9; line-height: 1; }
 .sb-tile-code { font-size: 0.95rem; font-weight: 800; line-height: 1.1; text-transform: uppercase; letter-spacing: .03em; }
 .sb-tile-name { font-size: 0.68rem; font-weight: 600; opacity: .85; line-height: 1.2; }
+.sb-tile-status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    max-width: 100%;
+    padding: 2px 6px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.22);
+    border: 1px solid rgba(255,255,255,.3);
+    font-size: 0.58rem;
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: .02em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+.sb-tile-intervention .sb-tile-status { background: rgba(255,255,255,.45); border-color: rgba(31,41,55,.18); }
 
 .sb-fault-badge {
     position: absolute;
@@ -362,9 +443,11 @@
 
             <cfset tileClass = "sb-tile-ok">
             <cfset tileIcon  = "fa-circle-check">
+            <cfset tileStatusLabel = "Çalışıyor">
             <cfif NOT qMachineBoard.is_active>
                 <cfset tileClass = "sb-tile-inactive">
                 <cfset tileIcon  = "fa-circle-pause">
+                <cfset tileStatusLabel = "Pasif">
             <cfelseif qMachineBoard.current_status_code EQ 2>
                 <cfset tileClass = "sb-tile-maint">
                 <cfset tileIcon  = "fa-tools">
@@ -374,16 +457,20 @@
             <cfelseif qMachineBoard.active_fault_stage EQ "intervention">
                 <cfset tileClass = "sb-tile-intervention">
                 <cfset tileIcon  = "fa-screwdriver-wrench">
+                <cfset tileStatusLabel = "Müdahale">
             <cfelseif qMachineBoard.active_fault_stage EQ "assigned">
                 <cfset tileClass = "sb-tile-assigned">
                 <cfset tileIcon  = "fa-user-check">
+                <cfset tileStatusLabel = "Atandı">
             <cfelseif val(qMachineBoard.open_fault_count) GT 0>
                 <cfset tileClass = "sb-tile-fault">
                 <cfset tileIcon  = "fa-triangle-exclamation">
+                <cfset tileStatusLabel = "Arızalı">
             </cfif>
 
+            <cfset tileTitle = htmlEditFormat(qMachineBoard.machine_name) & " | Durum: " & htmlEditFormat(tileStatusLabel) & " | Açık arıza: " & val(qMachineBoard.open_fault_count) & (len(trim(qMachineBoard.current_status_note)) ? " | Not: " & htmlEditFormat(qMachineBoard.current_status_note) : "")>
             <div class="sb-tile #tileClass#"
-                 title="#htmlEditFormat(qMachineBoard.machine_name)##len(trim(qMachineBoard.current_status_note)) ? ' — ' & htmlEditFormat(qMachineBoard.current_status_note) : ''#"
+                 title="#tileTitle#"
                  <cfif tileClass NEQ "sb-tile-inactive">onclick="sbTileClick(#val(qMachineBoard.machine_id)#,'#jsStringFormat(qMachineBoard.machine_name)#',#val(qMachineBoard.current_status_code)#,#val(qMachineBoard.open_fault_count)#)"</cfif>>
                 <cfif val(qMachineBoard.open_fault_count) GT 0>
                     <span class="sb-fault-badge">#val(qMachineBoard.open_fault_count)#</span>
@@ -391,6 +478,7 @@
                 <div class="sb-tile-icon"><i class="fas #tileIcon#"></i></div>
                 <div class="sb-tile-code">#htmlEditFormat(qMachineBoard.machine_code)#</div>
                 <div class="sb-tile-name">#htmlEditFormat(qMachineBoard.machine_name)#</div>
+                <div class="sb-tile-status"><i class="fas #tileIcon#"></i> #htmlEditFormat(tileStatusLabel)#</div>
             </div>
         </cfloop>
                     </div>
