@@ -78,6 +78,7 @@ CREATE TABLE IF NOT EXISTS machine_faults (
     fault_status VARCHAR(20) NOT NULL DEFAULT 'open', -- open/in_progress/resolved/cancelled
     opened_at TIMESTAMP NOT NULL DEFAULT NOW(),
     assigned_at TIMESTAMP,
+    intervention_at TIMESTAMP,
     resolved_at TIMESTAMP,
     opened_by INTEGER,
     assigned_emp_id INTEGER,

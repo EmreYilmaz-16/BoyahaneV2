@@ -19,7 +19,7 @@
     </cfif>
 
     <cfquery name="getFault" datasource="boyahane">
-        SELECT fault_id, machine_id, fault_status, opened_at, assigned_at, resolved_at
+        SELECT fault_id, machine_id, fault_status, opened_at, assigned_at, intervention_at, resolved_at
         FROM machine_faults
         WHERE fault_id = <cfqueryparam value="#faultId#" cfsqltype="cf_sql_integer">
     </cfquery>
@@ -38,7 +38,8 @@
         UPDATE machine_faults SET
             fault_status = <cfqueryparam value="#newStatus#" cfsqltype="cf_sql_varchar">,
             assigned_emp_id = <cfqueryparam value="#isNull(assignedEmp)?'':assignedEmp#" cfsqltype="cf_sql_integer" null="#isNull(assignedEmp)#">,
-            assigned_at = CASE WHEN <cfqueryparam value="#stage#" cfsqltype="cf_sql_varchar"> IN ('assigned','intervention') AND assigned_at IS NULL THEN CURRENT_TIMESTAMP ELSE assigned_at END,
+            assigned_at = CASE WHEN <cfqueryparam value="#stage#" cfsqltype="cf_sql_varchar"> = 'assigned' AND assigned_at IS NULL THEN CURRENT_TIMESTAMP WHEN <cfqueryparam value="#stage#" cfsqltype="cf_sql_varchar"> = 'intervention' AND assigned_at IS NULL THEN CURRENT_TIMESTAMP ELSE assigned_at END,
+            intervention_at = CASE WHEN <cfqueryparam value="#stage#" cfsqltype="cf_sql_varchar"> = 'intervention' AND intervention_at IS NULL THEN CURRENT_TIMESTAMP ELSE intervention_at END,
             resolved_at = CASE WHEN <cfqueryparam value="#stage#" cfsqltype="cf_sql_varchar"> = 'resolved' THEN CURRENT_TIMESTAMP ELSE resolved_at END,
             intervention_note = CASE WHEN <cfqueryparam value="#stage#" cfsqltype="cf_sql_varchar"> = 'intervention' THEN <cfqueryparam value="#stageNote#" cfsqltype="cf_sql_varchar" null="#NOT len(stageNote)#"> ELSE intervention_note END,
             resolution_note = CASE WHEN <cfqueryparam value="#stage#" cfsqltype="cf_sql_varchar"> = 'resolved' THEN <cfqueryparam value="#stageNote#" cfsqltype="cf_sql_varchar" null="#NOT len(stageNote)#"> ELSE resolution_note END,
