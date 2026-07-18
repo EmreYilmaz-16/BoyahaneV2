@@ -11,41 +11,32 @@
         COALESCE(m.current_status_note, '') AS current_status_note,
         COALESCE(active_fault.last_event_type, '') AS active_fault_stage,
         COALESCE(m.is_active, true) AS is_active,
-        (
-            SELECT COUNT(*)
-            FROM machine_faults f
-            WHERE f.machine_id = m.machine_id
-              AND f.fault_status IN ('open', 'in_progress')
-        ) fault_counts ON true
+        COALESCE(fault_counts.open_fault_count, 0) AS open_fault_count
+    FROM machine_machines m
+    LEFT JOIN department d ON d.department_id = m.department_id
+    LEFT JOIN LATERAL (
+        SELECT COUNT(*) AS open_fault_count
+        FROM machine_faults f
+        WHERE f.machine_id = m.machine_id
+          AND f.fault_status IN ('open', 'in_progress')
+    ) fault_counts ON true
+    LEFT JOIN LATERAL (
+        SELECT COALESCE(last_event.event_type, 'opened') AS last_event_type
+        FROM machine_faults f
         LEFT JOIN LATERAL (
-            SELECT COALESCE(last_event.event_type, 'opened') AS last_event_type
-            FROM machine_faults f
-            LEFT JOIN LATERAL (
-                SELECT fe.event_type
-                FROM machine_fault_events fe
-                WHERE fe.fault_id = f.fault_id
-                ORDER BY fe.event_date DESC, fe.fault_event_id DESC
-                LIMIT 1
-            ) last_event ON true
-            WHERE f.machine_id = m.machine_id
-              AND f.fault_status IN ('open', 'in_progress')
-            ORDER BY
-                CASE COALESCE(last_event.event_type, 'opened')
-                    WHEN 'intervention' THEN 3
-                    WHEN 'assigned' THEN 2
-                    ELSE 1
-                END DESC,
-                COALESCE(f.intervention_at, f.assigned_at, f.opened_at) DESC,
-                f.fault_id DESC
+            SELECT fe.event_type
+            FROM machine_fault_events fe
+            WHERE fe.fault_id = f.fault_id
+            ORDER BY fe.event_date DESC, fe.fault_event_id DESC
             LIMIT 1
         ) last_event ON true
         WHERE f.machine_id = m.machine_id
           AND f.fault_status IN ('open', 'in_progress')
         ORDER BY
             CASE COALESCE(last_event.event_type, 'opened')
-                WHEN 'intervention' THEN <cfqueryparam value="#STATUS_FAULT#" cfsqltype="cf_sql_integer">
-                WHEN 'assigned' THEN <cfqueryparam value="#STATUS_MAINTENANCE#" cfsqltype="cf_sql_integer">
-                ELSE <cfqueryparam value="#STATUS_OK#" cfsqltype="cf_sql_integer">
+                WHEN 'intervention' THEN 3
+                WHEN 'assigned' THEN 2
+                ELSE 1
             END DESC,
             COALESCE(f.intervention_at, f.assigned_at, f.opened_at) DESC,
             f.fault_id DESC
