@@ -36,7 +36,7 @@
                 WHEN 'assigned' THEN 2
                 ELSE 1
             END DESC,
-            COALESCE(f.assigned_at, f.opened_at) DESC,
+            COALESCE(f.intervention_at, f.assigned_at, f.opened_at) DESC,
             f.fault_id DESC
         LIMIT 1
     ) active_fault ON true

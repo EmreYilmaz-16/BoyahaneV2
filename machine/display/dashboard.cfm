@@ -35,7 +35,7 @@
         WHEN 'assigned' THEN 2
         ELSE 1
       END DESC,
-      COALESCE(f.assigned_at, f.opened_at) DESC,
+      COALESCE(f.intervention_at, f.assigned_at, f.opened_at) DESC,
       f.fault_id DESC
     LIMIT 1
   ) active_fault ON true
@@ -52,7 +52,7 @@
 <cfquery name="qFaults" datasource="boyahane">
     SELECT f.fault_id, f.fault_no, f.machine_id, m.machine_code, m.machine_name,
            f.fault_title, f.priority_level, f.fault_status,
-           f.opened_at, f.assigned_at, f.resolved_at,
+           f.opened_at, f.assigned_at, f.intervention_at, f.resolved_at,
            f.assigned_emp_id,
            COALESCE(e.name || ' ' || e.surname, '') AS assigned_employee,
            COALESCE(f.intervention_note, '') AS intervention_note,
@@ -60,7 +60,7 @@
            COALESCE(f.root_cause_code, '') AS root_cause_code,
            COALESCE(f.downtime_category, 'unplanned') AS downtime_category,
            CASE
-               WHEN f.assigned_at IS NOT NULL THEN ROUND(EXTRACT(EPOCH FROM (f.assigned_at - f.opened_at)) / 60.0, 2)
+               WHEN COALESCE(f.intervention_at, f.assigned_at) IS NOT NULL THEN ROUND(EXTRACT(EPOCH FROM (COALESCE(f.intervention_at, f.assigned_at) - f.opened_at)) / 60.0, 2)
                ELSE NULL
            END AS first_response_min,
            CASE
@@ -103,7 +103,7 @@
 
 <cfquery name="qMachineFaultHistory" datasource="boyahane">
     SELECT f.fault_id, f.fault_no, f.machine_id, m.machine_code, m.machine_name,
-           f.fault_title, f.priority_level, f.fault_status, f.opened_at, f.assigned_at, f.resolved_at,
+           f.fault_title, f.priority_level, f.fault_status, f.opened_at, f.assigned_at, f.intervention_at, f.resolved_at,
            COALESCE(e.name || ' ' || e.surname, '') AS assigned_employee,
            CASE
                WHEN f.resolved_at IS NOT NULL THEN ROUND(EXTRACT(EPOCH FROM (f.resolved_at - f.opened_at)) / 60.0, 2)
@@ -226,6 +226,7 @@
         "assigned_employee": assigned_employee ?: "",
         "opened_at": isDate(opened_at) ? dateFormat(opened_at, "dd/mm/yyyy") & " " & timeFormat(opened_at, "HH:mm") : "",
         "assigned_at": isDate(assigned_at) ? dateFormat(assigned_at, "dd/mm/yyyy") & " " & timeFormat(assigned_at, "HH:mm") : "",
+        "intervention_at": isDate(intervention_at) ? dateFormat(intervention_at, "dd/mm/yyyy") & " " & timeFormat(intervention_at, "HH:mm") : "",
         "resolved_at": isDate(resolved_at) ? dateFormat(resolved_at, "dd/mm/yyyy") & " " & timeFormat(resolved_at, "HH:mm") : "",
         "intervention_note": intervention_note ?: "", "resolution_note": resolution_note ?: "",
         "first_response_min": isNumeric(first_response_min) ? val(first_response_min) : javacast("null",""),
@@ -233,7 +234,7 @@
         "root_cause_code": root_cause_code ?: "",
         "downtime_category": downtime_category ?: "",
         "sla_close_breached": _closeBreach,
-        "sla_response_breached": _isActive AND NOT isDate(assigned_at) AND _nowMin GT _sla.response
+        "sla_response_breached": _isActive AND NOT isDate(intervention_at) AND NOT isDate(assigned_at) AND _nowMin GT _sla.response
     })>
 </cfloop>
 
@@ -309,6 +310,7 @@
         "fault_status": fault_status ?: "",
         "opened_at": isDate(opened_at) ? dateFormat(opened_at, "dd/mm/yyyy") & " " & timeFormat(opened_at, "HH:mm") : "",
         "assigned_at": isDate(assigned_at) ? dateFormat(assigned_at, "dd/mm/yyyy") & " " & timeFormat(assigned_at, "HH:mm") : "",
+        "intervention_at": isDate(intervention_at) ? dateFormat(intervention_at, "dd/mm/yyyy") & " " & timeFormat(intervention_at, "HH:mm") : "",
         "resolved_at": isDate(resolved_at) ? dateFormat(resolved_at, "dd/mm/yyyy") & " " & timeFormat(resolved_at, "HH:mm") : "",
         "assigned_employee": assigned_employee ?: "",
         "close_duration_min": isNumeric(close_duration_min) ? val(close_duration_min) : javacast("null","")
@@ -554,7 +556,7 @@ function buildGrids(){
       {dataField:'priority_level',caption:'Öncelik',width:90, cellTemplate:function(c,o){c.text(priorityText(o.value));}},
       {dataField:'fault_status',caption:'Durum',width:110, cellTemplate:function(c,o){var t=o.value;var cls=t=='open'?'danger':t=='in_progress'?'primary':t=='resolved'?'success':'secondary'; c.html('<span class="badge bg-'+cls+'">'+t+'</span>');}},
       {dataField:'assigned_employee',caption:'Atanan',width:150},
-      {dataField:'opened_at',caption:'Açılış',width:140}, {dataField:'assigned_at',caption:'Müdahale',width:140}, {dataField:'resolved_at',caption:'Bitiş',width:140},
+      {dataField:'opened_at',caption:'Açılış',width:140}, {dataField:'assigned_at',caption:'Atama',width:140}, {dataField:'intervention_at',caption:'Müdahale',width:140}, {dataField:'resolved_at',caption:'Bitiş',width:140},
       {dataField:'first_response_min',caption:'İlk Müd. (dk)',width:110,alignment:'right'}, {dataField:'close_duration_min',caption:'Toplam (dk)',width:110,alignment:'right'},
       {dataField:'root_cause_code',caption:'Kök Neden',width:130, cellTemplate:function(c,o){c.text(rootCauseText(o.value));}},
       {dataField:'downtime_category',caption:'Duruş Türü',width:120, cellTemplate:function(c,o){c.text(downtimeCatText(o.value));}},
