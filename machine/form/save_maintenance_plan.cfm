@@ -16,11 +16,39 @@
         <cfoutput>#serializeJSON(response)#</cfoutput><cfabort>
     </cfif>
 
+    <cfquery name="qMachine" datasource="boyahane">
+        SELECT machine_id, is_active
+        FROM machine_machines
+        WHERE machine_id = <cfqueryparam value="#machineId#" cfsqltype="cf_sql_integer">
+    </cfquery>
+
+    <cfif qMachine.recordCount eq 0>
+        <cfset response.message = "Seçilen makine bulunamadı.">
+        <cfoutput>#serializeJSON(response)#</cfoutput><cfabort>
+    </cfif>
+
+    <cfif NOT qMachine.is_active>
+        <cfset response.message = "Pasif makine için bakım planı kaydedilemez.">
+        <cfoutput>#serializeJSON(response)#</cfoutput><cfabort>
+    </cfif>
+
     <cfset nextDate = (len(nextDateRaw) AND isDate(nextDateRaw)) ? createODBCDateTime(parseDateTime(replace(nextDateRaw,'T',' ','all'))) : javaCast("null","")>
 
     <cfif planId gt 0>
+        <cfquery name="qPlan" datasource="boyahane">
+            SELECT plan_id
+            FROM machine_maintenance_plans
+            WHERE plan_id = <cfqueryparam value="#planId#" cfsqltype="cf_sql_integer">
+        </cfquery>
+
+        <cfif qPlan.recordCount eq 0>
+            <cfset response.message = "Güncellenecek bakım planı bulunamadı.">
+            <cfoutput>#serializeJSON(response)#</cfoutput><cfabort>
+        </cfif>
+
         <cfquery datasource="boyahane">
             UPDATE machine_maintenance_plans SET
+                machine_id = <cfqueryparam value="#machineId#" cfsqltype="cf_sql_integer">,
                 plan_title = <cfqueryparam value="#planTitle#" cfsqltype="cf_sql_varchar">,
                 period_days = <cfqueryparam value="#periodDays#" cfsqltype="cf_sql_integer">,
                 next_planned_date = <cfqueryparam value="#isNull(nextDate)?'':nextDate#" cfsqltype="cf_sql_timestamp" null="#isNull(nextDate)#">,
@@ -50,6 +78,6 @@
     </cfif>
 
     <cfset response = {"success":true,"plan_id":savedId}>
-    <cfcatch type="any"><cfset response.message = cfcatch.message></cfcatch>
+    <cfcatch type="any"><cfset response.message = "Bakım planı kaydedilirken bir hata oluştu."></cfcatch>
 </cftry>
 <cfoutput>#serializeJSON(response)#</cfoutput>

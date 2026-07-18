@@ -10,6 +10,27 @@
     <cfset rootCauseCode  = listFindNoCase("mechanical,electrical,pneumatic,hydraulic,operator_error,wear,other", trim(form.root_cause_code ?: "")) ? trim(form.root_cause_code) : "">
     <cfset downtimeCat    = listFindNoCase("unplanned,planned,production_change,cleaning", trim(form.downtime_category ?: "")) ? trim(form.downtime_category) : "unplanned">
 
+    <cfif machineId lte 0 OR NOT len(faultTitle)>
+        <cfset response.message = "Makine ve arıza başlığı zorunludur.">
+        <cfoutput>#serializeJSON(response)#</cfoutput><cfabort>
+    </cfif>
+
+    <cfquery name="qMachine" datasource="boyahane">
+        SELECT machine_id, is_active
+        FROM machine_machines
+        WHERE machine_id = <cfqueryparam value="#machineId#" cfsqltype="cf_sql_integer">
+    </cfquery>
+
+    <cfif qMachine.recordCount eq 0>
+        <cfset response.message = "Seçilen makine bulunamadı.">
+        <cfoutput>#serializeJSON(response)#</cfoutput><cfabort>
+    </cfif>
+
+    <cfif NOT qMachine.is_active>
+        <cfset response.message = "Pasif makine için arıza kaydı açılamaz.">
+        <cfoutput>#serializeJSON(response)#</cfoutput><cfabort>
+    </cfif>
+
     <cfset faultNo = "ARZ-" & dateFormat(now(),"yyyymmdd") & "-" & right("0000" & randRange(1,9999),4)>
 
     <cfquery name="insFault" datasource="boyahane">
@@ -63,6 +84,6 @@
     </cfquery>
 
     <cfset response = {"success":true,"fault_id":val(insFault.fault_id),"fault_no":insFault.fault_no}>
-    <cfcatch type="any"><cfset response.message = cfcatch.message></cfcatch>
+    <cfcatch type="any"><cfset response.message = "Arıza kaydı oluşturulurken bir hata oluştu."></cfcatch>
 </cftry>
 <cfoutput>#serializeJSON(response)#</cfoutput>
