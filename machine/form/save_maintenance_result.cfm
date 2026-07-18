@@ -37,10 +37,21 @@
         )
     </cfquery>
 
+    <cfquery name="openFaultCheck" datasource="boyahane">
+        SELECT COUNT(*) AS open_fault_count
+        FROM machine_faults
+        WHERE machine_id = <cfqueryparam value="#machineId#" cfsqltype="cf_sql_integer">
+          AND fault_status IN ('open','in_progress')
+    </cfquery>
+
+    <cfset hasOpenFault = val(openFaultCheck.open_fault_count) gt 0>
+    <cfset nextStatusCode = hasOpenFault ? 3 : 1>
+    <cfset nextStatusNote = hasOpenFault ? "Aktif arıza mevcut" : "Bakım tamamlandı">
+
     <cfquery datasource="boyahane">
         UPDATE machine_machines
-        SET current_status_code = 1,
-            current_status_note = 'Bakım tamamlandı',
+        SET current_status_code = <cfqueryparam value="#nextStatusCode#" cfsqltype="cf_sql_integer">,
+            current_status_note = <cfqueryparam value="#nextStatusNote#" cfsqltype="cf_sql_varchar">,
             last_maintenance_date = CURRENT_TIMESTAMP,
             update_date = CURRENT_TIMESTAMP
         WHERE machine_id = <cfqueryparam value="#machineId#" cfsqltype="cf_sql_integer">
@@ -50,8 +61,8 @@
         INSERT INTO machine_status_history (machine_id, status_code, status_note, source_type, source_id, record_emp)
         VALUES (
             <cfqueryparam value="#machineId#" cfsqltype="cf_sql_integer">,
-            1,
-            'Bakım sonucu girildi',
+            <cfqueryparam value="#nextStatusCode#" cfsqltype="cf_sql_integer">,
+            <cfqueryparam value="#nextStatusNote#" cfsqltype="cf_sql_varchar">,
             'maintenance',
             NULL,
             <cfqueryparam value="#session.user.employee_id ?: 0#" cfsqltype="cf_sql_integer" null="#NOT isDefined('session.user.employee_id')#">
