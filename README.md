@@ -136,6 +136,19 @@ Yeni tablolar eklemek için:
 1. `docker/init-db/` klasörüne yeni `.sql` dosyası ekleyin (örn: `02-create-tables.sql`)
 2. Container'ları yeniden oluşturun: `docker compose down -v && docker compose up -d`
 
+
+## 🏭 Makine Durum Kodları
+
+Makine durum kodları uygulamada `machine/includes/status_codes.cfm` dosyasından merkezi olarak yönetilir. Yeni ekran veya form geliştirmelerinde sayısal değerler doğrudan kullanılmamalı; aşağıdaki sabitler include edilerek kullanılmalıdır.
+
+| Sabit | Kod | Ekran Etiketi | Açıklama |
+|-------|-----|---------------|----------|
+| `STATUS_OK` | `1` | Çalışıyor | Makine çalışır durumda; aktif arıza yok. |
+| `STATUS_MAINTENANCE` | `2` | Bakımda | Makine bakımda veya bakım sonucu takip gerektiriyor. |
+| `STATUS_FAULT` | `3` | Arızalı | Makinede aktif arıza var. |
+
+Durum panosu etiket, ikon ve renk bilgilerini aynı merkezi tanımdan alır; arıza aşamaları için `assigned` ve `intervention` görsel ayrımları da bu dosyada belgelenir.
+
 ## 🐛 Sorun Giderme
 
 ### Port Çakışması

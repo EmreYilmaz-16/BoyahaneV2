@@ -1,4 +1,5 @@
 <cfprocessingdirective pageEncoding="utf-8">
+<cfinclude template="../includes/status_codes.cfm">
 <cfcontent type="application/json; charset=utf-8"><cfsetting showdebugoutput="false">
 
 <cfset response = {"success":false,"message":""}>
@@ -9,8 +10,14 @@
     <cfset departmentId = isDefined("form.department_id") and isNumeric(form.department_id) and val(form.department_id) gt 0 ? val(form.department_id) : javaCast("null","")>
     <cfset locationText = left(trim(form.location_text ?: ""), 150)>
     <cfset isActive = isDefined("form.is_active") and val(form.is_active) eq 0 ? false : true>
-    <cfset statusCode = isDefined("form.current_status_code") and isNumeric(form.current_status_code) ? val(form.current_status_code) : 1>
+    <cfset statusCode = isDefined("form.current_status_code") and isNumeric(form.current_status_code) ? val(form.current_status_code) : STATUS_OK>
     <cfset statusNote = left(trim(form.current_status_note ?: ""), 500)>
+
+
+    <cfif NOT structKeyExists(machineStatusDefinitions, statusCode)>
+        <cfset response.message = "Geçersiz makine durum kodu.">
+        <cfoutput>#serializeJSON(response)#</cfoutput><cfabort>
+    </cfif>
 
     <cfif NOT len(machineCode) OR NOT len(machineName)>
         <cfset response.message = "Makine kodu ve adı zorunludur.">

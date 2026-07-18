@@ -1,4 +1,5 @@
 <cfprocessingdirective pageEncoding="utf-8">
+<cfinclude template="../includes/status_codes.cfm">
 
 <cfquery name="qMachineBoard" datasource="boyahane">
     SELECT
@@ -6,7 +7,7 @@
         COALESCE(m.machine_code, '') AS machine_code,
         COALESCE(m.machine_name, '') AS machine_name,
         COALESCE(d.department_head, 'Diğer') AS department_name,
-        COALESCE(m.current_status_code, 1) AS current_status_code,
+        COALESCE(m.current_status_code, <cfqueryparam value="#STATUS_OK#" cfsqltype="cf_sql_integer">) AS current_status_code,
         COALESCE(m.current_status_note, '') AS current_status_note,
         COALESCE(active_fault.last_event_type, '') AS active_fault_stage,
         COALESCE(m.is_active, true) AS is_active,
@@ -32,9 +33,9 @@
           AND f.fault_status IN ('open', 'in_progress')
         ORDER BY
             CASE COALESCE(last_event.event_type, 'opened')
-                WHEN 'intervention' THEN 3
-                WHEN 'assigned' THEN 2
-                ELSE 1
+                WHEN 'intervention' THEN <cfqueryparam value="#STATUS_FAULT#" cfsqltype="cf_sql_integer">
+                WHEN 'assigned' THEN <cfqueryparam value="#STATUS_MAINTENANCE#" cfsqltype="cf_sql_integer">
+                ELSE <cfqueryparam value="#STATUS_OK#" cfsqltype="cf_sql_integer">
             END DESC,
             COALESCE(f.intervention_at, f.assigned_at, f.opened_at) DESC,
             f.fault_id DESC
@@ -46,9 +47,9 @@
 <cfquery name="qSummary" datasource="boyahane">
     SELECT
         COUNT(*) AS total_machine,
-        SUM(CASE WHEN COALESCE(current_status_code, 1) = 1 THEN 1 ELSE 0 END) AS status_ok,
-        SUM(CASE WHEN COALESCE(current_status_code, 1) = 2 THEN 1 ELSE 0 END) AS status_maintenance,
-        SUM(CASE WHEN COALESCE(current_status_code, 1) = 3 THEN 1 ELSE 0 END) AS status_fault,
+        SUM(CASE WHEN COALESCE(current_status_code, <cfqueryparam value="#STATUS_OK#" cfsqltype="cf_sql_integer">) = <cfqueryparam value="#STATUS_OK#" cfsqltype="cf_sql_integer"> THEN 1 ELSE 0 END) AS status_ok,
+        SUM(CASE WHEN COALESCE(current_status_code, <cfqueryparam value="#STATUS_OK#" cfsqltype="cf_sql_integer">) = <cfqueryparam value="#STATUS_MAINTENANCE#" cfsqltype="cf_sql_integer"> THEN 1 ELSE 0 END) AS status_maintenance,
+        SUM(CASE WHEN COALESCE(current_status_code, <cfqueryparam value="#STATUS_OK#" cfsqltype="cf_sql_integer">) = <cfqueryparam value="#STATUS_FAULT#" cfsqltype="cf_sql_integer"> THEN 1 ELSE 0 END) AS status_fault,
         SUM(CASE WHEN COALESCE(is_active, true) = false THEN 1 ELSE 0 END) AS status_inactive
     FROM machine_machines
 </cfquery>
@@ -296,31 +297,31 @@
             <div><div class="sb-stat-label">Toplam</div><div class="sb-stat-val">#val(qSummary.total_machine)#</div></div>
         </div>
         <div class="sb-stat">
-            <div class="sb-stat-icon ok"><i class="fas fa-circle-check"></i></div>
-            <div><div class="sb-stat-label">Çalışıyor</div><div class="sb-stat-val" style="color:##16a34a">#val(qSummary.status_ok)#</div></div>
+            <div class="sb-stat-icon #machineStatusDefinitions[STATUS_OK].summaryClass#"><i class="fas #machineStatusDefinitions[STATUS_OK].icon#"></i></div>
+            <div><div class="sb-stat-label">#machineStatusDefinitions[STATUS_OK].label#</div><div class="sb-stat-val" style="color:#machineStatusDefinitions[STATUS_OK].color#">#val(qSummary.status_ok)#</div></div>
         </div>
         <div class="sb-stat">
-            <div class="sb-stat-icon maint"><i class="fas fa-tools"></i></div>
-            <div><div class="sb-stat-label">Bakımda</div><div class="sb-stat-val" style="color:##4b5563">#val(qSummary.status_maintenance)#</div></div>
+            <div class="sb-stat-icon #machineStatusDefinitions[STATUS_MAINTENANCE].summaryClass#"><i class="fas #machineStatusDefinitions[STATUS_MAINTENANCE].icon#"></i></div>
+            <div><div class="sb-stat-label">#machineStatusDefinitions[STATUS_MAINTENANCE].label#</div><div class="sb-stat-val" style="color:#machineStatusDefinitions[STATUS_MAINTENANCE].color#">#val(qSummary.status_maintenance)#</div></div>
         </div>
         <div class="sb-stat">
-            <div class="sb-stat-icon fault"><i class="fas fa-triangle-exclamation"></i></div>
-            <div><div class="sb-stat-label">Arızalı</div><div class="sb-stat-val" style="color:##dc2626">#val(qSummary.status_fault)#</div></div>
+            <div class="sb-stat-icon #machineStatusDefinitions[STATUS_FAULT].summaryClass#"><i class="fas #machineStatusDefinitions[STATUS_FAULT].icon#"></i></div>
+            <div><div class="sb-stat-label">#machineStatusDefinitions[STATUS_FAULT].label#</div><div class="sb-stat-val" style="color:#machineStatusDefinitions[STATUS_FAULT].color#">#val(qSummary.status_fault)#</div></div>
         </div>
         <div class="sb-stat">
-            <div class="sb-stat-icon inactive"><i class="fas fa-circle-pause"></i></div>
-            <div><div class="sb-stat-label">Pasif</div><div class="sb-stat-val" style="color:##6b7280">#val(qSummary.status_inactive)#</div></div>
+            <div class="sb-stat-icon #machineStatusInactive.summaryClass#"><i class="fas #machineStatusInactive.icon#"></i></div>
+            <div><div class="sb-stat-label">#machineStatusInactive.label#</div><div class="sb-stat-val" style="color:#machineStatusInactive.color#">#val(qSummary.status_inactive)#</div></div>
         </div>
     </div>
 
     <!--- Legend --->
     <div class="sb-legend">
-        <span><i class="sb-legend-dot" style="background:##16a34a"></i>Çözüldü</span>
-        <span><i class="sb-legend-dot" style="background:##4b5563"></i>Bakımda</span>
-        <span><i class="sb-legend-dot" style="background:##1d4ed8"></i>Personel Atandı</span>
-        <span><i class="sb-legend-dot" style="background:##ca8a04"></i>Müdahale Ediliyor</span>
-        <span><i class="sb-legend-dot" style="background:##dc2626"></i>Arızalı</span>
-        <span><i class="sb-legend-dot" style="background:##64748b"></i>Pasif</span>
+        <span><i class="sb-legend-dot" style="background:#machineStatusDefinitions[STATUS_OK].color#"></i>#machineStatusDefinitions[STATUS_OK].legendLabel#</span>
+        <span><i class="sb-legend-dot" style="background:#machineStatusDefinitions[STATUS_MAINTENANCE].color#"></i>#machineStatusDefinitions[STATUS_MAINTENANCE].legendLabel#</span>
+        <span><i class="sb-legend-dot" style="background:#machineFaultStageDefinitions.assigned.color#"></i>#machineFaultStageDefinitions.assigned.label#</span>
+        <span><i class="sb-legend-dot" style="background:#machineFaultStageDefinitions.intervention.color#"></i>#machineFaultStageDefinitions.intervention.label#</span>
+        <span><i class="sb-legend-dot" style="background:#machineStatusDefinitions[STATUS_FAULT].color#"></i>#machineStatusDefinitions[STATUS_FAULT].legendLabel#</span>
+        <span><i class="sb-legend-dot" style="background:#machineStatusInactive.color#"></i>#machineStatusInactive.label#</span>
         <span class="sb-legend-hint"><i class="fas fa-circle-exclamation me-1"></i>Sağ üstteki sayı: açık arıza adedi</span>
     </div>
 
@@ -347,28 +348,28 @@
                     <div class="sb-machine-list">
             </cfif>
 
-            <cfset tileClass = "sb-tile-ok">
-            <cfset tileIcon  = "fa-circle-check">
+            <cfset tileClass = machineStatusDefinitions[STATUS_OK].tileClass>
+            <cfset tileIcon  = machineStatusDefinitions[STATUS_OK].icon>
             <cfif NOT qMachineBoard.is_active>
-                <cfset tileClass = "sb-tile-inactive">
-                <cfset tileIcon  = "fa-circle-pause">
-            <cfelseif qMachineBoard.current_status_code EQ 2>
-                <cfset tileClass = "sb-tile-maint">
-                <cfset tileIcon  = "fa-tools">
+                <cfset tileClass = machineStatusInactive.tileClass>
+                <cfset tileIcon  = machineStatusInactive.icon>
+            <cfelseif qMachineBoard.current_status_code EQ STATUS_MAINTENANCE>
+                <cfset tileClass = machineStatusDefinitions[STATUS_MAINTENANCE].tileClass>
+                <cfset tileIcon  = machineStatusDefinitions[STATUS_MAINTENANCE].icon>
             <cfelseif qMachineBoard.active_fault_stage EQ "intervention">
-                <cfset tileClass = "sb-tile-intervention">
-                <cfset tileIcon  = "fa-screwdriver-wrench">
+                <cfset tileClass = machineFaultStageDefinitions.intervention.tileClass>
+                <cfset tileIcon  = machineFaultStageDefinitions.intervention.icon>
             <cfelseif qMachineBoard.active_fault_stage EQ "assigned">
-                <cfset tileClass = "sb-tile-assigned">
-                <cfset tileIcon  = "fa-user-check">
+                <cfset tileClass = machineFaultStageDefinitions.assigned.tileClass>
+                <cfset tileIcon  = machineFaultStageDefinitions.assigned.icon>
             <cfelseif val(qMachineBoard.open_fault_count) GT 0>
-                <cfset tileClass = "sb-tile-fault">
-                <cfset tileIcon  = "fa-triangle-exclamation">
+                <cfset tileClass = machineStatusDefinitions[STATUS_FAULT].tileClass>
+                <cfset tileIcon  = machineStatusDefinitions[STATUS_FAULT].icon>
             </cfif>
 
             <div class="sb-tile #tileClass#"
                  title="#htmlEditFormat(qMachineBoard.machine_name)##len(trim(qMachineBoard.current_status_note)) ? ' — ' & htmlEditFormat(qMachineBoard.current_status_note) : ''#"
-                 <cfif tileClass NEQ "sb-tile-inactive">onclick="sbTileClick(#val(qMachineBoard.machine_id)#,'#jsStringFormat(qMachineBoard.machine_name)#',#val(qMachineBoard.current_status_code)#,#val(qMachineBoard.open_fault_count)#)"</cfif>>
+                 <cfif tileClass NEQ machineStatusInactive.tileClass>onclick="sbTileClick(#val(qMachineBoard.machine_id)#,'#jsStringFormat(qMachineBoard.machine_name)#',#val(qMachineBoard.current_status_code)#,#val(qMachineBoard.open_fault_count)#)"</cfif>>
                 <cfif val(qMachineBoard.open_fault_count) GT 0>
                     <span class="sb-fault-badge">#val(qMachineBoard.open_fault_count)#</span>
                 </cfif>
