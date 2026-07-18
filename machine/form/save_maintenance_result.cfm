@@ -8,8 +8,13 @@
     <cfset maintenanceType= left(trim(form.maintenance_type ?: "planned"), 30)>
     <cfset startRaw       = trim(form.maintenance_start ?: "")>
     <cfset endRaw         = trim(form.maintenance_end ?: "")>
-    <cfset resultStatus   = left(trim(form.maintenance_result ?: "completed"), 30)>
+    <cfset resultStatus   = lcase(left(trim(form.maintenance_result ?: "completed"), 30))>
     <cfset resultNote     = left(trim(form.result_note ?: ""), 2000)>
+
+    <cfif NOT listFindNoCase("completed,partial,failed", resultStatus)>
+        <cfset response.message = "Geçersiz bakım sonucu. İzinli değerler: completed, partial, failed.">
+        <cfoutput>#serializeJSON(response)#</cfoutput><cfabort>
+    </cfif>
 
     <cfif machineId lte 0>
         <cfset response.message = "Makine seçimi zorunludur.">
@@ -49,6 +54,26 @@
     <cfset startDate = (len(startRaw) AND isDate(startRaw)) ? createODBCDateTime(parseDateTime(replace(startRaw,'T',' ','all'))) : javaCast("null","")>
     <cfset endDate   = (len(endRaw)   AND isDate(endRaw))   ? createODBCDateTime(parseDateTime(replace(endRaw,'T',' ','all')))   : javaCast("null","")>
 
+    <cfif NOT isNull(startDate) AND NOT isNull(endDate) AND dateCompare(endDate, startDate, "s") LT 0>
+        <cfset response.message = "Bakım bitiş zamanı başlangıçtan önce olamaz.">
+        <cfoutput>#serializeJSON(response)#</cfoutput><cfabort>
+    </cfif>
+
+    <cfset machineStatusCode = 1>
+    <cfset machineStatusNote = "Bakım tamamlandı">
+    <cfset machineHistoryNote = "Bakım sonucu girildi">
+    <cfif NOT isNull(startDate) AND isNull(endDate)>
+        <cfset machineStatusCode = 2>
+        <cfset machineStatusNote = "Bakımda">
+        <cfset machineHistoryNote = "Bakım başlatıldı">
+    <cfelseif NOT isNull(endDate)>
+        <cfif resultStatus EQ "partial">
+            <cfset machineStatusNote = "Bakım kısmi tamamlandı">
+        <cfelseif resultStatus EQ "failed">
+            <cfset machineStatusNote = "Bakım başarısız tamamlandı">
+        </cfif>
+    </cfif>
+
     <cfquery datasource="boyahane">
         INSERT INTO machine_maintenance_logs (
             machine_id, plan_id, maintenance_type, maintenance_start, maintenance_end,
@@ -67,11 +92,31 @@
         )
     </cfquery>
 
+    <cfset machineStatusCode = 1>
+    <cfset machineStatusNote = "Bakım tamamlandı">
+    <cfset historyStatusNote = "Bakım sonucu girildi">
+
+    <cfif resultStatus eq "partial">
+        <cfset machineStatusCode = 2>
+        <cfset machineStatusNote = "Bakım kısmi tamamlandı; plan sonraki tarihi otomatik ileri alınmadı. Lütfen ayrı bir sonraki bakım tarihi seçin.">
+        <cfset historyStatusNote = "Bakım kısmi tamamlandı">
+    <cfelseif resultStatus eq "failed">
+        <cfquery name="qOpenFaults" datasource="boyahane">
+            SELECT COUNT(*) AS open_count
+            FROM machine_faults
+            WHERE machine_id = <cfqueryparam value="#machineId#" cfsqltype="cf_sql_integer">
+              AND fault_status IN ('open','in_progress')
+        </cfquery>
+        <cfset machineStatusCode = val(qOpenFaults.open_count) gt 0 ? 3 : 2>
+        <cfset machineStatusNote = machineStatusCode eq 3 ? "Bakım başarısız; aktif arıza mevcut" : "Bakım başarısız; makine bakımda bırakıldı">
+        <cfset historyStatusNote = "Bakım başarısız">
+    </cfif>
+
     <cfquery datasource="boyahane">
         UPDATE machine_machines
-        SET current_status_code = 1,
-            current_status_note = 'Bakım tamamlandı',
-            last_maintenance_date = CURRENT_TIMESTAMP,
+        SET current_status_code = <cfqueryparam value="#machineStatusCode#" cfsqltype="cf_sql_integer">,
+            current_status_note = <cfqueryparam value="#machineStatusNote#" cfsqltype="cf_sql_varchar">,
+            last_maintenance_date = CASE WHEN <cfqueryparam value="#isNull(endDate)?0:1#" cfsqltype="cf_sql_integer"> = 1 THEN CURRENT_TIMESTAMP ELSE last_maintenance_date END,
             update_date = CURRENT_TIMESTAMP
         WHERE machine_id = <cfqueryparam value="#machineId#" cfsqltype="cf_sql_integer">
     </cfquery>
@@ -80,15 +125,15 @@
         INSERT INTO machine_status_history (machine_id, status_code, status_note, source_type, source_id, record_emp)
         VALUES (
             <cfqueryparam value="#machineId#" cfsqltype="cf_sql_integer">,
-            1,
-            'Bakım sonucu girildi',
+            <cfqueryparam value="#machineStatusCode#" cfsqltype="cf_sql_integer">,
+            <cfqueryparam value="#machineHistoryNote#" cfsqltype="cf_sql_varchar">,
             'maintenance',
             NULL,
             <cfqueryparam value="#session.user.employee_id ?: 0#" cfsqltype="cf_sql_integer" null="#NOT isDefined('session.user.employee_id')#">
         )
     </cfquery>
 
-    <cfif NOT isNull(planId)>
+    <cfif NOT isNull(planId) AND NOT isNull(endDate)>
         <cfquery datasource="boyahane">
             UPDATE machine_maintenance_plans
             SET last_done_date = CURRENT_TIMESTAMP,

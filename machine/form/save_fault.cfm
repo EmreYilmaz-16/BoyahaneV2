@@ -32,6 +32,10 @@
     </cfif>
 
     <cfset faultNo = "ARZ-" & dateFormat(now(),"yyyymmdd") & "-" & right("0000" & randRange(1,9999),4)>
+    <cfquery name="getFaultNo" datasource="boyahane">
+        SELECT 'ARZ-' || to_char(CURRENT_DATE, 'YYYYMMDD') || '-' || lpad(nextval('machine_fault_no_seq')::text, 6, '0') AS fault_no
+    </cfquery>
+    <cfset faultNo = getFaultNo.fault_no>
 
     <cfquery name="insFault" datasource="boyahane">
         INSERT INTO machine_faults (
