@@ -53,6 +53,25 @@
         SELECT
             COALESCE(m.current_status_code, 1) AS current_status_code,
             COALESCE(m.is_active, true) AS is_active,
+            (
+                SELECT COUNT(*)
+                FROM machine_faults f
+                WHERE f.machine_id = m.machine_id
+                  AND f.fault_status IN ('open', 'in_progress')
+            ) AS open_fault_count
+        FROM machine_machines m
+    )
+    SELECT
+        COUNT(*) AS total_machine,
+        SUM(CASE WHEN is_active = true
+                  AND open_fault_count = 0
+                  AND current_status_code = 1 THEN 1 ELSE 0 END) AS status_ok,
+        SUM(CASE WHEN is_active = true
+                  AND open_fault_count = 0
+                  AND current_status_code = 2 THEN 1 ELSE 0 END) AS status_maintenance,
+        SUM(CASE WHEN is_active = true
+                  AND (open_fault_count > 0 OR current_status_code = 3) THEN 1 ELSE 0 END) AS status_fault,
+        SUM(CASE WHEN is_active = false THEN 1 ELSE 0 END) AS status_inactive
             COALESCE(active_fault.last_event_type, '') AS active_fault_stage,
             COALESCE(fault_counts.open_fault_count, 0) AS open_fault_count
         FROM machine_machines m
@@ -371,9 +390,6 @@
             <cfif NOT qMachineBoard.is_active>
                 <cfset tileClass = "sb-tile-inactive">
                 <cfset tileIcon  = "fa-circle-pause">
-            <cfelseif qMachineBoard.current_status_code EQ 2>
-                <cfset tileClass = "sb-tile-maint">
-                <cfset tileIcon  = "fa-tools">
             <cfelseif qMachineBoard.active_fault_stage EQ "intervention">
                 <cfset tileClass = "sb-tile-intervention">
                 <cfset tileIcon  = "fa-screwdriver-wrench">
@@ -381,6 +397,12 @@
                 <cfset tileClass = "sb-tile-assigned">
                 <cfset tileIcon  = "fa-user-check">
             <cfelseif val(qMachineBoard.open_fault_count) GT 0>
+                <cfset tileClass = "sb-tile-fault">
+                <cfset tileIcon  = "fa-triangle-exclamation">
+            <cfelseif qMachineBoard.current_status_code EQ 2>
+                <cfset tileClass = "sb-tile-maint">
+                <cfset tileIcon  = "fa-tools">
+            <cfelseif qMachineBoard.current_status_code EQ 3>
                 <cfset tileClass = "sb-tile-fault">
                 <cfset tileIcon  = "fa-triangle-exclamation">
             </cfif>
