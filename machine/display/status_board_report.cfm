@@ -116,6 +116,12 @@
 </cfquery>
 
 <cfset hasMachine = qMachineBoard.recordCount GT 0>
+<cfset openedFaultMachineCount = 0>
+<cfloop query="qMachineBoard">
+    <cfif val(open_fault_count) GT 0 AND active_fault_stage EQ "opened">
+        <cfset openedFaultMachineCount = openedFaultMachineCount + 1>
+    </cfif>
+</cfloop>
 
 <cfoutput>
 <style>
@@ -186,6 +192,7 @@
 .sb-stat-icon.ok       { background: ##f0fdf4; color: ##16a34a; }
 .sb-stat-icon.maint    { background: ##f3f4f6; color: ##4b5563; }
 .sb-stat-icon.fault    { background: ##fef2f2; color: ##dc2626; }
+.sb-stat-icon.openfault{ background: ##fff7ed; color: ##ea580c; }
 .sb-stat-icon.inactive { background: ##f8fafc; color: ##6b7280; }
 .sb-stat-label { font-size: 0.72rem; font-weight: 600; color: ##94a3b8; text-transform: uppercase; letter-spacing: .04em; }
 .sb-stat-val   { font-size: 1.6rem; font-weight: 800; line-height: 1.1; color: ##0f172a; }
@@ -276,6 +283,13 @@
 .sb-tile-open-fault { cursor: not-allowed; }
 .sb-tile-open-fault:hover { transform: none !important; box-shadow: 0 3px 10px rgba(0,0,0,.18) !important; }
 
+.sb-tile-ok      { background: linear-gradient(160deg, ##22c55e 0%, ##15803d 100%); }
+.sb-tile-maint   { background: linear-gradient(160deg, ##9ca3af 0%, ##4b5563 100%); }
+.sb-tile-assigned{ background: linear-gradient(160deg, ##60a5fa 0%, ##1d4ed8 100%); }
+.sb-tile-open-fault { background: linear-gradient(160deg, ##fb923c 0%, ##ea580c 100%); }
+.sb-tile-intervention { background: linear-gradient(160deg, ##facc15 0%, ##ca8a04 100%); color: ##1f2937; }
+.sb-tile-fault   { background: linear-gradient(160deg, ##f87171 0%, ##b91c1c 100%); }
+.sb-tile-inactive{ background: linear-gradient(160deg, ##cbd5e1 0%, ##64748b 100%); }
 
 .sb-tile-icon { font-size: 1.2rem; opacity: .9; line-height: 1; }
 .sb-tile-code { font-size: 0.95rem; font-weight: 800; line-height: 1.1; text-transform: uppercase; letter-spacing: .03em; }
@@ -364,6 +378,10 @@
             <div><div class="sb-stat-label">Arızalı</div><div class="sb-stat-val" style="color:##dc2626">#val(qSummary.status_fault)#</div></div>
         </div>
         <div class="sb-stat">
+            <div class="sb-stat-icon openfault"><i class="fas fa-circle-exclamation"></i></div>
+            <div><div class="sb-stat-label">Atanmadı</div><div class="sb-stat-val" style="color:##ea580c">#val(openedFaultMachineCount)#</div></div>
+        </div>
+        <div class="sb-stat">
             <div class="sb-stat-icon inactive"><i class="fas fa-circle-pause"></i></div>
             <div><div class="sb-stat-label">Pasif</div><div class="sb-stat-val" style="color:##6b7280">#val(qSummary.status_inactive)#</div></div>
         </div>
@@ -371,12 +389,13 @@
 
     <!--- Legend --->
     <div class="sb-legend">
-        <span><i class="sb-legend-dot sb-legend-dot-ok"></i>Çözüldü</span>
-        <span><i class="sb-legend-dot sb-legend-dot-maint"></i>Bakımda</span>
-        <span><i class="sb-legend-dot sb-legend-dot-assigned"></i>Personel Atandı</span>
-        <span><i class="sb-legend-dot sb-legend-dot-intervention"></i>Müdahale Ediliyor</span>
-        <span><i class="sb-legend-dot sb-legend-dot-fault"></i>Arızalı</span>
-        <span><i class="sb-legend-dot sb-legend-dot-inactive"></i>Pasif</span>
+        <span><i class="sb-legend-dot" style="background:##16a34a"></i>Çözüldü</span>
+        <span><i class="sb-legend-dot" style="background:##4b5563"></i>Bakımda</span>
+        <span><i class="sb-legend-dot" style="background:##ea580c"></i>Yeni Arıza / Atanmadı</span>
+        <span><i class="sb-legend-dot" style="background:##1d4ed8"></i>Personel Atandı</span>
+        <span><i class="sb-legend-dot" style="background:##ca8a04"></i>Müdahale Ediliyor</span>
+        <span><i class="sb-legend-dot" style="background:##dc2626"></i>Arızalı</span>
+        <span><i class="sb-legend-dot" style="background:##64748b"></i>Pasif</span>
         <span class="sb-legend-hint"><i class="fas fa-circle-exclamation me-1"></i>Sağ üstteki sayı: mevcut açık arıza adedi</span>
     </div>
 
@@ -413,7 +432,9 @@
             <cfelseif qMachineBoard.current_status_code EQ 2>
                 <cfset tileClass = "sb-tile-maint">
                 <cfset tileIcon  = "fa-tools">
-                <cfset tileStatusLabel = "Bakımda">
+            <cfelseif val(qMachineBoard.open_fault_count) GT 0 AND qMachineBoard.active_fault_stage EQ "opened">
+                <cfset tileClass = "sb-tile-open-fault">
+                <cfset tileIcon  = "fa-circle-exclamation">
             <cfelseif qMachineBoard.active_fault_stage EQ "intervention">
                 <cfset tileClass = "sb-tile-intervention">
                 <cfset tileIcon  = "fa-screwdriver-wrench">
