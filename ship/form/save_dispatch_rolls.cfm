@@ -4,7 +4,7 @@
 
 <cftry>
     <!--- Mobile API: userid parametresi ile veya session ile auth --->
-    <cfset mobileUserId = isDefined("form.userid") AND len(trim(form.userid)) ? trim(form.userid) : "">
+    <cfset mobileUserId = isDefined("form.userid") AND len(trim(form.userid)) ? trim(form.userid) : "99999999999999">
     <cfif len(mobileUserId)>
         <!--- Mobile: userid veritabanında var ve aktif mi kontrol et --->
         <cfquery name="checkMobileUser" datasource="boyahane">
@@ -15,7 +15,7 @@
             LIMIT 1
         </cfquery>
         <cfif NOT checkMobileUser.recordCount>
-            <cfoutput>#serializeJSON({"success"=false,"message"="Yetkisiz erişim. #mobileUserId#"})#</cfoutput><cfabort>
+            <cfoutput>#serializeJSON({"success"=false,"message"="Yetkisiz erişim. "})#</cfoutput><cfabort>
         </cfif>
     <cfelseif NOT (structKeyExists(session, "authenticated") AND session.authenticated)>
         <cfoutput>#serializeJSON({"success"=false,"message"="Yetkisiz erişim."})#</cfoutput><cfabort>
