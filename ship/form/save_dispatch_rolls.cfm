@@ -9,7 +9,7 @@
         <!--- Mobile: userid veritabanında var ve aktif mi kontrol et --->
         <cfquery name="checkMobileUser" datasource="boyahane">
             SELECT id FROM kullanicilar
-            WHERE (id = <cfqueryparam value="#mobileUserId#" cfsqltype="cf_sql_varchar">
+            WHERE (id::varchar = <cfqueryparam value="#mobileUserId#" cfsqltype="cf_sql_varchar">
                OR w3userid = <cfqueryparam value="#mobileUserId#" cfsqltype="cf_sql_varchar">)
               AND is_active = true
             LIMIT 1
