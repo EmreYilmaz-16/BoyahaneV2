@@ -15,7 +15,7 @@
             LIMIT 1
         </cfquery>
         <cfif NOT checkMobileUser.recordCount>
-            <cfoutput>#serializeJSON({"success"=false,"message"="Yetkisiz erişim."})#</cfoutput><cfabort>
+            <cfoutput>#serializeJSON({"success"=false,"message"="Yetkisiz erişim. #mobileUserId#"})#</cfoutput><cfabort>
         </cfif>
     <cfelseif NOT (structKeyExists(session, "authenticated") AND session.authenticated)>
         <cfoutput>#serializeJSON({"success"=false,"message"="Yetkisiz erişim."})#</cfoutput><cfabort>
