@@ -3,7 +3,21 @@
 <cfsetting showdebugoutput="false">
 
 <cftry>
-    <cfif NOT (structKeyExists(session, "authenticated") AND session.authenticated)>
+    <!--- Mobile API: userid parametresi ile veya session ile auth --->
+    <cfset mobileUserId = isDefined("form.userid") AND len(trim(form.userid)) ? trim(form.userid) : "">
+    <cfif len(mobileUserId)>
+        <!--- Mobile: userid veritabanında var ve aktif mi kontrol et --->
+        <cfquery name="checkMobileUser" datasource="boyahane">
+            SELECT id FROM kullanicilar
+            WHERE (id = <cfqueryparam value="#mobileUserId#" cfsqltype="cf_sql_varchar">
+               OR w3userid = <cfqueryparam value="#mobileUserId#" cfsqltype="cf_sql_varchar">)
+              AND is_active = true
+            LIMIT 1
+        </cfquery>
+        <cfif NOT checkMobileUser.recordCount>
+            <cfoutput>#serializeJSON({"success"=false,"message"="Yetkisiz erişim."})#</cfoutput><cfabort>
+        </cfif>
+    <cfelseif NOT (structKeyExists(session, "authenticated") AND session.authenticated)>
         <cfoutput>#serializeJSON({"success"=false,"message"="Yetkisiz erişim."})#</cfoutput><cfabort>
     </cfif>
 
