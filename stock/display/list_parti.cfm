@@ -683,7 +683,9 @@ window.addEventListener('load', function() {
             selection: { mode: 'single' },
             onRowPrepared: function(e) {
                 if (e.rowType !== 'data') return;
-                e.rowElement.addEventListener('contextmenu', function(ev) {
+                var el = e.rowElement.get ? e.rowElement.get(0) : e.rowElement;
+                if (!el) return;
+                el.addEventListener('contextmenu', function(ev) {
                     ev.preventDefault();
                     ev.stopPropagation();
                     showPartiContextMenu(ev, e.data);
