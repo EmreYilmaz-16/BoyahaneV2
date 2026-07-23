@@ -869,7 +869,7 @@ window.addEventListener('load', function() {
                 var li = document.createElement('div');
                 li.className = 'ctx-item' + (item.cls ? ' ' + item.cls : '');
                 li.innerHTML = '<i class="' + item.icon + '"></i>' + item.label;
-                li.addEventListener('click', function(fn){ return function(){ hidePartiContextMenu(); fn(); }; }(item.action));
+                li.addEventListener('click', function(fn){ return function(){ fn(); hidePartiContextMenu(); }; }(item.action));
                 menu.appendChild(li);
             }
         });
