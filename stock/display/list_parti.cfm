@@ -307,6 +307,9 @@
     </div>
 </div>
 
+<!--- ─── Sağ-tık Context Menu ─── --->
+<div id="partiCtxMenu"></div>
+
 <!--- ─── Parti Kalemleri Modal ─── --->
 <div class="modal fade" id="partiRowModal" tabindex="-1" aria-labelledby="partiRowModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
@@ -557,6 +560,14 @@
 .add-color-modal .modal-footer  { background:##f8fafc; border-top:1px solid ##e2e8f0; }
 .popup-section-label { font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:##6366f1; padding:6px 0 2px; border-bottom:1px solid ##e0e7ff; margin-bottom:4px; }
 .ready-switch-wrap   { display:flex; align-items:center; justify-content:space-between; padding:8px 12px; border:1px solid ##e2e8f0; border-radius:8px; background:##f8fafc; font-size:.85rem; }
+/* Sağ-tık context menu */
+##partiCtxMenu { position:fixed; z-index:999999; background:##fff; border:1px solid ##d1d5db; border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,.15); min-width:210px; padding:4px 0; display:none; }
+##partiCtxMenu .ctx-item { display:flex; align-items:center; gap:10px; padding:8px 16px; font-size:.85rem; cursor:pointer; color:##1e293b; white-space:nowrap; transition:background .1s; }
+##partiCtxMenu .ctx-item:hover { background:##f1f5f9; }
+##partiCtxMenu .ctx-item i { width:16px; text-align:center; font-size:.82rem; }
+##partiCtxMenu .ctx-item.ctx-danger { color:##dc2626; }
+##partiCtxMenu .ctx-item.ctx-danger:hover { background:##fef2f2; }
+##partiCtxMenu .ctx-divider { border-top:1px solid ##e5e7eb; margin:3px 0; }
 </style>
 
 <script>
@@ -670,6 +681,14 @@ window.addEventListener('load', function() {
                 e.cancel = true;
             },
             selection: { mode: 'single' },
+            onRowPrepared: function(e) {
+                if (e.rowType !== 'data') return;
+                e.rowElement.addEventListener('contextmenu', function(ev) {
+                    ev.preventDefault();
+                    ev.stopPropagation();
+                    showPartiContextMenu(ev, e.data);
+                });
+            },
             columns: [
                 { dataField:'order_id',     caption:'ID',         width:70, alignment:'center', dataType:'number' },
                 { dataField:'order_number', caption:'Parti Kodu', width:160,
@@ -796,6 +815,88 @@ window.addEventListener('load', function() {
             }
         });
     }
+
+    /* ─── Sağ-tık Context Menu ─────────────────────────────── */
+    var _ctxData = null;
+
+    window.showPartiContextMenu = function(ev, data) {
+        _ctxData = data;
+        var oid      = data.ORDER_ID  || data.order_id;
+        var sid      = data.SHIP_ID   || data.ship_id   || 0;
+        var isMain   = data.FIRST_IS_MAIN !== undefined ? data.FIRST_IS_MAIN : data.first_is_main;
+        var hasColor = (isMain === false || isMain === 'false' || isMain === 0);
+
+        var items = [
+            { icon:'fas fa-th-list',    label:'Kalemleri Gör',         cls:'', action: function(){ openRowModal(_ctxData); } },
+            { divider: true },
+            { icon:'fas fa-id-card',    label:'Refakat Kartı Yazdır',  cls:'', action: function(){
+                var _oid = _ctxData.ORDER_ID || _ctxData.order_id;
+                window.open('/ship/display/refakat_kart.cfm?order_id='+_oid,'_blank','width=900,height=780,scrollbars=yes');
+            }}
+        ];
+        if (sid > 0) {
+            items.push({ icon:'fas fa-file-invoice', label:'Sevkiyat Çıkış Fişi', cls:'', action: function(){
+                var _oid = _ctxData.ORDER_ID || _ctxData.order_id;
+                var _sid = _ctxData.SHIP_ID  || _ctxData.ship_id || 0;
+                window.open('/ship/display/sevkiyat_cikis_fisi.cfm?ship_id='+_sid+'&order_id='+_oid,'_blank','width=900,height=780,scrollbars=yes');
+            }});
+        }
+        items.push({ divider: true });
+        items.push({ icon:'fas fa-edit',     label:'Siparişi Düzenle', cls:'', action: function(){
+            var _oid = _ctxData.ORDER_ID || _ctxData.order_id;
+            window.location.href = 'index.cfm?fuseaction=order.add_order&order_id=' + _oid;
+        }});
+        items.push({ icon:'fas fa-industry', label:'Üretime Gönder', cls:'', action: function(){
+            partiSendToProduction(_ctxData.ORDER_ID || _ctxData.order_id);
+        }});
+        if (hasColor) {
+            items.push({ divider: true });
+            items.push({ icon:'fas fa-flask', label:'Reçete', cls:'', action: function(){
+                openRecete(_ctxData);
+            }});
+        }
+
+        var menu = document.getElementById('partiCtxMenu');
+        menu.innerHTML = '';
+        items.forEach(function(item) {
+            if (item.divider) {
+                var d = document.createElement('div');
+                d.className = 'ctx-divider';
+                menu.appendChild(d);
+            } else {
+                var li = document.createElement('div');
+                li.className = 'ctx-item' + (item.cls ? ' ' + item.cls : '');
+                li.innerHTML = '<i class="' + item.icon + '"></i>' + item.label;
+                li.addEventListener('click', function(fn){ return function(){ hidePartiContextMenu(); fn(); }; }(item.action));
+                menu.appendChild(li);
+            }
+        });
+
+        /* Konum: pencere sınırlarına göre ayarla */
+        menu.style.display = 'block';
+        var mw = menu.offsetWidth, mh = menu.offsetHeight;
+        var vw = window.innerWidth,  vh = window.innerHeight;
+        var x  = ev.clientX, y = ev.clientY;
+        if (x + mw > vw - 4) x = vw - mw - 4;
+        if (y + mh > vh - 4) y = vh - mh - 4;
+        menu.style.left = x + 'px';
+        menu.style.top  = y + 'px';
+    };
+
+    window.hidePartiContextMenu = function() {
+        var m = document.getElementById('partiCtxMenu');
+        if (m) m.style.display = 'none';
+        _ctxData = null;
+    };
+
+    document.addEventListener('click',       hidePartiContextMenu);
+    document.addEventListener('contextmenu', function(ev){
+        /* Grid dışında sağ-tık → menüyü gizle */
+        if (!ev.target.closest('##partiCtxMenu') && !ev.target.closest('##mainPartiGrid'))
+            hidePartiContextMenu();
+    });
+    document.addEventListener('keydown', function(ev){ if (ev.key === 'Escape') hidePartiContextMenu(); });
+    document.addEventListener('scroll',  hidePartiContextMenu, true);
 
     /* ─── Renk Kaydet ─────────────────────────────────────────── */
     $('##colorPickerSaveBtn').on('click', function() {
