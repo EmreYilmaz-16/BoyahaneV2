@@ -746,21 +746,37 @@ window.addEventListener('load', function() {
                 { dataField:'grosstotal', caption:'Brüt',  width:100, alignment:'right', dataType:'number', format:{type:'fixedPoint',precision:2} },
                 { dataField:'nettotal',   caption:'Net',   width:100, alignment:'right', dataType:'number', format:{type:'fixedPoint',precision:2} },
                 {
-                    caption:'İşlemler', width:160, alignment:'center', allowSorting:false, allowFiltering:false,
+                    caption:'İşlemler', width:220, alignment:'center', allowSorting:false, allowFiltering:false,
                     cellTemplate: function(c,o) {
+                        var oid    = o.data.ORDER_ID  || o.data.order_id;
+                        var sid    = o.data.SHIP_ID   || o.data.ship_id   || 0;
                         var g = $('<div>').addClass('d-flex gap-1 justify-content-center');
                         $('<button>').addClass('btn btn-sm btn-outline-info').attr('title','Kalemleri Gör')
                             .html('<i class="fas fa-th-list"></i>')
                             .on('click', function(e2){ e2.stopPropagation(); openRowModal(o.data); }).appendTo(g);
+                        $('<button>').addClass('btn btn-sm btn-outline-dark').attr('title','Refakat Kartı Yazdır')
+                            .html('<i class="fas fa-id-card"></i>')
+                            .on('click', function(e2){
+                                e2.stopPropagation();
+                                window.open('/ship/display/refakat_kart.cfm?order_id='+oid,'_blank','width=900,height=780,scrollbars=yes');
+                            }).appendTo(g);
+                        if (sid > 0) {
+                            $('<button>').addClass('btn btn-sm btn-outline-secondary').attr('title','Sevkiyat Çıkış Fişi')
+                                .html('<i class="fas fa-file-invoice"></i>')
+                                .on('click', function(e2){
+                                    e2.stopPropagation();
+                                    window.open('/ship/display/sevkiyat_cikis_fisi.cfm?ship_id='+sid+'&order_id='+oid,'_blank','width=900,height=780,scrollbars=yes');
+                                }).appendTo(g);
+                        }
                         $('<button>').addClass('btn btn-sm btn-outline-primary').attr('title','Siparişi Düzenle')
                             .html('<i class="fas fa-edit"></i>')
                             .on('click', function(e2){
                                 e2.stopPropagation();
-                                window.location.href = 'index.cfm?fuseaction=order.add_order&order_id=' + (o.data.ORDER_ID||o.data.order_id);
+                                window.location.href = 'index.cfm?fuseaction=order.add_order&order_id=' + oid;
                             }).appendTo(g);
                         $('<button>').addClass('btn btn-sm btn-outline-success').attr('title','Üretime Gönder')
                             .html('<i class="fas fa-industry"></i>')
-                            .on('click', function(e2){ e2.stopPropagation(); partiSendToProduction(o.data.ORDER_ID||o.data.order_id); }).appendTo(g);
+                            .on('click', function(e2){ e2.stopPropagation(); partiSendToProduction(oid); }).appendTo(g);
                         var isMainRow = o.data.FIRST_IS_MAIN !== undefined ? o.data.FIRST_IS_MAIN : o.data.first_is_main;
                         if (isMainRow === false || isMainRow === 'false' || isMainRow === 0) {
                             $('<button>').addClass('btn btn-sm btn-outline-info').attr('title','Reçete')

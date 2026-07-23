@@ -1,5 +1,6 @@
 <cfprocessingdirective pageEncoding="utf-8">
-<cfset shipId = isDefined("url.ship_id") AND isNumeric(url.ship_id) ? val(url.ship_id) : 0>
+<cfset shipId  = isDefined("url.ship_id")  AND isNumeric(url.ship_id)  ? val(url.ship_id)  : 0>
+<cfset orderId = isDefined("url.order_id") AND isNumeric(url.order_id) ? val(url.order_id) : 0>
 
 <cfif shipId lte 0>
     <div style="padding:20px;color:#b91c1c;font-family:Arial">Geçerli bir sevkiyat seçilmedi (ship_id gerekli).</div>
@@ -47,8 +48,9 @@
     LEFT JOIN LATERAL (
         SELECT o1.*
         FROM orders o1
-        WHERE o1.ref_ship_id = s.ship_id
-           OR (o1.ref_ship_id IS NULL AND o1.ref_no IS NOT NULL AND o1.ref_no <> '' AND o1.ref_no = s.ship_number)
+        WHERE (o1.ref_ship_id = s.ship_id
+           OR (o1.ref_ship_id IS NULL AND o1.ref_no IS NOT NULL AND o1.ref_no <> '' AND o1.ref_no = s.ship_number))
+        <cfif orderId gt 0>AND o1.order_id = <cfqueryparam value="#orderId#" cfsqltype="cf_sql_integer"></cfif>
         ORDER BY o1.order_id
         LIMIT 1
     ) o ON true
@@ -64,13 +66,13 @@
     SELECT sr.roll_no, sr.metre, sr.kg, COALESCE(sr.paket_durumu, '') AS hata
     FROM ship_roll sr
     LEFT JOIN orders o ON o.order_id = sr.order_id
-    WHERE sr.ship_id = <cfqueryparam value="#shipId#" cfsqltype="cf_sql_integer">
+    WHERE (<cfif orderId gt 0>sr.order_id = <cfqueryparam value="#orderId#" cfsqltype="cf_sql_integer"><cfelse>sr.ship_id = <cfqueryparam value="#shipId#" cfsqltype="cf_sql_integer">
        OR sr.order_id IN (
            SELECT o2.order_id
            FROM orders o2
            WHERE o2.ref_ship_id = <cfqueryparam value="#shipId#" cfsqltype="cf_sql_integer">
               OR (o2.ref_ship_id IS NULL AND o2.ref_no IS NOT NULL AND o2.ref_no <> '' AND o2.ref_no = <cfqueryparam value="#getSlip.ship_number#" cfsqltype="cf_sql_varchar">)
-       )
+       )</cfif>)
     ORDER BY COALESCE(sr.roll_no, 0), sr.roll_id
 </cfquery>
 

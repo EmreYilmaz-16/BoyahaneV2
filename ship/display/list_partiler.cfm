@@ -584,7 +584,7 @@ window.addEventListener('load', function() {
                 { dataField:'sarim_sekli_adi', caption:'Sarım Şekli', width:120 },
                 { dataField:'ambalaj_adi',     caption:'Ambalaj',      width:120 },
                 {
-                    caption:'İşlemler', width:165, alignment:'center', allowSorting:false, allowFiltering:false,
+                    caption:'İşlemler', width:210, alignment:'center', allowSorting:false, allowFiltering:false,
                     cellTemplate: function(c,o){
                         var oid = o.data.ORDER_ID || o.data.order_id;
                         var pOrderId = o.data.P_ORDER_ID || o.data.p_order_id || 0;
@@ -594,6 +594,20 @@ window.addEventListener('load', function() {
                             .on('click', function(e2){
                                 e2.stopPropagation();
                                 window.location.href='index.cfm?fuseaction=ship.detail_parti&order_id='+oid;
+                            })
+                            .appendTo(g);
+                        $('<button>').addClass('btn btn-sm btn-outline-dark').attr('title','Refakat Kartı Yazdır')
+                            .html('<i class="fas fa-id-card"></i>')
+                            .on('click', function(e2){
+                                e2.stopPropagation();
+                                window.open('/ship/display/refakat_kart.cfm?order_id='+oid,'_blank','width=900,height=780,scrollbars=yes');
+                            })
+                            .appendTo(g);
+                        $('<button>').addClass('btn btn-sm btn-outline-secondary').attr('title','Sevkiyat Çıkış Fişi')
+                            .html('<i class="fas fa-file-invoice"></i>')
+                            .on('click', function(e2){
+                                e2.stopPropagation();
+                                window.open('/ship/display/sevkiyat_cikis_fisi.cfm?ship_id='+shipId+'&order_id='+oid,'_blank','width=900,height=780,scrollbars=yes');
                             })
                             .appendTo(g);
                         if (pOrderId > 0) {
